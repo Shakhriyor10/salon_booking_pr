@@ -279,7 +279,12 @@
                                             <input type="hidden" name="form_type" value="stylist_price_update">
                                             <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
                                             <input type="hidden" name="stylist_id" value="{{ selected_stylist.id }}">
-                                            <input type="number" step="0.01" min="0" name="price" value="{{ ss.current_price|default_if_none:'' }}" class="form-control flex-grow-1" placeholder="Не задана">
+                                            <div class="flex-grow-1">
+                                                <input type="number" step="0.01" min="0" name="price" value="{{ ss.current_price|default_if_none:'' }}" class="form-control" placeholder="Не задана">
+                                                {% if ss.current_price is not None %}
+                                                    <div class="form-text">Текущая цена: {{ ss.current_price }}</div>
+                                                {% endif %}
+                                            </div>
                                             <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
                                             {% if ss.current_price %}
                                                 <button type="submit" name="price" value="" class="btn btn-outline-danger btn-sm">Очистить</button>
