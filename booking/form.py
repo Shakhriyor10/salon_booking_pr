@@ -4,6 +4,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from PIL import Image
+
 from users.models import Profile
 
 from .models import (
@@ -36,6 +38,11 @@ class StylistCreationForm(UserCreationForm):
     level = forms.ModelChoiceField(
         label='Уровень', queryset=StylistLevel.objects.all(), required=False
     )
+    photo = forms.ImageField(
+        label='Фото',
+        required=False,
+        help_text='Фото должно быть квадратным и весить не более 1 МБ.',
+    )
     bio = forms.CharField(
         label='О себе',
         widget=forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
@@ -64,6 +71,37 @@ class StylistCreationForm(UserCreationForm):
         # Textarea already has styling above, ensure passwords styled too
         self.fields['password1'].widget.attrs.setdefault('class', 'form-control')
         self.fields['password2'].widget.attrs.setdefault('class', 'form-control')
+        if 'photo' in self.fields:
+            self.fields['photo'].widget.attrs.setdefault('accept', 'image/*')
+
+    def clean_photo(self):
+        photo = self.cleaned_data.get('photo')
+        if not photo:
+            return photo
+
+        max_size_bytes = 1024 * 1024  # 1 МБ
+        if photo.size > max_size_bytes:
+            raise forms.ValidationError('Размер фото должен быть не более 1 МБ.')
+
+        image = None
+        try:
+            image = Image.open(photo)
+            width, height = image.size
+        except Exception:
+            raise forms.ValidationError('Не удалось прочитать изображение. Загрузите корректный файл.')
+        finally:
+            if hasattr(photo, 'seek'):
+                photo.seek(0)
+            if image is not None:
+                try:
+                    image.close()
+                except Exception:
+                    pass
+
+        if width != height:
+            raise forms.ValidationError('Фото должно быть квадратным (ширина должна равняться высоте).')
+
+        return photo
 
     def save(self, salon, commit=True):
         """Создать пользователя и привязать его к салону как мастера."""
@@ -92,6 +130,11 @@ class StylistCreationForm(UserCreationForm):
             level=self.cleaned_data.get('level'),
             bio=self.cleaned_data.get('bio', ''),
         )
+
+        photo = self.cleaned_data.get('photo')
+        if photo:
+            stylist.avatar = photo
+            stylist.save(update_fields=['avatar'])
 
         return stylist
 

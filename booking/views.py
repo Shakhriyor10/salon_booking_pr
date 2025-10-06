@@ -1339,7 +1339,7 @@ def stylist_dayoff_view(request):
         form_type = request.POST.get('form_type')
 
         if profile.is_salon_admin and form_type == 'stylist_add':
-            stylist_creation_form = StylistCreationForm(request.POST)
+            stylist_creation_form = StylistCreationForm(request.POST, request.FILES)
             if stylist_creation_form.is_valid():
                 stylist_creation_form.save(profile.salon)
                 messages.success(request, 'Стилист добавлен в салон.')

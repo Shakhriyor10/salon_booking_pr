@@ -443,7 +443,7 @@
 <div class="modal fade" id="addStylistModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <form method="post">
+      <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="stylist_add">
         <div class="modal-header">
@@ -453,6 +453,11 @@
         <div class="modal-body">
           {% if stylist_creation_form.non_field_errors %}
             <div class="alert alert-danger">{{ stylist_creation_form.non_field_errors }}</div>
+          {% endif %}
+          {% if stylist_creation_form.photo %}
+            <div class="alert alert-info small mb-3">
+              Фото стилиста должно быть квадратным и весить не более 1 МБ.
+            </div>
           {% endif %}
           <div class="row g-3">
             {% for field in stylist_creation_form %}
