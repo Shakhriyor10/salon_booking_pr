@@ -27,20 +27,15 @@ def validate_stylist_photo(photo):
     if photo.size > max_size_bytes:
         raise forms.ValidationError('Размер фото должен быть не более 1 МБ.')
 
-    image = None
     try:
         image = Image.open(photo)
+        image.load()
         width, height = image.size
     except Exception:
         raise forms.ValidationError('Не удалось прочитать изображение. Загрузите корректный файл.')
     finally:
         if hasattr(photo, 'seek'):
             photo.seek(0)
-        if image is not None:
-            try:
-                image.close()
-            except Exception:
-                pass
 
     if width != height:
         raise forms.ValidationError('Фото должно быть квадратным (ширина должна равняться высоте).')
