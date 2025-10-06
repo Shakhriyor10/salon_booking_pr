@@ -1366,6 +1366,21 @@ def stylist_dayoff_view(request):
                 salon_service_form.save()
                 messages.success(request, 'Услуга добавлена в салон.')
                 return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'salon_service_delete':
+            salon_service_id = request.POST.get('salon_service_id')
+            salon_service = get_object_or_404(
+                SalonService, id=salon_service_id, salon=profile.salon
+            )
+            try:
+                salon_service.delete()
+            except ProtectedError:
+                messages.error(
+                    request,
+                    'Невозможно удалить услугу, пока есть связанные записи (например, записи клиентов).'
+                )
+            else:
+                messages.success(request, 'Услуга удалена из салона.')
+            return redirect(reverse('stylist_dayoff'))
         elif profile.is_salon_admin and form_type == 'stylist_update':
             target_id = request.POST.get('stylist_id')
             target = get_object_or_404(Stylist, id=target_id, salon=profile.salon)
@@ -1403,7 +1418,7 @@ def stylist_dayoff_view(request):
             return redirect(reverse('stylist_dayoff'))
 
         # Дальнейшие действия требуют выбранного стилиста
-        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'stylist_update', 'stylist_delete'}:
+        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'stylist_update', 'stylist_delete'}:
             messages.error(request, 'Сначала выберите мастера.')
             return redirect(reverse('stylist_dayoff'))
 

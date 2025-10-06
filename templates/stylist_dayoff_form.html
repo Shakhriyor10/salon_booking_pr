@@ -199,6 +199,7 @@
                                 <th>Категория</th>
                                 <th>Длительность</th>
                                 <th>Активна</th>
+                                <th class="text-end">Действия</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -213,6 +214,16 @@
                                         {% else %}
                                             <span class="badge bg-secondary">Нет</span>
                                         {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="salon_service_delete">
+                                            <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить услугу из салона?')">
+                                                Удалить
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             {% endfor %}
