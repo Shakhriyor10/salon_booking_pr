@@ -3,8 +3,243 @@
 <div class="container py-4">
     <h2 class="mb-4 text-center">График и блокировки</h2>
 
+    {% if request.user.profile.is_salon_admin %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Стилисты салона</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addStylistModal">
+                Добавить стилиста
+            </button>
+        </div>
+        <div class="card-body">
+            {% if stylists %}
+                <ul class="list-group">
+                    {% for s in stylists %}
+                        <li class="list-group-item">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ s.user.get_full_name|default:s.user.username }}
+                                        {% if s.level %}
+                                            <span class="text-muted">— {{ s.level.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if s.bio %}
+                                        <div class="text-muted small mt-1">{{ s.bio }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center flex-wrap gap-2 justify-content-end">
+                                    {% if s.user.profile.phone %}
+                                        <span class="text-muted small me-2">{{ s.user.profile.phone }}</span>
+                                    {% endif %}
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editStylistModal{{ s.id }}">
+                                        Изменить
+                                    </button>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="stylist_delete">
+                                        <input type="hidden" name="stylist_id" value="{{ s.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить стилиста? Это действие нельзя отменить.')">
+                                            Удалить
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal fade" id="editStylistModal{{ s.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <form method="post" enctype="multipart/form-data">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="stylist_update">
+                                            <input type="hidden" name="stylist_id" value="{{ s.id }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Изменить данные стилиста</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                {% if s.update_form.non_field_errors %}
+                                                    <div class="alert alert-danger">
+                                                        {% for error in s.update_form.non_field_errors %}
+                                                            <div>{{ error }}</div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+
+                                                <div class="row g-3">
+                                                    {% with field=s.update_form.username %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.phone %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.first_name %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.last_name %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.level %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.photo %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.bio %}
+                                                    <div class="col-12">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                </div>
+
+                                                {% if s.avatar %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label d-block">Текущее фото</label>
+                                                        <img src="{{ s.avatar.url }}" alt="{{ s.user.get_full_name|default:s.user.username }}" class="img-thumbnail" style="max-width: 160px;">
+                                                    </div>
+                                                {% endif %}
+
+                                                {% if s.avatar or s.update_form.remove_photo.errors %}
+                                                    <div class="form-check mb-3">
+                                                        {{ s.update_form.remove_photo }}
+                                                        <label class="form-check-label" for="{{ s.update_form.remove_photo.id_for_label }}">{{ s.update_form.remove_photo.label }}</label>
+                                                    </div>
+                                                    {% for error in s.update_form.remove_photo.errors %}
+                                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">Стилистов пока нет.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Услуги салона</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalonServiceModal">
+                Добавить услугу
+            </button>
+        </div>
+        <div class="card-body">
+            {% if salon_services %}
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Услуга</th>
+                                <th>Категория</th>
+                                <th>Длительность</th>
+                                <th>Активна</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ss in salon_services %}
+                                <tr>
+                                    <td>{{ ss.service.name }}</td>
+                                    <td>{% if ss.category %}{{ ss.category.name }}{% else %}—{% endif %}</td>
+                                    <td>{{ ss.duration }}</td>
+                                    <td>
+                                        {% if ss.is_active %}
+                                            <span class="badge bg-success">Да</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Нет</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="salon_service_delete">
+                                            <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить услугу из салона?')">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Услуги ещё не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     {% if stylists %}
-    <form method="get" class="mb-3">
+    <form method="get" class="mb-4">
+        <label class="form-label">Выберите мастера для управления расписанием и ценами</label>
         <select name="stylist_id" class="form-select" onchange="this.form.submit()">
             <option value="">-- Выберите стилиста --</option>
             {% for s in stylists %}
@@ -16,137 +251,284 @@
     </form>
     {% endif %}
 
-    <!-- Таблица блокировок -->
+    {% if request.user.profile.is_salon_admin and selected_stylist %}
+    <div class="card mb-4">
+        <div class="card-header">
+            Цены для {{ selected_stylist.user.get_full_name|default:selected_stylist.user.username }}
+        </div>
+        <div class="card-body">
+            {% if salon_services %}
+                <p class="text-muted">Измените цену и нажмите «Сохранить». Чтобы удалить цену, используйте кнопку «Очистить».</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Услуга</th>
+                                <th>Длительность</th>
+                                <th style="width: 320px;">Цена</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ss in salon_services %}
+                                <tr>
+                                    <td>{{ ss.service.name }}</td>
+                                    <td>{{ ss.duration }}</td>
+                                    <td>
+                                        <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="stylist_price_update">
+                                            <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                            <input type="hidden" name="stylist_id" value="{{ selected_stylist.id }}">
+                                            <div class="flex-grow-1">
+                                                <input type="number" step="0.01" min="0" name="price" value="{{ ss.current_price|default_if_none:'' }}" class="form-control" placeholder="Не задана">
+                                                {% if ss.current_price is not None %}
+                                                    <div class="form-text">Текущая цена: {{ ss.current_price }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+                                            {% if ss.current_price %}
+                                                <button type="submit" name="price" value="" class="btn btn-outline-danger btn-sm">Очистить</button>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Сначала добавьте услуги салона, чтобы назначить цены.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <h4>Блокировки</h4>
     {% if blocks %}
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>Дата</th><th>С</th><th>До</th><th></th>
-        </tr>
-        </thead>
-        <tbody>
-        {% for block in blocks %}
-        <tr>
-            <td>{{ block.date }}</td>
-            <td>{{ block.from_time|default:"–" }}</td>
-            <td>{{ block.to_time|default:"–" }}</td>
-            <td>
-                <form method="post" action="{% url 'delete_dayoff' block.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Удалить блокировку?')">
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>Дата</th>
+                <th>С</th>
+                <th>До</th>
+                <th class="text-end">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for block in blocks %}
+            <tr>
+                <td>{{ block.date }}</td>
+                <td>{{ block.from_time|default:"–" }}</td>
+                <td>{{ block.to_time|default:"–" }}</td>
+                <td class="text-end">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editDayOffModal{{ block.id }}">
+                        Изменить
+                    </button>
+                    <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Удалить блокировку?')">
                             Удалить
                         </button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+                    </form>
+                </td>
+            </tr>
+
+            <div class="modal fade" id="editDayOffModal{{ block.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="dayoff_update">
+                            <input type="hidden" name="dayoff_id" value="{{ block.id }}">
+                            {% if selected_stylist_id %}
+                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
+                            {% endif %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Изменить блокировку</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Дата</label>
+                                    <input type="date" name="date" class="form-control" value="{{ block.date|date:'Y-m-d' }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">С</label>
+                                    <input type="time" name="from_time" class="form-control" value="{{ block.from_time|default_if_none:'' }}">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">До</label>
+                                    <input type="time" name="to_time" class="form-control" value="{{ block.to_time|default_if_none:'' }}">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+                                <button class="btn btn-primary" type="submit">Сохранить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
     <p class="text-muted">Нет блокировок</p>
     {% endif %}
+
     {% if selected_stylist_id %}
     <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
         Добавить блокировку
     </button>
-{% else %}
+    {% else %}
     <button class="btn btn-primary mb-4" onclick="alert('Сначала выберите специалиста');">
         Добавить блокировку
     </button>
-{% endif %}
+    {% endif %}
 
-    <!-- Таблица рабочих интервалов -->
-<h4>Рабочие интервалы</h4>
-{% if working_hours %}
-<table class="table table-bordered">
-    <thead>
-    <tr>
-        <th>День</th><th>С</th><th>До</th><th>Перерывы</th><th></th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for wh in working_hours %}
-    <tr>
-        <td>{{ wh.get_weekday_display }}</td>
-        <td>{{ wh.start_time }}</td>
-        <td>{{ wh.end_time }}</td>
-        <td>
-            {% if wh.breaks.all %}
-                {% for br in wh.breaks.all %}
-                    {{ br.start_time }}–{{ br.end_time }}<br>
-                {% endfor %}
-            {% else %}
-                <span class="text-muted">Нет</span>
-            {% endif %}
-        </td>
-        <td>
-            <button class="btn btn-primary btn-sm"
-                    data-bs-toggle="modal"
-                    data-bs-target="#addBreakModal{{ wh.id }}">
-                Изменить
-            </button>
-            <form method="post" style="display:inline;">
-                {% csrf_token %}
-                <input type="hidden" name="form_type" value="workinghour_delete">
-                <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
-                <button type="submit" class="btn btn-danger btn-sm"
-                        onclick="return confirm('Удалить блокировку?')">
-                    Удалить
-                </button>
-            </form>
-        </td>
-    </tr>
+    <h4>Рабочие интервалы</h4>
+    {% if working_hours %}
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+            <tr>
+                <th>День</th>
+                <th>С</th>
+                <th>До</th>
+                <th>Перерывы</th>
+                <th class="text-end">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for wh in working_hours %}
+            <tr>
+                <td>{{ wh.get_weekday_display }}</td>
+                <td>{{ wh.start_time }}</td>
+                <td>{{ wh.end_time }}</td>
+                <td>
+                    {% if wh.breaks.all %}
+                        {% for br in wh.breaks.all %}
+                            {{ br.start_time }}–{{ br.end_time }}<br>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">Нет</span>
+                    {% endif %}
+                </td>
+                <td class="text-end">
+                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editWorkingHourModal{{ wh.id }}">
+                        Изменить
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBreakModal{{ wh.id }}">
+                        Добавить перерыв
+                    </button>
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="workinghour_delete">
+                        <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
+                        {% if selected_stylist_id %}
+                            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Удалить интервал?')">
+                            Удалить
+                        </button>
+                    </form>
+                </td>
+            </tr>
 
-    <!-- Modal добавления перерыва -->
-    <div class="modal fade" id="addBreakModal{{ wh.id }}" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form method="post">
-                    {% csrf_token %}
-                    <input type="hidden" name="form_type" value="break_add">
-                    <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Добавить перерыв</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal fade" id="editWorkingHourModal{{ wh.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="workinghour_update">
+                            <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
+                            {% if selected_stylist_id %}
+                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
+                            {% endif %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Изменить рабочий интервал</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">День недели</label>
+                                    <select name="weekday" class="form-select">
+                                        {% for num, name in WEEKDAYS %}
+                                            <option value="{{ num }}" {% if num == wh.weekday %}selected{% endif %}>{{ name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">С</label>
+                                    <input type="time" name="start_time" class="form-control" value="{{ wh.start_time|time:'H:i' }}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">До</label>
+                                    <input type="time" name="end_time" class="form-control" value="{{ wh.end_time|time:'H:i' }}" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+                                <button class="btn btn-primary" type="submit">Сохранить</button>
+                            </div>
+                        </form>
                     </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label>Начало перерыва</label>
-                            <input type="time" name="start_time" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Конец перерыва</label>
-                            <input type="time" name="end_time" class="form-control" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">Сохранить</button>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
-    </div>
 
-    {% endfor %}
-    </tbody>
-</table>
-{% else %}
-<p class="text-muted">Нет рабочих интервалов</p>
-{% endif %}
-{% if selected_stylist_id %}
+            <div class="modal fade" id="addBreakModal{{ wh.id }}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="form_type" value="break_add">
+                            <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
+                            {% if selected_stylist_id %}
+                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
+                            {% endif %}
+                            <div class="modal-header">
+                                <h5 class="modal-title">Добавить перерыв</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Начало перерыва</label>
+                                    <input type="time" name="start_time" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Конец перерыва</label>
+                                    <input type="time" name="end_time" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <button type="submit" class="btn btn-primary">Сохранить</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="text-muted">Нет рабочих интервалов</p>
+    {% endif %}
+
+    {% if selected_stylist_id %}
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkingHourModal">
         Добавить интервал
     </button>
-{% else %}
+    {% else %}
     <button class="btn btn-primary" onclick="alert('Сначала выберите специалиста');">
         Добавить интервал
     </button>
-{% endif %}
+    {% endif %}
 </div>
 
-<!-- Модалка добавления блокировки -->
 <div class="modal fade" id="addDayOffModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -161,23 +543,28 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <label>Дата</label>
-          <input type="date" name="date" class="form-control" required>
-          <label>С</label>
-          <input type="time" name="from_time" class="form-control">
-          <label>До</label>
-          <input type="time" name="to_time" class="form-control">
+          <div class="mb-3">
+              <label class="form-label">Дата</label>
+              <input type="date" name="date" class="form-control" required>
+          </div>
+          <div class="mb-3">
+              <label class="form-label">С</label>
+              <input type="time" name="from_time" class="form-control">
+          </div>
+          <div class="mb-3">
+              <label class="form-label">До</label>
+              <input type="time" name="to_time" class="form-control">
+          </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-          <button class="btn btn-primary">Сохранить</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<!-- Модалка добавления рабочего интервала -->
 <div class="modal fade" id="addWorkingHourModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -192,23 +579,129 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <label>День недели</label>
-          <select name="weekday" class="form-select">
-            {% for num, name in WEEKDAYS %}
-                <option value="{{ num }}">{{ name }}</option>
-            {% endfor %}
-          </select>
-          <label>С</label>
-          <input type="time" name="start_time" class="form-control" required>
-          <label>До</label>
-          <input type="time" name="end_time" class="form-control" required>
+          <div class="mb-3">
+              <label class="form-label">День недели</label>
+              <select name="weekday" class="form-select">
+                {% for num, name in WEEKDAYS %}
+                    <option value="{{ num }}">{{ name }}</option>
+                {% endfor %}
+              </select>
+          </div>
+          <div class="mb-3">
+              <label class="form-label">С</label>
+              <input type="time" name="start_time" class="form-control" required>
+          </div>
+          <div class="mb-3">
+              <label class="form-label">До</label>
+              <input type="time" name="end_time" class="form-control" required>
+          </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-          <button class="btn btn-primary">Сохранить</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+{% if request.user.profile.is_salon_admin %}
+<div class="modal fade" id="addStylistModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="stylist_add">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить стилиста</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if stylist_creation_form.non_field_errors %}
+            <div class="alert alert-danger">{{ stylist_creation_form.non_field_errors }}</div>
+          {% endif %}
+          {% if stylist_creation_form.photo %}
+            <div class="alert alert-info small mb-3">
+              Фото стилиста должно быть квадратным и весить не более 1 МБ.
+            </div>
+          {% endif %}
+          <div class="row g-3">
+            {% for field in stylist_creation_form %}
+              {% if field.name != 'bio' %}
+                <div class="col-md-6">
+                  <label class="form-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endfor %}
+            <div class="col-12">
+              <label class="form-label" for="id_bio">О себе</label>
+              {{ stylist_creation_form.bio }}
+              {% if stylist_creation_form.bio.help_text %}
+                <div class="form-text">{{ stylist_creation_form.bio.help_text }}</div>
+              {% endif %}
+              {% for error in stylist_creation_form.bio.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addSalonServiceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="salon_service_add">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить услугу салона</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if salon_service_form.non_field_errors %}
+            <div class="alert alert-danger">{{ salon_service_form.non_field_errors }}</div>
+          {% endif %}
+          {% for field in salon_service_form %}
+            <div class="mb-3">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="form-check">
+                  {{ field }}
+                  <label class="form-check-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                </div>
+              {% else %}
+                <label class="form-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+              {% endif %}
+              {% for error in field.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
