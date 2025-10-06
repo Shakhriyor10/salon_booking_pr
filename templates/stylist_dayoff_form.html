@@ -1,0 +1,214 @@
+{% extends 'base3.html' %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4 text-center">График и блокировки</h2>
+
+    {% if stylists %}
+    <form method="get" class="mb-3">
+        <select name="stylist_id" class="form-select" onchange="this.form.submit()">
+            <option value="">-- Выберите стилиста --</option>
+            {% for s in stylists %}
+                <option value="{{ s.id }}" {% if s.id|stringformat:"s" == selected_stylist_id|stringformat:"s" %}selected{% endif %}>
+                    {{ s.user.get_full_name|default:s.user.username }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+    {% endif %}
+
+    <!-- Таблица блокировок -->
+    <h4>Блокировки</h4>
+    {% if blocks %}
+    <table class="table table-bordered">
+        <thead>
+        <tr>
+            <th>Дата</th><th>С</th><th>До</th><th></th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for block in blocks %}
+        <tr>
+            <td>{{ block.date }}</td>
+            <td>{{ block.from_time|default:"–" }}</td>
+            <td>{{ block.to_time|default:"–" }}</td>
+            <td>
+                <form method="post" action="{% url 'delete_dayoff' block.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Удалить блокировку?')">
+                            Удалить
+                        </button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">Нет блокировок</p>
+    {% endif %}
+    {% if selected_stylist_id %}
+    <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
+        Добавить блокировку
+    </button>
+{% else %}
+    <button class="btn btn-primary mb-4" onclick="alert('Сначала выберите специалиста');">
+        Добавить блокировку
+    </button>
+{% endif %}
+
+    <!-- Таблица рабочих интервалов -->
+<h4>Рабочие интервалы</h4>
+{% if working_hours %}
+<table class="table table-bordered">
+    <thead>
+    <tr>
+        <th>День</th><th>С</th><th>До</th><th>Перерывы</th><th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for wh in working_hours %}
+    <tr>
+        <td>{{ wh.get_weekday_display }}</td>
+        <td>{{ wh.start_time }}</td>
+        <td>{{ wh.end_time }}</td>
+        <td>
+            {% if wh.breaks.all %}
+                {% for br in wh.breaks.all %}
+                    {{ br.start_time }}–{{ br.end_time }}<br>
+                {% endfor %}
+            {% else %}
+                <span class="text-muted">Нет</span>
+            {% endif %}
+        </td>
+        <td>
+            <button class="btn btn-primary btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addBreakModal{{ wh.id }}">
+                Изменить
+            </button>
+            <form method="post" style="display:inline;">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="workinghour_delete">
+                <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
+                <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Удалить блокировку?')">
+                    Удалить
+                </button>
+            </form>
+        </td>
+    </tr>
+
+    <!-- Modal добавления перерыва -->
+    <div class="modal fade" id="addBreakModal{{ wh.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="break_add">
+                    <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Добавить перерыв</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>Начало перерыва</label>
+                            <input type="time" name="start_time" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Конец перерыва</label>
+                            <input type="time" name="end_time" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">Нет рабочих интервалов</p>
+{% endif %}
+{% if selected_stylist_id %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkingHourModal">
+        Добавить интервал
+    </button>
+{% else %}
+    <button class="btn btn-primary" onclick="alert('Сначала выберите специалиста');">
+        Добавить интервал
+    </button>
+{% endif %}
+</div>
+
+<!-- Модалка добавления блокировки -->
+<div class="modal fade" id="addDayOffModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="dayoff_add">
+        {% if selected_stylist_id %}
+            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
+        {% endif %}
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить блокировку</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label>Дата</label>
+          <input type="date" name="date" class="form-control" required>
+          <label>С</label>
+          <input type="time" name="from_time" class="form-control">
+          <label>До</label>
+          <input type="time" name="to_time" class="form-control">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка добавления рабочего интервала -->
+<div class="modal fade" id="addWorkingHourModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="workinghour_add">
+        {% if selected_stylist_id %}
+            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
+        {% endif %}
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить рабочий интервал</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label>День недели</label>
+          <select name="weekday" class="form-select">
+            {% for num, name in WEEKDAYS %}
+                <option value="{{ num }}">{{ name }}</option>
+            {% endfor %}
+          </select>
+          <label>С</label>
+          <input type="time" name="start_time" class="form-control" required>
+          <label>До</label>
+          <input type="time" name="end_time" class="form-control" required>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base3.html" %}
+{% load static %}
+
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="col-md-6 col-lg-5">
+        <h3 class="mb-4 text-center">Создать запись</h3>
+        <form method="post" class="p-4 border rounded bg-light shadow-sm">
+  {% csrf_token %}
+
+ <div class="mb-3">
+  <label for="serviceSelect" class="form-label">Услуга:</label>
+
+  <select name="service_ids" id="serviceSelect" class="form-select" multiple required>
+    {% for s in services %}
+      <option value="{{ s.id }}">{{ s.name }}</option>
+    {% endfor %}
+  </select>
+
+  <div class="form-text">Удерживайте Ctrl (или Cmd на Mac), чтобы выбрать несколько.</div>
+</div>
+
+  <div class="mb-3">
+    <label for="date-input" class="form-label">Дата:</label>
+    <input type="date" name="date" id="date-input" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="time-select" class="form-label">Время:</label>
+    <select name="time" id="time-select" class="form-select" required>
+      <option value="">Сначала выберите услугу и дату</option>
+    </select>
+  </div>
+
+  <div class="mb-3">
+    <label for="guest_name" class="form-label">Имя клиента:</label>
+    <input type="text" name="guest_name" id="guest_name" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="guest_phone" class="form-label">Телефон клиента:</label>
+    <input type="text" name="guest_phone" id="guest_phone" class="form-control" required>
+  </div>
+
+  <button type="submit" class="btn w-100" style="background-color: #212529; color: #fff">
+    ➕ Создать запись
+  </button>
+</form>
+
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const serviceSelect = document.getElementById('serviceSelect'); // исправили здесь
+  const dateInput = document.getElementById('date-input');
+  const timeSelect = document.getElementById('time-select');
+
+  function fetchTimes() {
+    const serviceId = serviceSelect.value;
+    const date = dateInput.value;
+    if (!serviceId || !date) return;
+
+    fetch(`/ajax/get_available_times/?service_id=${serviceId}&date=${date}`)
+      .then(res => res.json())
+      .then(data => {
+        timeSelect.innerHTML = '';
+        if (data.times.length === 0) {
+          timeSelect.innerHTML = '<option value="">Нет доступного времени</option>';
+        } else {
+          data.times.forEach(t => {
+            timeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+          });
+        }
+      });
+  }
+
+  serviceSelect.addEventListener('change', fetchTimes);
+  dateInput.addEventListener('change', fetchTimes);
+});
+</script>
+
+{% endblock %}
+

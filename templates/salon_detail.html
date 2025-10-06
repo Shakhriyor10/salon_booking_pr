@@ -1,0 +1,402 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% load form_tags %}
+{% load widget_tweaks %}
+{% load custom_filters %}
+
+{% block content %}
+<style>
+  .add-to-cart {
+  background-color: #486b71;
+  color: #fff;
+  border: 1px solid #486b71;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.add-to-cart:hover {
+  background-color: #36565a;
+  border-color: #36565a;
+  color: #fff;
+}
+
+.add-to-cart.added {
+  background-color: #28a745;
+  border-color: #28a745;
+  color: #fff;
+}
+
+.add-to-cart.added:hover {
+  background-color: #218838;
+  border-color: #218838;
+}
+  .floating-cart {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .floating-cart.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .floating-cart.d-none {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px);
+  }
+
+  .btn-custom {
+    background-color: #486b71;
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    font-weight: 500;
+    border-radius: 8px;
+  }
+
+  .btn-custom:hover {
+    background-color: #36565a;
+  }
+</style>
+{% if categories %}
+  <h3 class="text-center fw-semibold mt-4 mb-3">Категории</h3>
+  <div class="row">
+    {% for category in categories %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+          {% if category.photo %}
+            <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.photo.url }}">
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title text-center">{{ category.name }}</h5>
+            <a href="{% url 'category_services' category.id %}?salon={{ salon.id }}" class="btn mt-auto"
+               style="background-color: #486b71; color: #fff">Открыть</a>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+
+{% if uncategorized_services %}
+  <h3 class="text-center fw-semibold mt-4 mb-3">Все услуги</h3>
+  <div class="row">
+    {% for salon_service in uncategorized_services %}
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm">
+          {% if salon_service.service.photo %}
+            <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
+          {% endif %}
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title text-center">{{ salon_service.service.name }}</h5>
+<button
+              class="btn btn-outline-primary mt-auto add-to-cart"
+              data-service-id="{{ salon_service.service.id }}">
+              ➕ Добавить услугу
+            </button>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<h3 class="text-center fw-semibold mt-4 mb-3">Контакты</h3>
+
+  <div class="row">
+    <!-- Карта -->
+    <div class="col-md-8 mb-4">
+      <div class="ratio ratio-4x3 rounded shadow">
+        {% if salon.latitude and salon.longitude %}
+        {% with lat=salon.latitude|stringformat:"f"|cut:","|add:"." %}
+        {% with lon=salon.longitude|stringformat:"f"|cut:","|add:"." %}
+        <iframe
+                src="https://yandex.ru/map-widget/v1/?ll={{ lon }},{{ lat }}&z=15&pt={{ lon }},{{ lat }},pm2rdm"
+                width="100%"
+                height="400"
+                frameborder="0"
+                allowfullscreen>
+        </iframe>
+        {% endwith %}
+        {% endwith %}
+        {% else %}
+        <p>Координаты не указаны.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Информация -->
+    <div class="col-md-4">
+      <h2>{{ salon.name }}</h2>
+      {% if salon.photo %}
+        <img src="{{ salon.photo.url }}" alt="{{ salon.name }}" class="img-fluid rounded mb-3">
+      {% endif %}
+      <p><strong>Адрес:</strong> {{ salon.address }}</p>
+      <p><strong>Телефон:</strong> {{ salon.phone }}</p>
+      <p><strong>Описание:</strong> {{ salon.description }}</p>
+    </div>
+  </div>
+
+
+
+  <!-- Название салона -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-body">
+      <h2 class="card-title">{{ object.name }}</h2>
+
+      <!-- Средняя оценка -->
+      <div class="d-flex align-items-center mt-3 mb-4">
+        <div class="me-2 text-warning fs-5">
+          {% for _ in stars.full %}
+            <i class="bi bi-star-fill"></i>
+          {% endfor %}
+          {% if stars.half %}
+            <i class="bi bi-star-half"></i>
+          {% endif %}
+          {% for _ in stars.empty %}
+            <i class="bi bi-star"></i>
+          {% endfor %}
+        </div>
+        <span class="text-muted">({{ average_rating|floatformat:1 }}/5)</span>
+      </div>
+
+      <!-- Блок отправки отзыва -->
+      <div class="card mb-5">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Оставить отзыв</h5>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <!-- Рейтинг звёздами -->
+            <div class="mb-3">
+              <label class="form-label d-block">Ваша оценка:</label>
+              <div id="star-rating" class="text-warning fs-4">
+                {% for i in "12345" %}
+                  <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="rating" id="rating-value" required>
+            </div>
+
+            <!-- Комментарий -->
+            <div class="mb-3">
+              <label for="id_comment" class="form-label">Комментарий</label>
+              <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
+            </div>
+
+            <button type="submit" class="btn" style="background-color: #486b71; color: #fff">Отправить</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Список отзывов -->
+      <div class="card">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">Отзывы клиентов</h5>
+        </div>
+        <div class="card-body">
+          {% if reviews %}
+            {% for review in reviews %}
+              <div class="border-bottom pb-3 mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                  <strong>{{ review.user.username }}</strong>
+                  <small class="text-muted">{{ review.created_at|date:"d M Y, H:i" }}</small>
+                </div>
+                <div class="text-warning mb-1">
+                  {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= review.rating %}
+                      <i class="bi bi-star-fill"></i>
+                    {% else %}
+                      <i class="bi bi-star"></i>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% if review.comment %}
+                  <p class="mb-0">{{ review.comment }}</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted">Отзывов пока нет. Будьте первым!</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center gap-2">
+  <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
+    Перейти к записи (<span id="cart-count">0</span>)
+  </button>
+  <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
+</div>
+
+
+  <!-- Услуги -->
+<script>
+  const stars = document.querySelectorAll('#star-rating i');
+  const ratingInput = document.getElementById('rating-value');
+  const form = document.querySelector('form');
+
+  // При клике по звезде устанавливаем значение и меняем классы
+  stars.forEach((star, idx) => {
+    star.addEventListener('click', () => {
+      ratingInput.value = idx + 1;
+
+      stars.forEach((s, i) => {
+        s.classList.toggle('bi-star-fill', i <= idx);
+        s.classList.toggle('bi-star', i > idx);
+      });
+    });
+  });
+
+  // Не даём отправить форму, если звезда не выбрана
+  form.addEventListener('submit', (e) => {
+    if (!ratingInput.value) {
+      e.preventDefault();
+      alert('Пожалуйста, выберите количество звёзд.');
+    }
+  });
+</script>
+<script>
+  function getCart() {
+    const cart = localStorage.getItem("cart");
+    return cart ? JSON.parse(cart) : [];
+  }
+
+  function saveCart(cart) {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }
+
+function updateCartUI() {
+  const cart = getCart();
+  const count = cart.length;
+  document.getElementById("cart-count").textContent = count;
+  const bookingButton = document.getElementById("go-to-booking");
+  bookingButton.disabled = count === 0;
+
+  const floatingCart = document.getElementById("floating-cart-button");
+  if (count > 0) {
+    floatingCart.classList.remove("d-none");
+    floatingCart.classList.add("show");
+  } else {
+    floatingCart.classList.remove("show");
+    floatingCart.classList.add("d-none");
+  }
+
+  document.querySelectorAll(".add-to-cart").forEach(btn => {
+    const id = parseInt(btn.dataset.serviceId);
+    if (cart.includes(id)) {
+      btn.textContent = "✅ Добавлено (нажми чтобы удалить)";
+      btn.classList.add("added");
+    } else {
+      btn.textContent = "➕ Добавить услугу";
+      btn.classList.remove("added");
+    }
+  });
+}
+
+
+  document.addEventListener("DOMContentLoaded", () => {
+    updateCartUI();
+
+    // Кнопки "Добавить в корзину"
+    document.querySelectorAll(".add-to-cart").forEach(button => {
+      button.addEventListener("click", () => {
+        const serviceId = parseInt(button.dataset.serviceId);
+        let cart = getCart();
+
+        if (cart.includes(serviceId)) {
+          cart = cart.filter(id => id !== serviceId);
+        } else {
+          cart.push(serviceId);
+        }
+
+        saveCart(cart);
+        updateCartUI();
+      });
+    });
+
+    // Кнопка "Перейти к записи"
+    document.getElementById("go-to-booking").addEventListener("click", (event) => {
+  const cart = getCart();
+  if (cart.length === 0) return;
+
+  const salonId = event.target.dataset.salonId;
+
+  if (!salonId) {
+    alert("Ошибка: salon ID не найден");
+    return;
+  }
+
+  const params = new URLSearchParams();
+  params.append("salon", salonId);
+  cart.forEach(id => params.append("services", id));
+
+  window.location.href = `/booking/?${params.toString()}`;
+});
+  });
+</script>
+<script>
+  const currentSalonId = "{{ salon.id }}";  // Текущий ID салона
+  const savedSalonId = localStorage.getItem("currentSalonId");
+
+  // Проверка: если салон сменился — удаляем корзину
+  if (savedSalonId && savedSalonId !== currentSalonId) {
+    localStorage.removeItem("cart");
+    localStorage.removeItem("cartTimestamp");  // Удалим и метку времени
+  }
+
+  // Сохраняем текущий ID салона
+  localStorage.setItem("currentSalonId", currentSalonId);
+
+  // Очистка корзины по таймеру 15 минут
+  const now = Date.now();
+  const cartTimestamp = localStorage.getItem("cartTimestamp");
+
+  if (cartTimestamp && now - parseInt(cartTimestamp) > 15 * 60 * 1000) {
+    // Если прошло больше 15 минут — очищаем корзину
+    localStorage.removeItem("cart");
+    localStorage.removeItem("cartTimestamp");
+  }
+
+  // При добавлении услуги — обновим таймер
+  document.querySelectorAll(".add-to-cart").forEach(button => {
+    button.addEventListener("click", () => {
+      localStorage.setItem("cartTimestamp", Date.now().toString());
+    });
+  });
+
+
+document.getElementById("clear-cart").addEventListener("click", function () {
+  // Очистка localStorage
+  localStorage.removeItem("cart");
+  localStorage.removeItem("cartTimestamp");
+
+  // Сбросить счётчик
+  document.getElementById("cart-count").textContent = "0";
+
+  // Скрыть кнопку корзины
+  document.getElementById("floating-cart-button").classList.add("d-none");
+
+  // Сбросить все кнопки "Добавлено" обратно в "Добавить услугу"
+  document.querySelectorAll(".add-to-cart").forEach(button => {
+    // Полный сброс классов до начального состояния
+    button.className = "btn btn-outline-primary mt-auto add-to-cart";
+    button.textContent = "➕ Добавить услугу";
+  });
+});
+
+
+</script>
+{% endblock %}

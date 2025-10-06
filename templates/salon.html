@@ -1,0 +1,208 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% load form_tags %}
+
+{% block content %}
+<!--<form method="get" class="row gy-2 gx-3 align-items-center mb-4">-->
+<!--  &lt;!&ndash; Тип салона &ndash;&gt;-->
+<!--<div class="col-sm-4 col-md-3">-->
+<!--  <select name="type" class="form-select">-->
+<!--    <option value="">Тип салона</option>-->
+<!--    <option value="male" {% if selected_type == 'male' %}selected{% endif %}>Мужской</option>-->
+<!--    <option value="female" {% if selected_type == 'female' %}selected{% endif %}>Женский</option>-->
+<!--    <option value="both" {% if selected_type == 'both' %}selected{% endif %}>Обе</option>-->
+<!--  </select>-->
+<!--</div>-->
+
+<!--  &lt;!&ndash; Рейтинг &ndash;&gt;-->
+<!--  <div class="col-sm-4 col-md-3">-->
+<!--    <select name="rating" class="form-select">-->
+<!--      <option value="">Рейтинг</option>-->
+<!--      <option value="4" {% if selected_rating == '4' %}selected{% endif %}>4+</option>-->
+<!--      <option value="3.5" {% if selected_rating == '3.5' %}selected{% endif %}>3.5+</option>-->
+<!--      <option value="3" {% if selected_rating == '3' %}selected{% endif %}>3+</option>-->
+<!--    </select>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Поиск услуги &ndash;&gt;-->
+<!--  <div class="col-sm-8 col-md-4 position-relative">-->
+<!--    <input type="text" id="serviceSearch" name="service" class="form-control" placeholder="Поиск услуги..." autocomplete="off">-->
+<!--    <ul id="suggestions" class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1000;"></ul>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Кнопка поиска &ndash;&gt;-->
+<!--  <div class="col-sm-4 col-md-2">-->
+<!--    <button class="btn btn-primary w-100" type="submit">Поиск</button>-->
+<!--  </div>-->
+<!--</form>-->
+
+<h3 class="text-center fw-semibold mt-4 mb-3">Поиск и фильтр</h3>
+<form id="filterForm" method="get" class="mb-4">
+  <div class="container-fluid">
+    <div class="row gx-3 gy-2 align-items-center">
+
+      <!-- Фильтр: Тип салона -->
+      <div class="col-12 col-md-2">
+          <select name="type" class="form-select">
+  <option value="">Тип</option>
+  <option value="male" {% if selected_type == "male" %}selected{% endif %}>Мужской</option>
+  <option value="female" {% if selected_type == "female" %}selected{% endif %}>Женский</option>
+  <option value="both" {% if selected_type == "both" %}selected{% endif %}>Оба</option>
+</select>
+      </div>
+
+      <!-- Фильтр: Рейтинг -->
+      <div class="col-12 col-md-2">
+        <select name="rating" class="form-select">
+          <option value="">Рейтинг</option>
+          {% for i in "54321" %}
+            <option value="{{ i }}" {% if i == selected_rating %}selected{% endif %}>от {{ i }}★</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Поиск -->
+      <div class="col-12 col-md-6 position-relative">
+        <input
+          type="text"
+          id="searchInput"
+          name="search_value"
+          placeholder="Поиск по салону или услуге"
+          autocomplete="off"
+          value="{{ selected_service }}"
+          class="form-control"
+        >
+        <input type="hidden" name="search_type" id="searchTypeInput" value="{{ request.GET.search_type }}">
+
+        <ul
+          id="suggestions"
+          class="list-group position-absolute w-100"
+          style="top: 100%; left: 0; z-index: 1050; max-height: 200px; overflow-y: auto; display: none;"
+        ></ul>
+      </div>
+
+      <!-- Кнопка -->
+      <div class="col-12 col-md-2 d-grid">
+        <button type="submit" class="btn" style="background-color: #486b71; color: #fff;">Найти</button>
+      </div>
+
+    </div>
+  </div>
+</form>
+<h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
+<div class="row">
+    {% for salon in salons %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                {% if salon.photo %}
+                    <img src="{{ salon.photo.url }}" class="card-img-top rounded-top" alt="{{ salon.name }}">
+                {% else %}
+                    <img src="{% static 'img/default_salon.jpg' %}" class="card-img-top rounded-top" alt="No photo">
+                {% endif %}
+                <div class="card-body d-flex flex-column text-center">
+                    <h5 class="card-title fw-semibold">{{ salon.name }}</h5>
+
+                    <!-- Рейтинг -->
+                    <div class="mb-2">
+                        {% for _ in salon.stars.full %}
+                            <i class="text-warning bi bi-star-fill"></i>
+                        {% endfor %}
+                        {% if salon.stars.half %}
+                            <i class="text-warning bi bi-star-half"></i>
+                        {% endif %}
+                        {% for _ in salon.stars.empty %}
+                            <i class="text-muted bi bi-star"></i>
+                        {% endfor %}
+                        <span class="text-muted">({{ salon.rating_value }}/5)</span>
+                    </div>
+
+                    <p class="card-text text-muted">{{ salon.city.name }}</p>
+                    <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn mt-auto rounded-3"
+                       style="background-color: #486b71; color: #fff;">Посмотреть</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>Салоны не найдены.</p>
+    {% endfor %}
+</div>
+<!--<script>-->
+<!--document.getElementById('serviceSearch').addEventListener('input', function () {-->
+<!--    let query = this.value;-->
+<!--    if (query.length < 2) return;-->
+
+<!--    fetch(`/services/search/?q=${query}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--            let suggestions = document.getElementById('suggestions');-->
+<!--            suggestions.innerHTML = '';-->
+<!--            data.forEach(item => {-->
+<!--                let li = document.createElement('li');-->
+<!--                li.className = 'list-group-item';-->
+<!--                li.textContent = item;-->
+<!--                li.onclick = function () {-->
+<!--                    document.getElementById('serviceSearch').value = this.textContent;-->
+<!--                    suggestions.innerHTML = '';-->
+<!--                };-->
+<!--                suggestions.appendChild(li);-->
+<!--            });-->
+<!--        });-->
+<!--});-->
+<!--</script>-->
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("searchInput");
+  const suggestionsBox = document.getElementById("suggestions");
+  const searchTypeInput = document.getElementById("searchTypeInput");
+  let suggestions = [];
+
+  input.addEventListener("input", function () {
+    const query = input.value.trim();
+    searchTypeInput.value = ""; // сбрасываем search_type, если пользователь вводит вручную
+
+    if (query.length < 2) {
+      suggestionsBox.style.display = "none";
+      return;
+    }
+
+    fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
+      .then(response => response.json())
+      .then(data => {
+        suggestions = data;
+        suggestionsBox.innerHTML = "";
+        if (suggestions.length === 0) {
+          suggestionsBox.style.display = "none";
+          return;
+        }
+
+        suggestions.forEach(item => {
+          const li = document.createElement("li");
+          let label = item.label;
+            if (item.type === "service" && item.gender) {
+              label += ` (${item.gender})`;
+            }
+            li.textContent = label;
+          li.classList.add("list-group-item", "list-group-item-action");
+          li.addEventListener("click", () => {
+            input.value = item.label;
+            searchTypeInput.value = item.type;
+            suggestionsBox.style.display = "none";
+          });
+          suggestionsBox.appendChild(li);
+        });
+
+        suggestionsBox.style.display = "block";
+      });
+  });
+
+  // Скрыть подсказки при клике вне
+  document.addEventListener("click", function (e) {
+    if (!suggestionsBox.contains(e.target) && e.target !== input) {
+      suggestionsBox.style.display = "none";
+    }
+  });
+});
+</script>
+
+{% endblock %}

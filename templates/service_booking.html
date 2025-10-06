@@ -1,0 +1,188 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% block content %}
+    <div id="content">
+
+        <div class="row">
+            <div class="col-12 col-md-12 mb-4 mt-4">
+                <div class="card shadow-sm p-4" >
+                    <form method="get">
+    {% if request.GET.salon %}
+        <input type="hidden" name="salon" value="{{ request.GET.salon }}">
+    {% endif %}
+
+{% for service in services_list %}
+    <input type="hidden" name="services" value="{{ service }}">
+{% endfor %}
+
+    <div class="mb-3">
+        <label for="date" class="form-label fs-5">📅 Выберите дату:</label>
+        <input type="date"
+               name="date"
+               id="date"
+               value="{{ selected_date|date:'Y-m-d' }}"
+               class="form-control form-control-lg"
+               onchange="this.form.submit()"
+               min="{{ today|date:'Y-m-d' }}"
+               max="{{ max_date|date:'Y-m-d' }}">
+    </div>
+</form>
+                </div>
+            </div>
+        {% if stylist_slots %}
+        {% for item in stylist_slots %}
+
+<!--            <div class="white-back box col-md-4 col-sm-4" style="border: 1px solid #ddd;">-->
+<!--                <img src="{{ item.stylist.avatar.url }}" alt="" class="img-responsive" style="border-radius: 50rem; width: 25%; height: auto;">-->
+
+<!--                <div class="">-->
+<!--                    <h3>{{ item.stylist.user|truncatewords:15 }}</h3>-->
+<!--                    <hr>-->
+<!--                    <span style="font-size: 18px; font-weight: bold;">-->
+<!--                        Цена: {{ item.price }} сум-->
+<!--                    </span>-->
+<!--                    &lt;!&ndash;          <div class="rating">&ndash;&gt;-->
+<!--                    &lt;!&ndash;            <i class="fa fa-star"></i>&ndash;&gt;-->
+<!--                    &lt;!&ndash;            <i class="fa fa-star"></i>&ndash;&gt;-->
+<!--                    &lt;!&ndash;            <i class="fa fa-star"></i>&ndash;&gt;-->
+<!--                    &lt;!&ndash;            <i class="fa fa-star"></i>&ndash;&gt;-->
+<!--                    &lt;!&ndash;            <i class="fa fa-star-o"></i>&ndash;&gt;-->
+<!--                    &lt;!&ndash;          </div>&lt;!&ndash; end rating &ndash;&gt;&ndash;&gt;-->
+
+
+<!--                    <form method="post" action="{% url 'make_appointment' %}" class="w-100">-->
+<!--                        {% csrf_token %}-->
+<!--                        <input type="hidden" name="stylist_id" value="{{ item.stylist.id }}">-->
+<!--                        <input type="hidden" name="service_id" value="{{ service.id }}">-->
+
+<!--                        &lt;!&ndash; Время &ndash;&gt;-->
+<!--                        <div class="form-group">-->
+<!--                            <label for="slot-{{ forloop.counter }}" class="form-label fs-5">-->
+<!--                                🕒 Выберите удобное время:-->
+<!--                            </label>-->
+<!--                            <select name="slot" id="slot-{{ forloop.counter }}"-->
+<!--                                    class="form-control"-->
+<!--                                    required-->
+<!--                                    style="border-radius: 0.5rem; font-size: 13px;">-->
+<!--                                {% for slot in item.slots %}-->
+<!--                                <option value="{{ slot|date:'Y-m-d\\TH:i' }}">{{ slot|date:"H:i" }}</option>-->
+<!--                                {% endfor %}-->
+<!--                            </select>-->
+<!--                        </div>-->
+
+<!--                        {% if not user.is_authenticated %}-->
+<!--                        &lt;!&ndash; Имя &ndash;&gt;-->
+<!--                        <div style="margin-bottom: 5px">-->
+<!--                            <input type="text" name="guest_name" class="form-control" placeholder="Ваше имя" required>-->
+<!--                        </div>-->
+
+<!--                        &lt;!&ndash; Телефон &ndash;&gt;-->
+<!--                        <div style="margin-bottom: 5px">-->
+<!--                            <input type="tel"-->
+<!--                                   name="guest_phone"-->
+<!--                                   class="form-control"-->
+<!--                                   placeholder="Телефон"-->
+<!--                                   pattern="^\+998\d{9}$"-->
+<!--                                   title="Введите номер в формате +998938188818"-->
+<!--                                   required>-->
+<!--                        </div>-->
+<!--                        {% endif %}-->
+
+<!--                        &lt;!&ndash; Кнопка &ndash;&gt;-->
+<!--                        <div class="mb-2">-->
+<!--                            <button class="btn w-100" style="background-color: #486b71; color: #fff">Записаться</button>-->
+<!--                        </div>-->
+<!--                    </form>-->
+<!--                </div>&lt;!&ndash; end col &ndash;&gt;-->
+<!--            </div>&lt;!&ndash; end row &ndash;&gt;-->
+            <div class="col-md-4 col-sm-6 mb-4">
+                <div class="card shadow-sm h-100 p-3">
+                    <!-- Аватар -->
+                    <div class="d-flex justify-content-center mb-3">
+                        <img src="{{ item.stylist.avatar.url }}" alt="Фото стилиста" class="rounded-circle"
+                             style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6;">
+                    </div>
+
+                    <!-- Имя и цена -->
+                    <div class="text-center">
+                        <h5 class="fw-bold">{{ item.stylist.user|truncatewords:10 }}
+                        </h5>
+                        <h5 class="fw-bold">
+                            {% if item.stylist.level %}
+                            {% if item.stylist.level.name == "Топ Барбер" %}
+                            <span class="badge bg-warning text-dark">★ {{ item.stylist.level.name }}</span>
+                            {% elif item.stylist.level.name == "Старший Барбер" %}
+                            <span class="badge bg-success">💈 {{ item.stylist.level.name }}</span>
+                            {% elif item.stylist.level.name == "Барбер" %}
+                            <span class="badge bg-secondary">✂️ {{ item.stylist.level.name }}</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">{{ item.stylist.level.name }}</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="badge bg-light text-dark">Барбер</span>
+                            {% endif %}
+                        </h5>
+                        <hr class="my-2">
+                        <div class="text-muted fs-6 mb-3">💰 <strong>Общая цена:</strong> {{ item.price }} сум</div>
+                        <div class="text-muted fs-6 mb-3">⏱ <strong>Длительность:</strong> {{ item.duration }}</div>
+
+                    </div>
+
+                    <!-- Форма -->
+                    <form method="post" action="{% url 'make_appointment' %}">
+                        {% csrf_token %}
+
+                        <!-- 🔽 Добавляем salon, если есть -->
+                        {% if request.GET.salon %}
+                        <input type="hidden" name="salon" value="{{ request.GET.salon }}">
+                        {% endif %}
+
+                        <input type="hidden" name="stylist_id" value="{{ item.stylist.id }}">
+                        {% for sid in selected_service_ids %}
+                        <input type="hidden" name="service_ids" value="{{ sid }}">
+                        {% endfor %}
+
+                        <!-- Время -->
+                        <div class="mb-3">
+                            <label for="slot-{{ forloop.counter }}" class="form-label">🕒 Удобное время</label>
+                            <select name="slot" id="slot-{{ forloop.counter }}" class="form-select" required>
+                                {% for slot in item.slots %}
+                                <option value="{{ slot|date:'Y-m-d\\TH:i' }}">{{ slot|date:"H:i" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        {% if not user.is_authenticated %}
+                        <!-- Гость: имя -->
+                        <div class="mb-2">
+                            <input type="text" name="guest_name" class="form-control" placeholder="Ваше имя" required>
+                        </div>
+
+                        <!-- Гость: телефон -->
+                        <div class="mb-3">
+                            <input type="tel"
+                                   name="guest_phone"
+                                   class="form-control"
+                                   placeholder="Телефон"
+                                   pattern="^\+998\d{9}$"
+                                   title="Введите номер в формате +998991234567"
+                                   required>
+                        </div>
+                        {% endif %}
+
+                        <!-- Кнопка -->
+                        <div>
+                            <button type="submit" class="btn w-100" style="background-color: #486b71; color: #fff">
+                                📅 Записаться
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div><!-- end row -->
+
+
+        {% endfor %}
+        {% endif %}
+            </div>
+    </div>
+{% endblock %}

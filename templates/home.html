@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Услуги{% endblock %}
+
+{% block content %}
+<h1>Наши услуги</h1>
+<div class="row row-cols-1 row-cols-md-2 g-3">
+  {% for service in services %}
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-body">
+          <h5 class="card-title">{{ service.name }}</h5>
+          <p class="card-text">{{ service.description|default:"Без описания" }}</p>
+          <p><strong>{{ service.price }} сум</strong></p>
+          <a href="{% url 'service_booking' service.id %}" class="btn btn-primary">Записаться</a>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

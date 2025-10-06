@@ -1,0 +1,157 @@
+{% extends "base3.html" %}
+{% load static %}
+{% load form_tags %}
+
+{% block content %}
+<div class="container mt-4">
+  <h4 class="mt-3 mb-2">
+  💰 Касса на {{ today|date:"d.m.Y" }}: <span class="badge bg-success">{{ cash_today|floatformat:0 }} сум</span>
+</h4>
+  <h2>📋 Все записи</h2>
+  <div id="appointments-container">
+    {% include "partials/appointments_table_rows.html" %}
+
+  </div>
+</div>
+
+<audio id="alert-sound" preload="auto">
+  <source src="{% static 'sounds/ping.mp3' %}" type="audio/mpeg">
+</audio>
+<script>
+  let lastCount = {{ appointments|length }};
+  let autoRefresh = null;
+  let currentAppointmentId = null;
+
+  async function fetchAppointments() {
+    if (document.querySelector(".modal.show")) return;
+
+    const resp = await fetch("{% url 'dashboard_ajax' %}");
+    const data = await resp.json();
+    if (!data.html) return;
+
+    const wrap = document.getElementById("appointments-container");
+    const temp = document.createElement("div");
+    temp.innerHTML = data.html;
+
+    const newCount = temp.querySelectorAll("tr").length;
+    if (newCount > lastCount) {
+      document.getElementById("alert-sound").play().catch(() => {});
+    }
+
+    wrap.innerHTML = data.html;
+    lastCount = newCount;
+  }
+
+  autoRefresh = setInterval(fetchAppointments, 10000);
+
+  // При клике на кнопку отмены
+  document.addEventListener('click', function (event) {
+    if (event.target.classList.contains('cancel-btn')) {
+      event.preventDefault();
+      currentAppointmentId = event.target.dataset.appointmentId;
+
+      const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+      modal.show();
+
+      clearInterval(autoRefresh);
+    }
+  });
+
+  // При клике «Да, отменить»
+  document.getElementById('confirmCancelBtn').addEventListener('click', function () {
+    if (currentAppointmentId) {
+      const form = document.getElementById('cancel-form-' + currentAppointmentId);
+      if (form) {
+        form.submit();
+      }
+    }
+  });
+
+  // Возобновляем автообновление
+  document.getElementById('cancelModal').addEventListener('hidden.bs.modal', function () {
+    currentAppointmentId = null;
+    autoRefresh = setInterval(fetchAppointments, 10000);
+  });
+</script>
+<script>
+  let formToSubmit = null;
+
+  // Назначаем при каждом клике на кнопку "Отменить"
+  document.addEventListener('click', function (event) {
+    if (event.target.matches('.cancel-btn')) {
+      formToSubmit = event.target.closest('form');
+      // Показываем модалку вручную (если нужно)
+      const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+      modal.show();
+    }
+  });
+
+  // При подтверждении — отправляем форму
+  document.getElementById('confirmCancelBtn').addEventListener('click', function () {
+    if (formToSubmit) {
+      formToSubmit.submit();
+      formToSubmit = null; // очистим на всякий случай
+    }
+  });
+
+ function getCSRFToken() {
+  const name = 'csrftoken';
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const c = cookie.trim();
+    if (c.startsWith(name + '=')) {
+      return decodeURIComponent(c.substring(name.length + 1));
+    }
+  }
+  return '';
+}
+
+function submitAction(appointmentId, action) {
+  if (action === "cancel") {
+    const confirmed = confirm("Вы уверены, что хотите отменить эту запись?");
+    if (!confirmed) return;
+  }
+
+  fetch(`/appointment/${appointmentId}/action/`, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: `action=${action}`,
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("Ошибка выполнения действия");
+    }
+    location.reload(); // или fetchAppointments(), если ты хочешь без перезагрузки
+  })
+  .catch(error => {
+    alert(error.message);
+  });
+}
+
+// CSRF helper
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      // Does this cookie string begin with the name we want?
+      if (cookie.substring(0, name.length + 1) === name + "=") {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+
+{% endblock %}
+
+{% block js %}
+
+{% endblock %}
+

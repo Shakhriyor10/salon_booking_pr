@@ -1,0 +1,67 @@
+{% extends 'base3.html' %}
+{% load static %}
+
+{% block content %}
+<div class="bg-white p-4 rounded shadow-sm">
+    <h2 class="text-center mb-4">📋 Мои записи</h2>
+
+    {% if appointments %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover align-middle text-center">
+        <thead class="table-light">
+          <tr>
+            <th>Мастер</th>
+            <th>Услуга</th>
+            <th>Дата и время</th>
+            <th>Статус</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for appointment in appointments %}
+          <tr>
+            <td>{{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
+              {{ appointment.stylist_service.salon_service.salon.name }}
+            </td>
+            <td>
+  {% for s in appointment.services.all %}
+    {{ s.stylist_service.salon_service.service.name }}{% if not forloop.last %}, {% endif %}
+  {% endfor %}
+</td>
+            <td>{{ appointment.start_time|date:"d.m.Y H:i" }}</td>
+            <td>
+              {% if appointment.status == "P" %}
+              <span class="badge bg-warning text-dark">Ожидает</span>
+              {% elif appointment.status == "C" %}
+              <span class="badge bg-info">Принято</span>
+              {% elif appointment.status == "D" %}
+              <span class="badge bg-success">Выполнено</span>
+              {% elif appointment.status == "canceled" %}
+              <span class="badge bg-danger">Отменено</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if appointment.status == "P" or appointment.status == "C" %}
+              <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Точно отменить запись?')">
+                  Отменить
+                </button>
+              </form>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-center text-muted mt-4">У вас пока нет записей.</p>
+    {% endif %}
+  </div>
+{% endblock %}
+
+

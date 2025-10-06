@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Запись к мастеру{% endblock %}
+
+{% block content %}
+<h1>{{ stylist.user.get_full_name }}</h1>
+<p>{{ stylist.bio }}</p>
+
+<form method="get" class="mb-3">
+  <label for="date">Выберите дату:</label>
+  <input type="date" id="date" name="date" value="{{ selected_date }}" class="form-control" onchange="this.form.submit()">
+</form>
+
+<h4>Свободные слоты на {{ selected_date }}</h4>
+{% if slots %}
+  <form method="post" class="card p-3 bg-light">
+    {% csrf_token %}
+    <input type="hidden" name="stylist_id" value="{{ stylist.id }}">
+
+    <div class="mb-3">
+      <label for="slot">Время:</label>
+      <select name="slot" id="slot" class="form-select">
+        {% for slot in slots %}
+          <option value="{{ slot|date:"Y-m-d\\TH:i" }}">{{ slot|date:"H:i" }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="service">Услуга:</label>
+      <select name="service_id" id="service" class="form-select">
+        {% for service in stylist.services.all %}
+          <option value="{{ service.id }}">{{ service.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Записаться</button>
+  </form>
+{% else %}
+  <p class="text-muted">На этот день нет свободных слотов.</p>
+{% endif %}
+{% endblock %}

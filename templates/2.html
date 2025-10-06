@@ -1,0 +1,76 @@
+<div class="container py-3">
+
+  <h2 class="text-center mb-4">Запись на "{{ service.name }}"</h2>
+
+  <form method="get" class="mb-4">
+    <label for="date" class="form-label">Выберите дату:</label>
+    <input type="date" name="date" id="date"
+           value="{{ selected_date|date:'Y-m-d' }}"
+           class="form-control"
+           onchange="this.form.submit()">
+  </form>
+
+  {% if stylist_slots %}
+    <div class="row justify-content-center g-4">
+      {% for item in stylist_slots %}
+        <div class="col-12 col-sm-10 col-md-8 col-lg-6">
+          <div class="card shadow-sm h-100">
+            <div class="card-body">
+
+              <div class="d-flex align-items-center mb-3">
+                {% if item.stylist.avatar %}
+                  <img src="{{ item.stylist.avatar.url }}" alt="Avatar"
+                       class="rounded-circle me-3"
+                       style="width: 64px; height: 64px; object-fit: cover;">
+                {% else %}
+                  <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3"
+                       style="width: 64px; height: 64px;">
+                    <span class="fs-4">
+                      {{ item.stylist.user.first_name|default:"?"|first|upper }}
+                    </span>
+                  </div>
+                {% endif %}
+                <div>
+                  <h5 class="mb-1">{{ item.stylist.user.get_full_name }}</h5>
+                  {% if item.stylist.bio %}
+                    <small class="text-muted d-block">{{ item.stylist.bio|truncatewords:15 }}</small>
+                  {% endif %}
+                </div>
+              </div>
+
+              <form method="post" action="{% url 'make_appointment' %}" class="row gy-2 gx-2">
+                {% csrf_token %}
+                <input type="hidden" name="stylist_id" value="{{ item.stylist.id }}">
+                <input type="hidden" name="service_id" value="{{ service.id }}">
+
+                <div class="col-12 col-md-6">
+                  <select name="slot" class="form-select" required>
+                    {% for slot in item.slots %}
+                      <option value="{{ slot|date:"Y-m-d\\TH:i" }}">{{ slot|date:"H:i" }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                {% if not user.is_authenticated %}
+                  <div class="col-12 col-md-6">
+                    <input type="text" name="guest_name" class="form-control" placeholder="Ваше имя" required>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <input type="tel" name="guest_phone" class="form-control" placeholder="Телефон" required>
+                  </div>
+                {% endif %}
+
+                <div class="col-12 col-md-auto mt-2">
+                  <button class="btn btn-success w-100">Записаться</button>
+                </div>
+              </form>
+
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">Нет доступных мастеров на выбранную дату.</p>
+  {% endif %}
+</div>
