@@ -258,10 +258,10 @@
                                                 {% if field.field.widget.input_type == 'checkbox' %}
                                                     <div class="form-check">
                                                         {{ field }}
-                                                        {{ field.label_tag(attrs={'class': 'form-check-label'}) }}
+                                                        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                     </div>
                                                 {% else %}
-                                                    {{ field.label_tag(attrs={'class': 'form-label'}) }}
+                                                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                     {{ field }}
                                                 {% endif %}
                                                 {% if field.help_text %}
