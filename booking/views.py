@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
@@ -6,7 +7,7 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView,
 from django.urls import reverse_lazy, reverse
 from django.middleware.csrf import get_token
 from users.models import Profile
-from .form import ReviewForm
+from .form import ReviewForm, StylistCreationForm, SalonServiceForm, StylistUpdateForm
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
     SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS
 from django.contrib.auth.decorators import login_required
@@ -24,7 +25,7 @@ from django.db.models import Count, Sum, DecimalField, Prefetch, F
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
 from collections import defaultdict
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import datetime as dt
 from django.views import View
 from django.shortcuts import render
@@ -36,6 +37,7 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
 import pytz
 from django.db.models import Avg, Q
+from django.db.models.deletion import ProtectedError
 
 PHONE_RE = re.compile(r'^\+?\d{9,15}$')
 
@@ -1298,24 +1300,127 @@ def stylist_reports(request):
 def stylist_dayoff_view(request):
     profile = request.user.profile
 
+    stylist_creation_form = None
+    salon_service_form = None
+    salon_services = None
+    selected_stylist = None
+    selected_stylist_id = None
+
+    stylists = []
+    stylists_map = {}
+
     # Для администратора
     if profile.is_salon_admin:
-        stylists = Stylist.objects.filter(salon=profile.salon)
+        stylists_queryset = (
+            Stylist.objects.filter(salon=profile.salon)
+            .select_related('user', 'level')
+            .order_by('user__first_name', 'user__last_name')
+        )
+        stylists = list(stylists_queryset)
+        for stylist_obj in stylists:
+            stylist_obj.update_form = StylistUpdateForm(stylist=stylist_obj)
+            stylists_map[stylist_obj.id] = stylist_obj
+
+        salon_services = (
+            SalonService.objects.filter(salon=profile.salon)
+            .select_related('service', 'category')
+            .order_by('position', 'service__name')
+        )
+
+        stylist_creation_form = StylistCreationForm()
+        salon_service_form = SalonServiceForm(profile.salon)
+
         selected_stylist_id = request.POST.get('stylist_id') or request.GET.get('stylist_id')
 
         if selected_stylist_id:
-            stylist = get_object_or_404(Stylist, id=selected_stylist_id, salon=profile.salon)
-        else:
-            stylist = None
-
+            try:
+                selected_stylist = stylists_map[int(selected_stylist_id)]
+            except (KeyError, ValueError):
+                selected_stylist = get_object_or_404(
+                    Stylist, id=selected_stylist_id, salon=profile.salon
+                )
+                selected_stylist.update_form = StylistUpdateForm(stylist=selected_stylist)
+                stylists.append(selected_stylist)
+                stylists_map[selected_stylist.id] = selected_stylist
+            selected_stylist_id = str(selected_stylist.id)
     else:
         stylists = None
-        stylist = request.user.stylist_profile
-        selected_stylist_id = stylist.id
+        selected_stylist = request.user.stylist_profile
+        selected_stylist_id = str(selected_stylist.id)
+
+    stylist = selected_stylist
 
     # Обработка POST
     if request.method == 'POST':
         form_type = request.POST.get('form_type')
+
+        if profile.is_salon_admin and form_type == 'stylist_add':
+            stylist_creation_form = StylistCreationForm(request.POST, request.FILES)
+            if stylist_creation_form.is_valid():
+                stylist_creation_form.save(profile.salon)
+                messages.success(request, 'Стилист добавлен в салон.')
+                return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'salon_service_add':
+            salon_service_form = SalonServiceForm(profile.salon, request.POST)
+            if salon_service_form.is_valid():
+                salon_service_form.save()
+                messages.success(request, 'Услуга добавлена в салон.')
+                return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'salon_service_delete':
+            salon_service_id = request.POST.get('salon_service_id')
+            salon_service = get_object_or_404(
+                SalonService, id=salon_service_id, salon=profile.salon
+            )
+            try:
+                salon_service.delete()
+            except ProtectedError:
+                messages.error(
+                    request,
+                    'Невозможно удалить услугу, пока есть связанные записи (например, записи клиентов).'
+                )
+            else:
+                messages.success(request, 'Услуга удалена из салона.')
+            return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'stylist_update':
+            target_id = request.POST.get('stylist_id')
+            target = get_object_or_404(Stylist, id=target_id, salon=profile.salon)
+            update_form = StylistUpdateForm(request.POST, request.FILES, stylist=target)
+            if update_form.is_valid():
+                update_form.save()
+                messages.success(request, 'Данные стилиста обновлены.')
+                redirect_id = selected_stylist_id or str(target.id)
+                redirect_url = reverse('stylist_dayoff')
+                if redirect_id:
+                    redirect_url = f'{redirect_url}?stylist_id={redirect_id}'
+                return redirect(redirect_url)
+            else:
+                display_target = stylists_map.get(target.id)
+                if display_target is not None:
+                    display_target.update_form = update_form
+                else:
+                    target.update_form = update_form
+                    if isinstance(stylists, list):
+                        stylists.append(target)
+                        stylists_map[target.id] = target
+        elif profile.is_salon_admin and form_type == 'stylist_delete':
+            target_id = request.POST.get('stylist_id')
+            target = get_object_or_404(Stylist, id=target_id, salon=profile.salon)
+            user = target.user
+            try:
+                user.delete()
+            except ProtectedError:
+                messages.error(
+                    request,
+                    'Невозможно удалить мастера, пока есть связанные записи (например, прошлые записи клиентов).'
+                )
+            else:
+                messages.success(request, 'Стилист удалён из салона.')
+            return redirect(reverse('stylist_dayoff'))
+
+        # Дальнейшие действия требуют выбранного стилиста
+        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'stylist_update', 'stylist_delete'}:
+            messages.error(request, 'Сначала выберите мастера.')
+            return redirect(reverse('stylist_dayoff'))
 
         # Добавление блокировки
         if form_type == 'dayoff_add':
@@ -1325,15 +1430,51 @@ def stylist_dayoff_view(request):
 
             if date_str:
                 date = datetime.strptime(date_str, '%Y-%m-%d').date()
-                from_time = datetime.strptime(from_time_str, '%H:%M').time() if from_time_str else None
-                to_time = datetime.strptime(to_time_str, '%H:%M').time() if to_time_str else None
+                from_time = (
+                    datetime.strptime(from_time_str, '%H:%M').time()
+                    if from_time_str
+                    else None
+                )
+                to_time = (
+                    datetime.strptime(to_time_str, '%H:%M').time()
+                    if to_time_str
+                    else None
+                )
 
                 StylistDayOff.objects.create(
                     stylist=stylist,
                     date=date,
                     from_time=from_time,
-                    to_time=to_time
+                    to_time=to_time,
                 )
+
+            return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+
+        # Изменение блокировки
+        elif form_type == 'dayoff_update':
+            block_id = request.POST.get('dayoff_id')
+            block = get_object_or_404(StylistDayOff, id=block_id, stylist=stylist)
+
+            date_str = request.POST.get('date')
+            from_time_str = request.POST.get('from_time')
+            to_time_str = request.POST.get('to_time')
+
+            try:
+                block.date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                block.from_time = (
+                    datetime.strptime(from_time_str, '%H:%M').time()
+                    if from_time_str
+                    else None
+                )
+                block.to_time = (
+                    datetime.strptime(to_time_str, '%H:%M').time()
+                    if to_time_str
+                    else None
+                )
+                block.save()
+                messages.success(request, 'Блокировка обновлена.')
+            except (ValueError, TypeError):
+                messages.error(request, 'Неверный формат даты или времени.')
 
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
@@ -1347,8 +1488,27 @@ def stylist_dayoff_view(request):
                 stylist=stylist,
                 weekday=weekday,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
             )
+
+            return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+
+        # Обновление рабочего интервала
+        elif form_type == 'workinghour_update':
+            wh_id = request.POST.get('workinghour_id')
+            wh = get_object_or_404(WorkingHour, id=wh_id, stylist=stylist)
+
+            try:
+                wh.weekday = int(request.POST.get('weekday'))
+                wh.start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
+                wh.end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
+                wh.full_clean()
+                wh.save()
+                messages.success(request, 'Рабочий интервал обновлён.')
+            except (ValueError, TypeError):
+                messages.error(request, 'Неверный формат времени.')
+            except ValidationError as exc:
+                messages.error(request, exc.messages[0])
 
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
@@ -1362,7 +1522,7 @@ def stylist_dayoff_view(request):
             BreakPeriod.objects.create(
                 working_hour=wh,
                 start_time=start_time,
-                end_time=end_time
+                end_time=end_time,
             )
 
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
@@ -1374,17 +1534,74 @@ def stylist_dayoff_view(request):
             wh.delete()
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
-    # Получение данных для отображения
-    blocks = StylistDayOff.objects.filter(stylist=stylist).order_by('-date', '-from_time')
-    working_hours = WorkingHour.objects.filter(stylist=stylist).order_by('weekday', 'start_time')
+        elif profile.is_salon_admin and form_type == 'stylist_price_update':
+            salon_service_id = request.POST.get('salon_service_id')
+            price_raw = (request.POST.get('price') or '').replace(',', '.').strip()
 
-    return render(request, 'stylist_dayoff_form.html', {
-        'blocks': blocks,
-        'working_hours': working_hours,
-        'stylists': stylists,
-        'selected_stylist_id': selected_stylist_id,
-        'WEEKDAYS': WEEKDAYS,
-    })
+            if not salon_service_id:
+                messages.error(request, 'Не выбрана услуга.')
+                return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+
+            if price_raw == '':
+                StylistService.objects.filter(
+                    stylist=stylist, salon_service_id=salon_service_id
+                ).delete()
+                messages.success(request, 'Цена удалена для выбранной услуги.')
+                return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+
+            try:
+                price_value = Decimal(price_raw)
+                if price_value < 0:
+                    raise InvalidOperation
+            except (InvalidOperation, TypeError):
+                messages.error(request, 'Введите корректную цену.')
+            else:
+                StylistService.objects.update_or_create(
+                    stylist=stylist,
+                    salon_service_id=salon_service_id,
+                    defaults={'price': price_value},
+                )
+                messages.success(request, 'Цена сохранена.')
+
+            return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+
+    # Получение данных для отображения
+    if stylist:
+        blocks = StylistDayOff.objects.filter(stylist=stylist).order_by('-date', '-from_time')
+        working_hours = (
+            WorkingHour.objects.filter(stylist=stylist)
+            .select_related('stylist')
+            .prefetch_related('breaks')
+            .order_by('weekday', 'start_time')
+        )
+        stylist_price_map = {
+            ss.salon_service_id: ss.price
+            for ss in StylistService.objects.filter(stylist=stylist)
+        }
+    else:
+        blocks = StylistDayOff.objects.none()
+        working_hours = WorkingHour.objects.none()
+        stylist_price_map = {}
+
+    if salon_services is not None:
+        for service in salon_services:
+            service.current_price = stylist_price_map.get(service.id)
+
+    return render(
+        request,
+        'stylist_dayoff_form.html',
+        {
+            'blocks': blocks,
+            'working_hours': working_hours,
+            'stylists': stylists,
+            'selected_stylist_id': selected_stylist_id,
+            'selected_stylist': stylist,
+            'WEEKDAYS': WEEKDAYS,
+            'stylist_creation_form': stylist_creation_form,
+            'salon_service_form': salon_service_form,
+            'salon_services': salon_services,
+        },
+    )
 
 @login_required
 def delete_dayoff(request, pk):
