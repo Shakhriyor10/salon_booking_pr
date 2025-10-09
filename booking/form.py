@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import timedelta
 
 from django import forms
@@ -247,6 +248,14 @@ class StylistUpdateForm(forms.Form):
 
 
 class SalonServiceForm(forms.Form):
+    TYPE_LABELS = {
+        'male': 'Муж',
+        'female': 'Жен',
+        'both': 'Обе',
+        '': 'Не указано',
+    }
+    TYPE_ORDER = ['male', 'female', 'both', '']
+
     service = forms.ModelChoiceField(
         label='Услуга', queryset=Service.objects.none(), required=True
     )
@@ -269,6 +278,9 @@ class SalonServiceForm(forms.Form):
             .exclude(id__in=used_services)
             .order_by('name')
         )
+        service_field = self.fields['service']
+        self._service_type_map = self._build_service_type_map(service_field.queryset)
+        service_field.label_from_instance = self._service_label_from_instance
         self.fields['category'].queryset = Category.objects.all().order_by('name')
 
         for field_name, field in self.fields.items():
@@ -276,6 +288,43 @@ class SalonServiceForm(forms.Form):
                 field.widget.attrs.setdefault('class', 'form-check-input')
             else:
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def _build_service_type_map(self, queryset):
+        service_ids = list(queryset.values_list('id', flat=True))
+        if not service_ids:
+            return {}
+
+        type_map = defaultdict(set)
+        related_services = (
+            SalonService.objects.filter(service_id__in=service_ids)
+            .select_related('salon')
+            .values_list('service_id', 'salon__type')
+        )
+        for service_id, salon_type in related_services:
+            normalized_type = salon_type or ''
+            type_map[service_id].add(normalized_type)
+
+        return type_map
+
+    def _service_label_from_instance(self, service):
+        base_name = service.name
+        type_keys = self._service_type_map.get(service.id)
+        if not type_keys:
+            return base_name
+
+        labels = []
+        for type_key in self.TYPE_ORDER:
+            if type_key in type_keys:
+                labels.append(self.TYPE_LABELS[type_key])
+
+        remaining = [key for key in type_keys if key not in self.TYPE_ORDER]
+        for key in sorted(remaining):
+            labels.append(self.TYPE_LABELS.get(key, key))
+
+        if not labels:
+            return base_name
+
+        return f"{base_name} — ({' / '.join(labels)})"
 
     def save(self):
         salon_service = SalonService.objects.create(

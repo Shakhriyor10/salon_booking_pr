@@ -265,7 +265,8 @@ class Appointment(models.Model):
 
 class AppointmentService(models.Model):
     appointment = models.ForeignKey(Appointment, related_name='services', on_delete=models.CASCADE)
-    stylist_service = models.ForeignKey('StylistService', on_delete=models.PROTECT)
+    stylist_service = models.ForeignKey('StylistService', on_delete=models.SET_NULL,
+                                        null=True, blank=True)
 
     def get_duration(self):
         return self.stylist_service.salon_service.duration
