@@ -175,15 +175,6 @@
                                                     </div>
                                                 {% endif %}
 
-                                                {% if s.avatar or s.update_form.remove_photo.errors %}
-                                                    <div class="form-check mb-3">
-                                                        {{ s.update_form.remove_photo }}
-                                                        <label class="form-check-label" for="{{ s.update_form.remove_photo.id_for_label }}">{{ s.update_form.remove_photo.label }}</label>
-                                                    </div>
-                                                    {% for error in s.update_form.remove_photo.errors %}
-                                                        <div class="invalid-feedback d-block">{{ error }}</div>
-                                                    {% endfor %}
-                                                {% endif %}
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>

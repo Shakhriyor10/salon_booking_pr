@@ -70,7 +70,7 @@ class StylistCreationForm(UserCreationForm):
     )
     photo = forms.ImageField(
         label='Фото',
-        required=False,
+        required=True,
         help_text='Фото должно быть квадратным и весить не более 1 МБ.',
     )
     bio = forms.CharField(
@@ -170,10 +170,6 @@ class StylistUpdateForm(forms.Form):
         required=False,
         help_text='Фото должно быть квадратным и весить не более 1 МБ.',
     )
-    remove_photo = forms.BooleanField(
-        label='Удалить текущее фото',
-        required=False,
-    )
 
     def __init__(self, *args, stylist=None, **kwargs):
         self.stylist = stylist
@@ -247,20 +243,15 @@ class StylistUpdateForm(forms.Form):
         self.stylist.telegram_chat_id = self.cleaned_data.get('telegram_chat_id')
 
         photo = self.cleaned_data.get('photo')
-        remove_photo = self.cleaned_data.get('remove_photo')
 
         if photo:
-            self.stylist.avatar = photo
-        elif remove_photo:
             if self.stylist.avatar:
                 self.stylist.avatar.delete(save=False)
-            self.stylist.avatar = None
+            self.stylist.avatar = photo
 
         update_fields = ['level', 'bio', 'telegram_chat_id']
 
         if photo:
-            update_fields.append('avatar')
-        elif remove_photo:
             update_fields.append('avatar')
 
         self.stylist.save(update_fields=update_fields)
