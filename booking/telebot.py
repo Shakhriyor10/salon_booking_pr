@@ -17,19 +17,26 @@ async def _send(chat_id_or_username: str, text: str):
 
 def send_telegram(chat_id: int = None, username: str = None, text: str = ""):
     """
-    Сначала пытаемся слать по chat_id, если есть.
-    Иначе ‑ по @username (только если пользователь писал боту).
+    Сначала пытаемся отправить сообщение по @username, если он указан.
+    Если username отсутствует или отправка не удалась, пробуем chat_id.
     """
-    if chat_id:
-        target = chat_id
-    elif username:
-        target = f"@{username.lstrip('@')}"
-    else:
+
+    targets = []
+
+    if username:
+        targets.append(f"@{username.lstrip('@')}")
+
+    if chat_id is not None:
+        targets.append(chat_id)
+
+    if not targets:
         return False
 
-    try:
-        asyncio.run(_send(target, text))
-        return True
-    except Exception as e:
-        print("Telegram send error:", e)
-        return False
+    for target in targets:
+        try:
+            asyncio.run(_send(target, text))
+            return True
+        except Exception as e:
+            print(f"Telegram send error for {target}:", e)
+
+    return False
