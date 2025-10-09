@@ -207,7 +207,7 @@
                                 <tr>
                                     <td>{{ ss.service.name }}</td>
                                     <td>{% if ss.category %}{{ ss.category.name }}{% else %}—{% endif %}</td>
-                                    <td>{{ ss.duration }}</td>
+                                    <td>{{ ss.duration_minutes }} мин</td>
                                     <td>
                                         {% if ss.is_active %}
                                             <span class="badge bg-success">Да</span>
@@ -216,6 +216,9 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-end">
+                                        <button class="btn btn-outline-secondary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editSalonServiceModal{{ ss.id }}">
+                                            Изменить
+                                        </button>
                                         <form method="post" class="d-inline">
                                             {% csrf_token %}
                                             <input type="hidden" name="form_type" value="salon_service_delete">
@@ -230,6 +233,55 @@
                         </tbody>
                     </table>
                 </div>
+                {% for ss in salon_services %}
+                    <div class="modal fade" id="editSalonServiceModal{{ ss.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="salon_service_update">
+                                    <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Изменить услугу «{{ ss.service.name }}»</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if ss.update_form.non_field_errors %}
+                                            <div class="alert alert-danger">
+                                                {% for error in ss.update_form.non_field_errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% for field in ss.update_form %}
+                                            <div class="mb-3">
+                                                {% if field.field.widget.input_type == 'checkbox' %}
+                                                    <div class="form-check">
+                                                        {{ field }}
+                                                        {{ field.label_tag(attrs={'class': 'form-check-label'}) }}
+                                                    </div>
+                                                {% else %}
+                                                    {{ field.label_tag(attrs={'class': 'form-label'}) }}
+                                                    {{ field }}
+                                                {% endif %}
+                                                {% if field.help_text %}
+                                                    <div class="form-text">{{ field.help_text }}</div>
+                                                {% endif %}
+                                                {% for error in field.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
             {% else %}
                 <p class="text-muted mb-0">Услуги ещё не добавлены.</p>
             {% endif %}
@@ -272,7 +324,7 @@
                             {% for ss in salon_services %}
                                 <tr>
                                     <td>{{ ss.service.name }}</td>
-                                    <td>{{ ss.duration }}</td>
+                                    <td>{{ ss.duration_minutes }} мин</td>
                                     <td>
                                         <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
                                             {% csrf_token %}
