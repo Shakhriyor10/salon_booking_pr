@@ -271,6 +271,42 @@ class SalonServiceForm(forms.Form):
         )
         self.fields['category'].queryset = Category.objects.all().order_by('name')
 
+        service_ids = list(self.fields['service'].queryset.values_list('id', flat=True))
+        if service_ids:
+            type_labels = {
+                'male': 'Муж',
+                'female': 'Жен',
+                'both': 'Уни',
+            }
+            type_order = {key: index for index, key in enumerate(['male', 'female', 'both'])}
+            usage_map = {}
+
+            for salon_service in (
+                SalonService.objects.filter(service_id__in=service_ids)
+                .select_related('salon')
+            ):
+                salon_type = salon_service.salon.type or ''
+                if salon_type not in type_labels:
+                    continue
+                usage_map.setdefault(salon_service.service_id, set()).add(salon_type)
+
+            if usage_map:
+                formatted_usage = {}
+                for service_id, type_codes in usage_map.items():
+                    sorted_codes = sorted(type_codes, key=lambda code: type_order.get(code, 99))
+                    formatted_usage[service_id] = ', '.join(
+                        type_labels[code] for code in sorted_codes
+                    )
+
+                def label_from_instance(instance, usage_labels=formatted_usage):
+                    label = instance.name
+                    extra = usage_labels.get(instance.pk)
+                    if extra:
+                        label = f"{label} — ({extra})"
+                    return label
+
+                self.fields['service'].label_from_instance = label_from_instance
+
         for field_name, field in self.fields.items():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-check-input')
