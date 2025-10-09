@@ -344,7 +344,7 @@ class SalonServiceUpdateForm(forms.ModelForm):
 
     class Meta:
         model = SalonService
-        fields = ['category', 'duration', 'is_active']
+        fields = ['category', 'duration', 'position', 'is_active']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -354,6 +354,7 @@ class SalonServiceUpdateForm(forms.ModelForm):
         self.fields['category'].queryset = Category.objects.all().order_by('name')
         self.fields['category'].required = False
         self.fields['category'].empty_label = 'Без категории'
+        self.fields['position'].required = False
 
         if self.instance and self.instance.pk and 'duration' not in self.initial:
             self.initial['duration'] = int(self.instance.duration.total_seconds() // 60)
@@ -367,3 +368,9 @@ class SalonServiceUpdateForm(forms.ModelForm):
     def clean_duration(self):
         minutes = self.cleaned_data['duration']
         return timedelta(minutes=minutes)
+
+    def clean_position(self):
+        position = self.cleaned_data.get('position')
+        if position is None:
+            return 0
+        return position
