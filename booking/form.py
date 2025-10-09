@@ -61,6 +61,14 @@ class StylistCreationForm(UserCreationForm):
     first_name = forms.CharField(label='Имя', max_length=150, required=True)
     last_name = forms.CharField(label='Фамилия', max_length=150, required=False)
     phone = forms.CharField(label='Телефон', max_length=20, required=False)
+    telegram_username = forms.CharField(
+        label='Telegram username', max_length=64, required=False,
+        help_text='Укажите имя пользователя без @ или оставьте поле пустым.'
+    )
+    telegram_chat_id = forms.IntegerField(
+        label='Telegram chat_id', required=False,
+        help_text='Укажите chat_id или оставьте поле пустым.'
+    )
     level = forms.ModelChoiceField(
         label='Уровень', queryset=StylistLevel.objects.all(), required=False
     )
@@ -132,10 +140,16 @@ class StylistCreationForm(UserCreationForm):
             bio=self.cleaned_data.get('bio', ''),
         )
 
+        telegram_username = (self.cleaned_data.get('telegram_username') or '').strip()
+        stylist.telegram_username = telegram_username or None
+        stylist.telegram_chat_id = self.cleaned_data.get('telegram_chat_id')
+
         photo = self.cleaned_data.get('photo')
         if photo:
             stylist.avatar = photo
-            stylist.save(update_fields=['avatar'])
+            stylist.save(update_fields=['avatar', 'telegram_username', 'telegram_chat_id'])
+        else:
+            stylist.save(update_fields=['telegram_username', 'telegram_chat_id'])
 
         return stylist
 
@@ -145,6 +159,14 @@ class StylistUpdateForm(forms.Form):
     first_name = forms.CharField(label='Имя', max_length=150, required=True)
     last_name = forms.CharField(label='Фамилия', max_length=150, required=False)
     phone = forms.CharField(label='Телефон', max_length=20, required=False)
+    telegram_username = forms.CharField(
+        label='Telegram username', max_length=64, required=False,
+        help_text='Укажите имя пользователя без @ или оставьте поле пустым.'
+    )
+    telegram_chat_id = forms.IntegerField(
+        label='Telegram chat_id', required=False,
+        help_text='Укажите chat_id или оставьте поле пустым.'
+    )
     level = forms.ModelChoiceField(
         label='Уровень', queryset=StylistLevel.objects.all(), required=False
     )
@@ -176,6 +198,8 @@ class StylistUpdateForm(forms.Form):
                 'phone': profile.phone if profile else '',
                 'level': stylist.level,
                 'bio': stylist.bio,
+                'telegram_username': stylist.telegram_username or '',
+                'telegram_chat_id': stylist.telegram_chat_id,
             })
             kwargs['initial'] = initial
 
@@ -231,6 +255,9 @@ class StylistUpdateForm(forms.Form):
 
         self.stylist.level = self.cleaned_data.get('level')
         self.stylist.bio = self.cleaned_data.get('bio', '')
+        telegram_username = (self.cleaned_data.get('telegram_username') or '').strip()
+        self.stylist.telegram_username = telegram_username or None
+        self.stylist.telegram_chat_id = self.cleaned_data.get('telegram_chat_id')
 
         photo = self.cleaned_data.get('photo')
         remove_photo = self.cleaned_data.get('remove_photo')
@@ -242,7 +269,14 @@ class StylistUpdateForm(forms.Form):
                 self.stylist.avatar.delete(save=False)
             self.stylist.avatar = None
 
-        self.stylist.save()
+        update_fields = ['level', 'bio', 'telegram_username', 'telegram_chat_id']
+
+        if photo:
+            update_fields.append('avatar')
+        elif remove_photo:
+            update_fields.append('avatar')
+
+        self.stylist.save(update_fields=update_fields)
 
         return self.stylist
 

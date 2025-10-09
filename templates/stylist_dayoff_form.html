@@ -71,6 +71,9 @@
                                                         <div class="mb-3">
                                                             <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                             {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
                                                             {% for error in field.errors %}
                                                                 <div class="invalid-feedback d-block">{{ error }}</div>
                                                             {% endfor %}
@@ -82,6 +85,9 @@
                                                         <div class="mb-3">
                                                             <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                             {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
                                                             {% for error in field.errors %}
                                                                 <div class="invalid-feedback d-block">{{ error }}</div>
                                                             {% endfor %}
@@ -115,6 +121,34 @@
                                                         <div class="mb-3">
                                                             <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
                                                             {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.telegram_username %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.telegram_chat_id %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
                                                             {% for error in field.errors %}
                                                                 <div class="invalid-feedback d-block">{{ error }}</div>
                                                             {% endfor %}
