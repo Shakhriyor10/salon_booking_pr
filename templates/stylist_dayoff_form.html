@@ -198,6 +198,7 @@
                                 <th>Услуга</th>
                                 <th>Категория</th>
                                 <th>Длительность</th>
+                                <th>Позиция</th>
                                 <th>Активна</th>
                                 <th class="text-end">Действия</th>
                             </tr>
@@ -208,6 +209,7 @@
                                     <td>{{ ss.service.name }}</td>
                                     <td>{% if ss.category %}{{ ss.category.name }}{% else %}—{% endif %}</td>
                                     <td>{{ ss.duration_minutes }} мин</td>
+                                    <td>{{ ss.position }}</td>
                                     <td>
                                         {% if ss.is_active %}
                                             <span class="badge bg-success">Да</span>
