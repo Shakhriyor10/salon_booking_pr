@@ -7,7 +7,13 @@ from django.views.generic import ListView, DetailView, CreateView, TemplateView,
 from django.urls import reverse_lazy, reverse
 from django.middleware.csrf import get_token
 from users.models import Profile
-from .form import ReviewForm, StylistCreationForm, SalonServiceForm, StylistUpdateForm
+from .form import (
+    ReviewForm,
+    StylistCreationForm,
+    SalonServiceForm,
+    SalonServiceUpdateForm,
+    StylistUpdateForm,
+)
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
     SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS
 from django.contrib.auth.decorators import login_required
@@ -1321,7 +1327,7 @@ def stylist_dayoff_view(request):
             stylist_obj.update_form = StylistUpdateForm(stylist=stylist_obj)
             stylists_map[stylist_obj.id] = stylist_obj
 
-        salon_services = (
+        salon_services = list(
             SalonService.objects.filter(salon=profile.salon)
             .select_related('service', 'category')
             .order_by('position', 'service__name')
@@ -1381,6 +1387,31 @@ def stylist_dayoff_view(request):
             else:
                 messages.success(request, 'Услуга удалена из салона.')
             return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'salon_service_update':
+            salon_service_id = request.POST.get('salon_service_id')
+            salon_service = get_object_or_404(
+                SalonService, id=salon_service_id, salon=profile.salon
+            )
+
+            update_form = SalonServiceUpdateForm(
+                data=request.POST,
+                instance=salon_service,
+                auto_id=f'id_%s_{salon_service.id}',
+            )
+
+            if update_form.is_valid():
+                update_form.save()
+                messages.success(request, 'Настройки услуги обновлены.')
+                return redirect(reverse('stylist_dayoff'))
+
+            for service in salon_services or []:
+                if service.id == salon_service.id:
+                    service.update_form = update_form
+                    break
+            else:
+                salon_service.update_form = update_form
+                if isinstance(salon_services, list):
+                    salon_services.append(salon_service)
         elif profile.is_salon_admin and form_type == 'stylist_update':
             target_id = request.POST.get('stylist_id')
             target = get_object_or_404(Stylist, id=target_id, salon=profile.salon)
@@ -1418,7 +1449,7 @@ def stylist_dayoff_view(request):
             return redirect(reverse('stylist_dayoff'))
 
         # Дальнейшие действия требуют выбранного стилиста
-        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'stylist_update', 'stylist_delete'}:
+        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'salon_service_update', 'stylist_update', 'stylist_delete'}:
             messages.error(request, 'Сначала выберите мастера.')
             return redirect(reverse('stylist_dayoff'))
 
@@ -1586,6 +1617,12 @@ def stylist_dayoff_view(request):
     if salon_services is not None:
         for service in salon_services:
             service.current_price = stylist_price_map.get(service.id)
+            if not hasattr(service, 'update_form'):
+                service.update_form = SalonServiceUpdateForm(
+                    instance=service,
+                    auto_id=f'id_%s_{service.id}',
+                )
+            service.duration_minutes = int(service.duration.total_seconds() // 60)
 
     return render(
         request,

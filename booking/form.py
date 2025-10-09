@@ -337,3 +337,33 @@ class SalonServiceForm(forms.Form):
         )
 
         return salon_service
+
+
+class SalonServiceUpdateForm(forms.ModelForm):
+    duration = forms.IntegerField(label='Длительность (мин)', min_value=5, required=True)
+
+    class Meta:
+        model = SalonService
+        fields = ['category', 'duration', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.label_suffix = ''
+
+        self.fields['category'].queryset = Category.objects.all().order_by('name')
+        self.fields['category'].required = False
+        self.fields['category'].empty_label = 'Без категории'
+
+        if self.instance and self.instance.pk and 'duration' not in self.initial:
+            self.initial['duration'] = int(self.instance.duration.total_seconds() // 60)
+
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-check-input')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_duration(self):
+        minutes = self.cleaned_data['duration']
+        return timedelta(minutes=minutes)
