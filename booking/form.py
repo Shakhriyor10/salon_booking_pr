@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from collections import defaultdict
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -246,8 +248,26 @@ class StylistUpdateForm(forms.Form):
         return self.stylist
 
 
+class ServiceChoiceField(forms.ModelChoiceField):
+    """Поле выбора услуги с отображением подходящего типа салона."""
+
+    def __init__(self, *args, **kwargs):
+        self.service_labels = kwargs.pop('service_labels', {})
+        super().__init__(*args, **kwargs)
+
+    def set_service_labels(self, labels):
+        self.service_labels = labels or {}
+
+    def label_from_instance(self, obj):
+        label = super().label_from_instance(obj)
+        suffix = self.service_labels.get(obj.pk)
+        if suffix:
+            return f"{label} ({suffix})"
+        return label
+
+
 class SalonServiceForm(forms.Form):
-    service = forms.ModelChoiceField(
+    service = ServiceChoiceField(
         label='Услуга', queryset=Service.objects.none(), required=True
     )
     category = forms.ModelChoiceField(
@@ -264,11 +284,43 @@ class SalonServiceForm(forms.Form):
         self.salon = salon
 
         used_services = salon.salon_services.values_list('service_id', flat=True)
-        self.fields['service'].queryset = (
+        service_field = self.fields['service']
+        service_field.queryset = (
             Service.objects.filter(is_active=True)
             .exclude(id__in=used_services)
             .order_by('name')
         )
+        service_ids = list(service_field.queryset.values_list('id', flat=True))
+
+        if service_ids:
+            service_types = defaultdict(set)
+            for service_id, salon_type in (
+                SalonService.objects
+                .filter(service_id__in=service_ids)
+                .exclude(salon=self.salon)
+                .exclude(salon__type__isnull=True)
+                .exclude(salon__type='')
+                .values_list('service_id', 'salon__type')
+            ):
+                if salon_type:
+                    service_types[service_id].add(salon_type)
+
+            if service_types:
+                type_labels = {'male': 'муж', 'female': 'жен', 'both': 'оба'}
+                ordered_types = ['male', 'female', 'both']
+                formatted_labels = {}
+
+                for service_id, types in service_types.items():
+                    labels = [
+                        type_labels[gender]
+                        for gender in ordered_types
+                        if gender in types and gender in type_labels
+                    ]
+                    if labels:
+                        formatted_labels[service_id] = '/'.join(labels)
+
+                service_field.set_service_labels(formatted_labels)
+
         self.fields['category'].queryset = Category.objects.all().order_by('name')
 
         for field_name, field in self.fields.items():
