@@ -1,7 +1,7 @@
 {% extends 'base3.html' %}
 {% block content %}
 <div class="container py-4">
-    <h2 class="mb-4 text-center">График и блокировки</h2>
+    <h2 class="mb-4 text-center">Настройка стилистов салона</h2>
 
     {% if request.user.profile.is_salon_admin %}
     <div class="card mb-4">
@@ -392,7 +392,8 @@
                     </button>
                     <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Удалить блокировку?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Удалить блокировку?')">
                             Удалить
                         </button>
                     </form>
@@ -495,7 +496,8 @@
                         {% if selected_stylist_id %}
                             <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
                         {% endif %}
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Удалить интервал?')">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Удалить интервал?.')">
                             Удалить
                         </button>
                     </form>

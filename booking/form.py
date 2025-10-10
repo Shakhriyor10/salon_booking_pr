@@ -263,10 +263,10 @@ class SalonServiceForm(forms.Form):
     TYPE_LABELS = {
         'male': 'Муж',
         'female': 'Жен',
-        'both': 'Обе',
+        'both': 'Жен / Муж',
         '': 'Не указано',
     }
-    TYPE_ORDER = ['male', 'female', 'both', '']
+    TYPE_ORDER = ['female', 'male', 'both', '']
 
     service = forms.ModelChoiceField(
         label='Услуга', queryset=Service.objects.none(), required=True
@@ -293,7 +293,12 @@ class SalonServiceForm(forms.Form):
         service_field = self.fields['service']
         self._service_type_map = self._build_service_type_map(service_field.queryset)
         service_field.label_from_instance = self._service_label_from_instance
-        self.fields['category'].queryset = Category.objects.all().order_by('name')
+        category_field = self.fields['category']
+        category_field.queryset = Category.objects.all().order_by('name')
+        category_field.empty_label = 'Без категории'
+
+        self._category_type_map = self._build_category_type_map(category_field.queryset)
+        category_field.label_from_instance = self._category_label_from_instance
 
         for field_name, field in self.fields.items():
             if isinstance(field.widget, forms.CheckboxInput):
@@ -318,25 +323,59 @@ class SalonServiceForm(forms.Form):
 
         return type_map
 
-    def _service_label_from_instance(self, service):
-        base_name = service.name
-        type_keys = self._service_type_map.get(service.id)
+    def _build_category_type_map(self, queryset):
+        category_ids = list(queryset.values_list('id', flat=True))
+        if not category_ids:
+            return {}
+
+        type_map = defaultdict(set)
+        related_categories = (
+            SalonService.objects.filter(category_id__in=category_ids)
+            .select_related('salon')
+            .values_list('category_id', 'salon__type')
+        )
+        for category_id, salon_type in related_categories:
+            normalized_type = salon_type or ''
+            type_map[category_id].add(normalized_type)
+
+        return type_map
+
+    def _format_type_labels(self, type_keys):
         if not type_keys:
-            return base_name
+            return ''
+
+        normalized_keys = {key or '' for key in type_keys}
+        if 'both' in normalized_keys:
+            return self.TYPE_LABELS['both']
 
         labels = []
         for type_key in self.TYPE_ORDER:
-            if type_key in type_keys:
+            if type_key in normalized_keys:
                 labels.append(self.TYPE_LABELS[type_key])
 
-        remaining = [key for key in type_keys if key not in self.TYPE_ORDER]
+        remaining = normalized_keys.difference(self.TYPE_ORDER)
         for key in sorted(remaining):
             labels.append(self.TYPE_LABELS.get(key, key))
 
+        return ' / '.join(labels)
+
+    def _service_label_from_instance(self, service):
+        base_name = service.name
+        type_keys = self._service_type_map.get(service.id)
+        labels = self._format_type_labels(type_keys or set())
         if not labels:
             return base_name
 
-        return f"{base_name} — ({' / '.join(labels)})"
+        return f"{base_name} — ({labels})"
+
+    def _category_label_from_instance(self, category):
+        base_name = category.name
+        type_keys = self._category_type_map.get(category.id)
+        labels = self._format_type_labels(type_keys or set())
+        if not labels:
+            return base_name
+
+        return f"{base_name} — ({labels})"
 
     def save(self):
         salon_service = SalonService.objects.create(
