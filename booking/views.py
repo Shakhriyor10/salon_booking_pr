@@ -1,5 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views import View
@@ -52,7 +52,32 @@ class HomePageView(ListView):
     template_name = 'salon.html'
     context_object_name = 'salons'
 
+    @staticmethod
+    def _get_user_salon(user):
+        if not getattr(user, 'is_authenticated', False):
+            return None
+
+        profile = getattr(user, 'profile', None)
+        if profile and getattr(profile, 'is_salon_admin', False) and profile.salon:
+            return profile.salon
+
+        try:
+            stylist_profile = user.stylist_profile
+        except ObjectDoesNotExist:
+            stylist_profile = None
+
+        if stylist_profile and getattr(stylist_profile, 'salon', None):
+            return stylist_profile.salon
+
+        return None
+
     def get(self, request, *args, **kwargs):
+        salon = self._get_user_salon(request.user)
+        if salon:
+            salon_url = salon.get_absolute_url()
+            if request.path != salon_url:
+                return redirect(salon_url)
+
         get_params = request.GET.copy()
         if 'services' in get_params:
             get_params.pop('services')
