@@ -1,5 +1,5 @@
 <!-- templates/booking/base.html -->
-{% load static %}
+{% load static custom_filters %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -27,7 +27,8 @@
   <div class="container-fluid">
 
     <!-- Логотип -->
-    <a class="" href="/">
+    {% user_salon_url as salon_home_url %}
+    <a class="" href="{% if salon_home_url %}{{ salon_home_url }}{% else %}{% url 'home' %}{% endif %}">
         <img alt="Логотип" src="{% static 'img/logo.png' %}" width="50%"  class="d-inline-block align-text-top" >
       </a>
 
