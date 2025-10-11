@@ -225,6 +225,22 @@ class SalonDetailView(DetailView):
         context['average_rating'] = rating
         context['categories'] = categories
         context['uncategorized_services'] = uncategorized_services
+        stylists = (
+            salon.stylists.select_related('user', 'level')
+            .prefetch_related(
+                Prefetch(
+                    'stylist_services',
+                    queryset=StylistService.objects.filter(
+                        salon_service__salon=salon,
+                        salon_service__is_active=True,
+                        salon_service__service__is_active=True,
+                    ).select_related('salon_service__service'),
+                    to_attr='salon_services_for_display'
+                )
+            )
+            .order_by('user__first_name', 'user__last_name', 'user__username')
+        )
+        context['stylists'] = stylists
         return context
 
     def post(self, request, *args, **kwargs):
@@ -471,133 +487,173 @@ class AppointmentCreateView(View):
 
 
 def service_booking(request):
-    service_ids = request.GET.getlist("services")
+    raw_service_ids = request.GET.getlist("services")
     salon_id = request.GET.get('salon')
-
-    if not service_ids:
-        return render(request, 'error.html', {"message": "Выберите хотя бы одну услугу."})
-
-    try:
-        service_ids = [int(sid) for sid in service_ids]
-    except ValueError:
-        return render(request, 'error.html', {"message": "Некорректные ID услуг."})
-
-    services = Service.objects.filter(id__in=service_ids)
-    if not services.exists():
-        return render(request, 'error.html', {"message": "Выбранные услуги не найдены."})
+    stylist_id = request.GET.get('stylist')
 
     if not salon_id:
         return render(request, 'error.html', {"message": "Салон не указан."})
 
     salon = get_object_or_404(Salon, id=salon_id)
 
-    # Дата по умолчанию — сегодня
     today = now().date()
     max_date = today + timedelta(days=14)
     date_str = request.GET.get('date')
 
     try:
-        date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else today
+        selected_date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else today
     except (ValueError, TypeError):
-        date = today
+        selected_date = today
 
-    date = min(max(date, today), max_date)
-    weekday = date.weekday()
+    selected_date = min(max(selected_date, today), max_date)
+    weekday = selected_date.weekday()
 
-    all_stylist_services = StylistService.objects.filter(
-        salon_service__salon=salon,
-        salon_service__service_id__in=service_ids
-    ).select_related('stylist', 'salon_service', 'salon_service__service')
+    try:
+        selected_service_ids = list(dict.fromkeys(int(sid) for sid in raw_service_ids))
+    except (TypeError, ValueError):
+        return render(request, 'error.html', {"message": "Некорректные ID услуг."})
 
-    stylist_to_services = defaultdict(list)
-    for ss in all_stylist_services:
-        stylist_to_services[ss.stylist_id].append(ss)
+    services_qs = Service.objects.filter(id__in=selected_service_ids)
+    services_map = {service.id: service for service in services_qs}
+    if selected_service_ids and len(services_map) != len(selected_service_ids):
+        return render(request, 'error.html', {"message": "Выбранные услуги не найдены."})
 
-    selected_stylist_services = None
-    for stylist_id, ss_list in stylist_to_services.items():
-        matched_service_ids = {s.salon_service.service_id for s in ss_list}
-        if set(service_ids).issubset(matched_service_ids):
-            selected_stylist_services = ss_list
-            break
+    ordered_services = [services_map[sid] for sid in selected_service_ids]
 
-    total_price = 0
+    selected_stylist = None
+    stylist_available_services = []
+    removed_services = []
+
+    if stylist_id:
+        try:
+            stylist_id = int(stylist_id)
+        except (TypeError, ValueError):
+            return render(request, 'error.html', {"message": "Некорректный идентификатор мастера."})
+
+        selected_stylist = get_object_or_404(Stylist, id=stylist_id, salon=salon)
+        stylist_available_services = (
+            StylistService.objects.filter(
+                stylist=selected_stylist,
+                salon_service__salon=salon,
+                salon_service__is_active=True,
+                salon_service__service__is_active=True,
+            )
+            .select_related('salon_service__service')
+            .order_by(Lower('salon_service__service__name'))
+        )
+
+        available_ids = {ss.salon_service.service_id for ss in stylist_available_services}
+        removed_ids = [sid for sid in selected_service_ids if sid not in available_ids]
+
+        if removed_ids:
+            removed_services = [services_map[sid] for sid in removed_ids if sid in services_map]
+            selected_service_ids = [sid for sid in selected_service_ids if sid in available_ids]
+            ordered_services = [service for service in ordered_services if service.id in available_ids]
+
+    total_price = Decimal('0')
     total_duration = timedelta()
-
-    if selected_stylist_services:
-        for ss in selected_stylist_services:
-            if ss.salon_service.service_id in service_ids:
-                total_price += ss.price
-                total_duration += ss.salon_service.duration
-
     stylist_slots = []
 
-    for stylist_id, services_list in stylist_to_services.items():
-        stylist = Stylist.objects.get(id=stylist_id)
-        matched_ids = {s.salon_service.service_id for s in services_list}
-        if not set(service_ids).issubset(matched_ids):
-            continue
+    if selected_service_ids:
+        filters = {
+            'salon_service__salon': salon,
+            'salon_service__service_id__in': selected_service_ids,
+            'salon_service__is_active': True,
+            'salon_service__service__is_active': True,
+        }
 
-        ss_price = sum(s.price for s in services_list if s.salon_service.service_id in service_ids)
-        ss_duration = sum(
-            (s.salon_service.duration for s in services_list if s.salon_service.service_id in service_ids), timedelta())
+        if selected_stylist:
+            filters['stylist'] = selected_stylist
 
-        slots = []
-        for wh in stylist.working_hours.filter(weekday=weekday):
-            start = make_aware(datetime.combine(date, wh.start_time))
-            end = make_aware(datetime.combine(date, wh.end_time))
-            current = start
+        all_stylist_services = (
+            StylistService.objects.filter(**filters)
+            .select_related('stylist', 'salon_service', 'salon_service__service')
+        )
 
-            while current + ss_duration <= end:
-                # Проверка на пересечение с Appointment
-                overlap = Appointment.objects.filter(
-                    stylist=stylist,
-                    start_time__lt=current + ss_duration,
-                    end_time__gt=current
-                ).exists()
+        stylist_to_services = defaultdict(list)
+        for ss in all_stylist_services:
+            stylist_to_services[ss.stylist_id].append(ss)
 
-                # Проверка на перерыв
-                in_break = BreakPeriod.objects.filter(
-                    working_hour=wh,
-                    start_time__lt=(current + ss_duration).time(),
-                    end_time__gt=current.time()
-                ).exists()
+        for services_list in stylist_to_services.values():
+            stylist = services_list[0].stylist
+            matched_ids = {s.salon_service.service_id for s in services_list}
+            if not set(selected_service_ids).issubset(matched_ids):
+                continue
 
-                # 🔴 Проверка на блокировку (частичную или полную)
-                in_dayoff = StylistDayOff.objects.filter(
-                    stylist=stylist,
-                    date=date
-                ).filter(
-                    Q(from_time__isnull=True, to_time__isnull=True) |  # Весь день
-                    Q(from_time__lt=(current + ss_duration).time(), to_time__gt=current.time())  # Частично
-                ).exists()
+            relevant_services = [
+                s for s in services_list if s.salon_service.service_id in selected_service_ids
+            ]
 
-                if not overlap and not in_break and not in_dayoff and current >= now():
-                    slots.append(current)
+            ss_price = sum((s.price for s in relevant_services), Decimal('0'))
+            ss_duration = sum(
+                (s.salon_service.duration for s in relevant_services), timedelta()
+            )
 
-                current += timedelta(minutes=15)
+            if ss_duration.total_seconds() <= 0:
+                continue
 
-        if slots:
-            stylist_slots.append({
-                'stylist': stylist,
-                'services': [s for s in services_list if s.salon_service.service_id in service_ids],
-                'price': ss_price,
-                'duration': ss_duration,
-                'slots': slots
-            })
-    services_ids = request.GET.getlist("services")
-    return render(request, 'service_booking.html', {
-        'services': services,
+            slots = []
+            for wh in stylist.working_hours.filter(weekday=weekday):
+                start = make_aware(datetime.combine(selected_date, wh.start_time))
+                end = make_aware(datetime.combine(selected_date, wh.end_time))
+                current = start
+
+                while current + ss_duration <= end:
+                    overlap = Appointment.objects.filter(
+                        stylist=stylist,
+                        start_time__lt=current + ss_duration,
+                        end_time__gt=current
+                    ).exists()
+
+                    in_break = BreakPeriod.objects.filter(
+                        working_hour=wh,
+                        start_time__lt=(current + ss_duration).time(),
+                        end_time__gt=current.time()
+                    ).exists()
+
+                    in_dayoff = StylistDayOff.objects.filter(
+                        stylist=stylist,
+                        date=selected_date
+                    ).filter(
+                        Q(from_time__isnull=True, to_time__isnull=True)
+                        | Q(from_time__lt=(current + ss_duration).time(), to_time__gt=current.time())
+                    ).exists()
+
+                    if not overlap and not in_break and not in_dayoff and current >= now():
+                        slots.append(current)
+
+                    current += timedelta(minutes=15)
+
+            if slots:
+                stylist_slots.append({
+                    'stylist': stylist,
+                    'services': relevant_services,
+                    'price': ss_price,
+                    'duration': ss_duration,
+                    'slots': slots
+                })
+
+                if (selected_stylist and stylist.id == selected_stylist.id) or not selected_stylist:
+                    total_price = ss_price
+                    total_duration = ss_duration
+
+    context = {
+        'services': ordered_services,
         'salon': salon,
-        'selected_date': date,
+        'selected_date': selected_date,
         'stylist_slots': stylist_slots,
         'today': today,
         'max_date': max_date,
-        'service_ids': service_ids,
-        'selected_service_ids': service_ids,
+        'service_ids': selected_service_ids,
+        'selected_service_ids': selected_service_ids,
         'total_price': total_price,
         'total_duration': total_duration,
-        "services_list": services_ids,
-    })
+        'selected_stylist': selected_stylist,
+        'stylist_available_services': stylist_available_services,
+        'removed_services': removed_services,
+    }
+
+    return render(request, 'service_booking.html', context)
 
 def group_appointments_by_date(appointments):
     grouped = defaultdict(list)
