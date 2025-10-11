@@ -3,6 +3,122 @@
 {% load form_tags %}
 
 {% block content %}
+<style>
+  :root {
+    --salon-card-radius: 1.25rem;
+    --salon-card-shadow: 0 18px 40px rgba(72, 107, 113, 0.18);
+    --salon-card-shadow-hover: 0 24px 55px rgba(72, 107, 113, 0.26);
+    --salon-accent: #486b71;
+    --salon-accent-soft: rgba(72, 107, 113, 0.08);
+  }
+
+  .salon-grid {
+    --bs-gutter-y: 2.5rem;
+  }
+
+  .salon-card {
+    border-radius: var(--salon-card-radius);
+    overflow: hidden;
+    border: none;
+    box-shadow: var(--salon-card-shadow);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    background: linear-gradient(180deg, #ffffff 0%, #f6fbfc 100%);
+  }
+
+  .salon-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--salon-card-shadow-hover);
+  }
+
+  .salon-card__image-wrapper {
+    position: relative;
+    aspect-ratio: 16 / 11;
+    background: linear-gradient(135deg, rgba(72, 107, 113, 0.08) 0%, rgba(72, 107, 113, 0.35) 100%);
+  }
+
+  .salon-card__image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .salon-card__badge {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--salon-accent);
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(72, 107, 113, 0.18);
+  }
+
+  .salon-card__body {
+    padding: 1.75rem 1.75rem 1.9rem;
+  }
+
+  .salon-card__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #233133;
+    margin-bottom: 0.6rem;
+  }
+
+  .salon-card__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(72, 107, 113, 0.08);
+    color: #1c2a2c;
+    font-weight: 600;
+    margin-bottom: 1.1rem;
+  }
+
+  .salon-card__rating .bi {
+    font-size: 1rem;
+  }
+
+  .salon-card__location {
+    color: #5d6d70;
+    font-size: 0.95rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .salon-card__button {
+    background: var(--salon-accent);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.9rem;
+    padding: 0.65rem 1.3rem;
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .salon-card__button:hover,
+  .salon-card__button:focus {
+    background: #3b585d;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(72, 107, 113, 0.25);
+  }
+
+  @media (max-width: 575.98px) {
+    .salon-card__body {
+      padding: 1.5rem 1.4rem 1.75rem;
+    }
+
+    .salon-card__title {
+      font-size: 1.05rem;
+    }
+  }
+</style>
 <!--<form method="get" class="row gy-2 gx-3 align-items-center mb-4">-->
 <!--  &lt;!&ndash; Тип салона &ndash;&gt;-->
 <!--<div class="col-sm-4 col-md-3">-->
@@ -90,20 +206,25 @@
   </div>
 </form>
 <h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
-<div class="row">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 salon-grid">
     {% for salon in salons %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm border-0">
-                {% if salon.photo %}
-                    <img src="{{ salon.photo.url }}" class="card-img-top rounded-top" alt="{{ salon.name }}">
-                {% else %}
-                    <img src="{% static 'img/default_salon.jpg' %}" class="card-img-top rounded-top" alt="No photo">
-                {% endif %}
-                <div class="card-body d-flex flex-column text-center">
-                    <h5 class="card-title fw-semibold">{{ salon.name }}</h5>
-
-                    <!-- Рейтинг -->
-                    <div class="mb-2">
+        <div class="col">
+            <div class="salon-card h-100">
+                <div class="salon-card__image-wrapper">
+                    {% if salon.photo %}
+                        <img src="{{ salon.photo.url }}" alt="{{ salon.name }}">
+                    {% else %}
+                        <img src="{% static 'img/default_salon.jpg' %}" alt="{{ salon.name }}">
+                    {% endif %}
+                    {% with salon.get_type_display as type_display %}
+                      {% if type_display and type_display != 'Не указано' %}
+                        <span class="salon-card__badge">{{ type_display }}</span>
+                      {% endif %}
+                    {% endwith %}
+                </div>
+                <div class="salon-card__body text-center d-flex flex-column align-items-center">
+                    <h5 class="salon-card__title">{{ salon.name }}</h5>
+                    <div class="salon-card__rating">
                         {% for _ in salon.stars.full %}
                             <i class="text-warning bi bi-star-fill"></i>
                         {% endfor %}
@@ -111,14 +232,14 @@
                             <i class="text-warning bi bi-star-half"></i>
                         {% endif %}
                         {% for _ in salon.stars.empty %}
-                            <i class="text-muted bi bi-star"></i>
+                            <i class="text-warning opacity-25 bi bi-star"></i>
                         {% endfor %}
-                        <span class="text-muted">({{ salon.rating_value }}/5)</span>
+                        <span>{{ salon.rating_value }}/5</span>
                     </div>
-
-                    <p class="card-text text-muted">{{ salon.city.name }}</p>
-                    <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn mt-auto rounded-3"
-                       style="background-color: #486b71; color: #fff;">Посмотреть</a>
+                    <p class="salon-card__location">
+                        <i class="bi bi-geo-alt-fill me-1 text-warning"></i>{{ salon.city.name }}
+                    </p>
+                    <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn salon-card__button mt-auto">Посмотреть</a>
                 </div>
             </div>
         </div>
