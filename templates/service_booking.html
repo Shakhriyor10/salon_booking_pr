@@ -150,10 +150,6 @@
                         {% if selected_stylist %}
                             <input type="hidden" name="stylist" value="{{ selected_stylist.id }}">
                         {% endif %}
-                        {% for sid in selected_service_ids %}
-                            <input type="hidden" name="services" value="{{ sid }}">
-                        {% endfor %}
-
                         <div class="row g-4 align-items-end">
                             <div class="col-md-5">
                                 <label for="date" class="form-label fw-semibold">📅 Дата визита</label>
