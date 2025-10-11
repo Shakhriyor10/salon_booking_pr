@@ -227,6 +227,18 @@ class SalonDetailView(DetailView):
         context['uncategorized_services'] = uncategorized_services
         stylists = (
             salon.stylists.select_related('user', 'level')
+            .annotate(
+                active_service_count=Count(
+                    'stylist_services',
+                    filter=Q(
+                        stylist_services__salon_service__salon=salon,
+                        stylist_services__salon_service__is_active=True,
+                        stylist_services__salon_service__service__is_active=True,
+                    ),
+                    distinct=True,
+                )
+            )
+            .filter(active_service_count__gt=0)
             .prefetch_related(
                 Prefetch(
                     'stylist_services',
