@@ -38,16 +38,19 @@
 	  font-weight: normal;
 	  font-style: normal;
 	}
-	body {
-		background: #f7f8fa;
-		color: #777777;
-		font-size: 14px;
-		line-height: 28px;
-		letter-spacing: 0;
-		font-weight: 300;
-		padding:0;
-		font-family: "Droid Serif", "Helvetica Neue", Helvetica, Arial, sans-serif;
-	}
+        body {
+                background: linear-gradient(135deg, #f2f4f7 0%, #ffffff 45%, #f8f1ff 100%);
+                color: #4a4a4a;
+                font-size: 14px;
+                line-height: 28px;
+                letter-spacing: 0;
+                font-weight: 300;
+                padding:0;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                font-family: "Droid Serif", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
 	h1,h2,h3,h4,h5,h6{ 
 		font-family: "Oswald", "Helvetica Neue", Helvetica, Arial, sans-serif;
 		font-weight:normal;
@@ -2311,15 +2314,149 @@
 		position: fixed;
 		z-index: 9998;
 	}
-	.header-section {
-			-webkit-transition: all .7s ease-in-out;
-		-moz-transition: all .7s ease-in-out;
-		    -o-transition: all .7s ease-in-out;
-		    -ms-transition: all .7s ease-in-out;
-		    transition: all .7s ease-in-out;
-	}
-	@media (max-width: 768px) {
-		.header-section.affix {
-			position:relative !important;
-		}
-	}
+        .header-section { 
+                        -webkit-transition: all .7s ease-in-out;
+                -moz-transition: all .7s ease-in-out;
+                    -o-transition: all .7s ease-in-out;
+                    -ms-transition: all .7s ease-in-out;
+                    transition: all .7s ease-in-out;
+        }
+        @media (max-width: 768px) {
+                .header-section.affix {
+                        position:relative !important;
+                }
+        }
+
+/* ----------------------------------------------------
+        CUSTOM LANDING STYLES
+------------------------------------------------------- */
+
+.top-nav {
+        background: linear-gradient(120deg, #6a4df4 0%, #a96dff 50%, #ef70a8 100%);
+        backdrop-filter: blur(6px);
+}
+
+.top-nav .navbar-brand {
+        font-family: "Oswald", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 1.25rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+}
+
+.top-nav .nav-link {
+        color: rgba(255,255,255,0.85) !important;
+}
+
+.top-nav .nav-link:hover,
+.top-nav .btn-outline-light:hover {
+        color: #fff !important;
+        opacity: 0.9;
+}
+
+.nav-logo {
+        width: 56px;
+        height: 56px;
+        object-fit: contain;
+}
+
+.hero-section {
+        background: radial-gradient(circle at top left, rgba(255,255,255,0.9), rgba(255,255,255,0.05)),
+                    url('../img/hero-texture.svg');
+        background-size: cover;
+        position: relative;
+        overflow: hidden;
+}
+
+.hero-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(106,77,244,0.9), rgba(239,112,168,0.75));
+        z-index: 0;
+}
+
+.hero-section > .container {
+        position: relative;
+        z-index: 1;
+}
+
+.hero-card {
+        background: rgba(255,255,255,0.95);
+}
+
+.hero-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, rgba(106,77,244,0.12), rgba(239,112,168,0.12));
+        color: #6a4df4;
+}
+
+.highlight-card {
+        background: #ffffff;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(80,72,229,0.08);
+        transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.highlight-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 45px rgba(80,72,229,0.12);
+}
+
+.highlight-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        background: linear-gradient(135deg, rgba(106,77,244,0.15), rgba(239,112,168,0.15));
+        color: #6a4df4;
+}
+
+.tracking-wide {
+        letter-spacing: 0.18em;
+}
+
+.service-card {
+        border-radius: 24px;
+        transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.service-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 25px 45px rgba(59,44,153,0.12);
+}
+
+.app-footer {
+        background: rgba(255,255,255,0.85);
+        border-top: 1px solid rgba(106,77,244,0.12);
+}
+
+main {
+        flex: 1 0 auto;
+}
+
+footer {
+        flex-shrink: 0;
+}
+
+@media (max-width: 767.98px) {
+        .hero-section {
+                text-align: center;
+        }
+
+        .hero-card {
+                margin-top: 1.5rem;
+        }
+
+        .top-nav .navbar-brand span {
+                display: none;
+        }
+}
