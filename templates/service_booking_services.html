@@ -106,6 +106,9 @@
     }
 
     .service-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
         background: rgba(255, 255, 255, 0.15);
         border: 1px solid rgba(255, 255, 255, 0.28);
         color: #fff;
@@ -113,6 +116,62 @@
         border-radius: 999px;
         font-weight: 500;
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+    }
+
+    .service-chip:hover,
+    .service-chip:focus-visible {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 6px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    .service-chip-removable {
+        position: relative;
+        padding-right: 0.9rem;
+    }
+
+    .service-chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.28);
+        font-size: 0.8rem;
+        line-height: 1;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .add-service-form {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 0.85rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .add-service-form .form-label {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .add-service-form .form-select {
+        border-radius: 12px;
+        border-color: rgba(255, 255, 255, 0.25);
+        background-color: rgba(18, 27, 43, 0.35);
+        color: #fff;
+    }
+
+    .add-service-form .form-select option {
+        color: #1f2a33;
+    }
+
+    .add-service-form .btn {
+        border-radius: 12px;
     }
 
     .selected-services {
@@ -459,27 +518,67 @@
                         <h1 class="display-6 mb-3">Подберите мастера под ваши услуги</h1>
                         <p class="mb-4 opacity-75">Мы собрали стилистов, свободных на выбранные даты, — изучите портфолио, сравните стоимость и выберите идеальное время для визита.</p>
 
-                        {% if services %}
-                            <div class="selected-services mb-4">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                                    <span class="hero-pill">
-                                        <span class="text-white">Вы выбрали</span>
-                                        <strong>{{ services|length }}</strong>
-                                        <span class="text-white-50">услуг{{ services|length|pluralize:'у,и' }}</span>
-                                    </span>
-                                    <small class="text-white-50">Нужно изменить выбор? Вернитесь на предыдущий шаг — данные сохранены.</small>
-                                </div>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% for service in services %}
-                                        <span class="service-chip">{{ service.name }}</span>
+                        <div class="selected-services mb-4">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <span class="hero-pill">
+                                    <span class="text-white">Вы выбрали</span>
+                                    <strong>{{ services|length }}</strong>
+                                    <span class="text-white-50">услуг{{ services|length|pluralize:'у,и' }}</span>
+                                </span>
+                                {% if services %}
+                                    <small class="text-white-50">Нужно изменить выбор? Удалите или добавьте услуги прямо здесь — мы обновим мастеров автоматически.</small>
+                                {% else %}
+                                    <small class="text-white-50">Добавьте одну или несколько услуг из списка ниже, чтобы увидеть свободных мастеров и слоты.</small>
+                                {% endif %}
+                            </div>
+                            {% if services %}
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    {% for item in services_with_actions %}
+                                        <a href="?{{ item.remove_query }}"
+                                           class="service-chip service-chip-removable"
+                                           title="Убрать услугу {{ item.service.name }}">
+                                            <span class="service-chip-label">{{ item.service.name }}</span>
+                                            <span class="service-chip-remove" aria-hidden="true">&times;</span>
+                                            <span class="visually-hidden">Удалить услугу {{ item.service.name }}</span>
+                                        </a>
                                     {% endfor %}
                                 </div>
-                            </div>
-                        {% else %}
-                            <div class="bg-white bg-opacity-20 border border-light border-opacity-25 rounded-4 p-3 text-white mb-4">
-                                <strong>Услуги не выбраны.</strong> Вернитесь на предыдущий шаг, чтобы отметить интересующие процедуры.
-                            </div>
-                        {% endif %}
+                            {% else %}
+                                <div class=" bg-opacity-20 rounded-4 p-3 text-white">
+                                    <strong>Услуги пока не выбраны.</strong> Выберите нужную процедуру — мы сразу обновим доступных мастеров.
+                                </div>
+                            {% endif %}
+                            {% if salon_service_options %}
+                                <form method="get" class="add-service-form {% if services %}mt-3{% else %}mt-4{% endif %} d-flex flex-wrap align-items-end gap-3">
+                                    {% for key, value in request.GET.items %}
+                                        {% if key != 'services' %}
+                                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for sid in selected_service_ids %}
+                                        <input type="hidden" name="services" value="{{ sid }}">
+                                    {% endfor %}
+                                    <div class="flex-grow-1">
+                                        <label for="add-service-select" class="form-label mb-2">Добавить услугу салона</label>
+                                        <select id="add-service-select"
+                                                name="services"
+                                                class="form-select"
+                                                required>
+                                            <option value="" selected disabled>Выберите услугу</option>
+                                            {% for option in salon_service_options %}
+                                                <option value="{{ option.id }}"
+                                                        {% if option.id in selected_service_ids %}disabled{% endif %}>
+                                                    {{ option.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-outline-light">Добавить услугу</button>
+                                </form>
+                            {% else %}
+                                <div class="text-white-50 small mt-3">Для этого салона пока нет активных услуг, доступных для записи.</div>
+                            {% endif %}
+                        </div>
 
 
                     </div>
