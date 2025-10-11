@@ -783,7 +783,7 @@ def service_booking(request):
     }
 
     template_name = 'service_booking.html'
-    if selected_service_ids and not selected_stylist:
+    if not selected_stylist:
         template_name = 'service_booking_services.html'
 
     return render(request, template_name, context)

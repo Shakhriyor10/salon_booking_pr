@@ -518,16 +518,20 @@
                         <h1 class="display-6 mb-3">Подберите мастера под ваши услуги</h1>
                         <p class="mb-4 opacity-75">Мы собрали стилистов, свободных на выбранные даты, — изучите портфолио, сравните стоимость и выберите идеальное время для визита.</p>
 
-                        {% if services %}
-                            <div class="selected-services mb-4">
-                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                                    <span class="hero-pill">
-                                        <span class="text-white">Вы выбрали</span>
-                                        <strong>{{ services|length }}</strong>
-                                        <span class="text-white-50">услуг{{ services|length|pluralize:'у,и' }}</span>
-                                    </span>
+                        <div class="selected-services mb-4">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <span class="hero-pill">
+                                    <span class="text-white">Вы выбрали</span>
+                                    <strong>{{ services|length }}</strong>
+                                    <span class="text-white-50">услуг{{ services|length|pluralize:'у,и' }}</span>
+                                </span>
+                                {% if services %}
                                     <small class="text-white-50">Нужно изменить выбор? Удалите или добавьте услуги прямо здесь — мы обновим мастеров автоматически.</small>
-                                </div>
+                                {% else %}
+                                    <small class="text-white-50">Добавьте одну или несколько услуг из списка ниже, чтобы увидеть свободных мастеров и слоты.</small>
+                                {% endif %}
+                            </div>
+                            {% if services %}
                                 <div class="d-flex flex-wrap gap-2 align-items-center">
                                     {% for item in services_with_actions %}
                                         <a href="?{{ item.remove_query }}"
@@ -539,40 +543,42 @@
                                         </a>
                                     {% endfor %}
                                 </div>
-                                {% if salon_service_options %}
-                                    <form method="get" class="add-service-form mt-3 d-flex flex-wrap align-items-end gap-3">
-                                        {% for key, value in request.GET.items %}
-                                            {% if key != 'services' %}
-                                                <input type="hidden" name="{{ key }}" value="{{ value }}">
-                                            {% endif %}
-                                        {% endfor %}
-                                        {% for sid in selected_service_ids %}
-                                            <input type="hidden" name="services" value="{{ sid }}">
-                                        {% endfor %}
-                                        <div class="flex-grow-1">
-                                            <label for="add-service-select" class="form-label mb-2">Добавить услугу салона</label>
-                                            <select id="add-service-select"
-                                                    name="services"
-                                                    class="form-select"
-                                                    required>
-                                                <option value="" selected disabled>Выберите услугу</option>
-                                                {% for option in salon_service_options %}
-                                                    <option value="{{ option.id }}"
-                                                            {% if option.id in selected_service_ids %}disabled{% endif %}>
-                                                        {{ option.name }}
-                                                    </option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <button type="submit" class="btn btn-outline-light">Добавить услугу</button>
-                                    </form>
-                                {% endif %}
-                            </div>
-                        {% else %}
-                            <div class="bg-white bg-opacity-20 border border-light border-opacity-25 rounded-4 p-3 text-white mb-4">
-                                <strong>Услуги не выбраны.</strong> Вернитесь на предыдущий шаг, чтобы отметить интересующие процедуры.
-                            </div>
-                        {% endif %}
+                            {% else %}
+                                <div class="bg-white bg-opacity-20 border border-light border-opacity-25 rounded-4 p-3 text-white">
+                                    <strong>Услуги пока не выбраны.</strong> Выберите нужную процедуру — мы сразу обновим доступных мастеров.
+                                </div>
+                            {% endif %}
+                            {% if salon_service_options %}
+                                <form method="get" class="add-service-form {% if services %}mt-3{% else %}mt-4{% endif %} d-flex flex-wrap align-items-end gap-3">
+                                    {% for key, value in request.GET.items %}
+                                        {% if key != 'services' %}
+                                            <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for sid in selected_service_ids %}
+                                        <input type="hidden" name="services" value="{{ sid }}">
+                                    {% endfor %}
+                                    <div class="flex-grow-1">
+                                        <label for="add-service-select" class="form-label mb-2">Добавить услугу салона</label>
+                                        <select id="add-service-select"
+                                                name="services"
+                                                class="form-select"
+                                                required>
+                                            <option value="" selected disabled>Выберите услугу</option>
+                                            {% for option in salon_service_options %}
+                                                <option value="{{ option.id }}"
+                                                        {% if option.id in selected_service_ids %}disabled{% endif %}>
+                                                    {{ option.name }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-outline-light">Добавить услугу</button>
+                                </form>
+                            {% else %}
+                                <div class="text-white-50 small mt-3">Для этого салона пока нет активных услуг, доступных для записи.</div>
+                            {% endif %}
+                        </div>
 
 
                     </div>
