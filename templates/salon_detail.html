@@ -108,6 +108,77 @@
   </div>
 {% endif %}
 
+{% if stylists %}
+  <h3 class="text-center fw-semibold mt-4 mb-3">Наши мастера</h3>
+  <div class="row">
+    {% for stylist in stylists %}
+      <div class="col-md-4 col-sm-6 mb-4">
+        <div class="card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            {% with name=stylist.user.get_full_name|default:stylist.user.username %}
+            <div class="d-flex justify-content-center mb-3">
+              {% if stylist.avatar %}
+                <img src="{{ stylist.avatar.url }}" alt="{{ name }}"
+                     class="rounded-circle"
+                     style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6;">
+              {% else %}
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="width: 120px; height: 120px; background-color: #f1f3f5; border: 3px solid #dee2e6;">
+                  <span class="fw-semibold" style="font-size: 42px; color: #486b71;">
+                    {{ name|slice:":1"|upper }}
+                  </span>
+                </div>
+              {% endif %}
+            </div>
+
+            <h5 class="card-title text-center">{{ name }}</h5>
+
+            <div class="text-center mb-3">
+              {% if stylist.level %}
+                {% if stylist.level.name == "Топ Барбер" %}
+                  <span class="badge bg-warning text-dark">★ {{ stylist.level.name }}</span>
+                {% elif stylist.level.name == "Старший Барбер" %}
+                  <span class="badge bg-success">💈 {{ stylist.level.name }}</span>
+                {% elif stylist.level.name == "Барбер" %}
+                  <span class="badge bg-secondary">✂️ {{ stylist.level.name }}</span>
+                {% else %}
+                  <span class="badge bg-light text-dark">{{ stylist.level.name }}</span>
+                {% endif %}
+              {% else %}
+                <span class="badge bg-light text-dark">Барбер</span>
+              {% endif %}
+            </div>
+
+            {% with services_list=stylist.salon_services_for_display %}
+              {% if services_list %}
+                <ul class="list-unstyled small text-muted flex-grow-1">
+                  {% for ss in services_list|slice:":3" %}
+                    <li>• {{ ss.salon_service.service.name }}</li>
+                  {% endfor %}
+                  {% with total=services_list|length %}
+                    {% if total > 3 %}
+                      <li class="text-muted">и ещё {{ total|add:"-3" }} услуг</li>
+                    {% endif %}
+                  {% endwith %}
+                </ul>
+              {% else %}
+                <p class="text-muted small text-center flex-grow-1">Услуги мастера пока не добавлены.</p>
+              {% endif %}
+            {% endwith %}
+
+            <a href="{% url 'service_booking' %}?salon={{ salon.id }}&stylist={{ stylist.id }}"
+               class="btn mt-auto"
+               style="background-color: #486b71; color: #fff;">
+              Выбрать мастера
+            </a>
+            {% endwith %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
 <h3 class="text-center fw-semibold mt-4 mb-3">Контакты</h3>
 
   <div class="row">
