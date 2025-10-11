@@ -236,9 +236,13 @@ class SalonDetailView(DetailView):
                         stylist_services__salon_service__service__is_active=True,
                     ),
                     distinct=True,
-                )
+                ),
+                working_interval_count=Count('working_hours', distinct=True),
             )
-            .filter(active_service_count__gt=0)
+            .filter(
+                active_service_count__gt=0,
+                working_interval_count__gt=0,
+            )
             .prefetch_related(
                 Prefetch(
                     'stylist_services',
