@@ -1,20 +1,112 @@
 {% extends 'base.html' %}
 {% block title %}Услуги{% endblock %}
 
-{% block content %}
-<h1>Наши услуги</h1>
-<div class="row row-cols-1 row-cols-md-2 g-3">
-  {% for service in services %}
-    <div class="col">
-      <div class="card h-100">
-        <div class="card-body">
-          <h5 class="card-title">{{ service.name }}</h5>
-          <p class="card-text">{{ service.description|default:"Без описания" }}</p>
-          <p><strong>{{ service.price }} сум</strong></p>
-          <a href="{% url 'service_booking' service.id %}" class="btn btn-primary">Записаться</a>
+{% block before_container %}
+<section class="hero-section text-white py-5">
+    <div class="container">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-7">
+                <span class="badge rounded-pill text-bg-light text-primary px-3 py-2 mb-3">Салон красоты премиум-класса</span>
+                <h1 class="display-5 fw-semibold mb-3">Откройте новые грани своего стиля вместе с Beauty Time</h1>
+                <p class="lead mb-4">Выберите любимые процедуры, доверьтесь профессионалам и наслаждайтесь результатом. Онлайн-запись займет всего пару минут.</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'services' %}" class="btn btn-light btn-lg text-primary fw-semibold px-4">Каталог услуг</a>
+                    <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg px-4">Стать клиентом</a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="hero-card shadow-lg rounded-4 p-4 text-start">
+                    <h2 class="h4 text-dark mb-3">Сегодня в салоне:</h2>
+                    <ul class="list-unstyled d-grid gap-3 mb-0">
+                        <li class="d-flex align-items-start gap-3">
+                            <span class="hero-icon"><i class="bi bi-magic"></i></span>
+                            <div>
+                                <p class="mb-1 fw-semibold text-dark">Авторские техники окрашивания</p>
+                                <span class="text-muted small">Премиальные материалы и индивидуальный подбор оттенков.</span>
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-start gap-3">
+                            <span class="hero-icon"><i class="bi bi-heart-pulse"></i></span>
+                            <div>
+                                <p class="mb-1 fw-semibold text-dark">Уходовые SPA-программы</p>
+                                <span class="text-muted small">Расслабляющие ритуалы для волос, лица и тела.</span>
+                            </div>
+                        </li>
+                        <li class="d-flex align-items-start gap-3">
+                            <span class="hero-icon"><i class="bi bi-brilliance"></i></span>
+                            <div>
+                                <p class="mb-1 fw-semibold text-dark">Ногтевой сервис</p>
+                                <span class="text-muted small">Дизайны сезона и стойкие покрытия.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
         </div>
-      </div>
     </div>
-  {% endfor %}
-</div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="py-4">
+    <div class="text-center mb-5">
+        <span class="text-uppercase text-secondary fw-semibold tracking-wide small">Почему выбирают нас</span>
+        <h2 class="fw-semibold mt-2">Экспертный уход и атмосфера расслабления</h2>
+    </div>
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="highlight-card h-100 p-4">
+                <div class="highlight-icon mb-3"><i class="bi bi-people"></i></div>
+                <h3 class="h5">Опытные мастера</h3>
+                <p class="text-muted mb-0">Команда стилистов с международной практикой и персональным подходом к каждому гостю.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="highlight-card h-100 p-4">
+                <div class="highlight-icon mb-3"><i class="bi bi-stars"></i></div>
+                <h3 class="h5">Премиальные продукты</h3>
+                <p class="text-muted mb-0">Мы используем сертифицированную косметику ведущих брендов, чтобы результат радовал долго.</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="highlight-card h-100 p-4">
+                <div class="highlight-icon mb-3"><i class="bi bi-calendar-heart"></i></div>
+                <h3 class="h5">Удобная запись</h3>
+                <p class="text-muted mb-0">Онлайн-планирование, напоминания и гибкий выбор времени прямо из вашего смартфона.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-semibold mb-1">Популярные услуги</h2>
+            <p class="text-muted mb-0">Найдите подходящую процедуру и забронируйте удобное время.</p>
+        </div>
+        <a href="{% url 'services' %}" class="btn btn-outline-primary px-4">Все категории</a>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+      {% for service in services %}
+        <div class="col">
+          <div class="card service-card h-100 border-0 shadow-sm">
+            <div class="card-body p-4">
+              <span class="badge rounded-pill bg-primary-subtle text-primary mb-3">{{ service.category.name }}</span>
+              <h3 class="card-title h5">{{ service.name }}</h3>
+              <p class="card-text text-muted">{{ service.description|default:"Без описания" }}</p>
+            </div>
+            <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center px-4 pb-4">
+              <span class="fw-semibold text-primary">{{ service.price }} сум</span>
+              <a href="{% url 'service_booking' service.id %}" class="btn btn-primary">Записаться</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col">
+            <div class="alert alert-light border shadow-sm" role="alert">
+                Услуги пока не добавлены. Возвращайтесь позже!
+            </div>
+        </div>
+      {% endfor %}
+    </div>
+</section>
 {% endblock %}
