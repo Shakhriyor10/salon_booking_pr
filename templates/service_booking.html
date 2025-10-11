@@ -97,7 +97,7 @@
                     </div>
                     {% endwith %}
 
-                    <form method="get" class="mt-4">
+                    <form method="get" class="mt-4" id="service-selection-form">
                         <input type="hidden" name="salon" value="{{ salon.id }}">
                         <input type="hidden" name="stylist" value="{{ selected_stylist.id }}">
                         <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
@@ -322,4 +322,38 @@
         {% endif %}
             </div>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('service-selection-form');
+            if (!form) {
+                return;
+            }
+
+            const checkboxes = form.querySelectorAll('input[type="checkbox"][name="services"]');
+            let submitTimeoutId = null;
+
+            const submitForm = () => {
+                if (form.dataset.submitting === 'true') {
+                    return;
+                }
+
+                form.dataset.submitting = 'true';
+                form.submit();
+            };
+
+            form.addEventListener('submit', () => {
+                form.dataset.submitting = 'true';
+            }, { once: false });
+
+            checkboxes.forEach((checkbox) => {
+                checkbox.addEventListener('change', () => {
+                    if (submitTimeoutId) {
+                        clearTimeout(submitTimeoutId);
+                    }
+
+                    submitTimeoutId = setTimeout(submitForm, 250);
+                });
+            });
+        });
+    </script>
 {% endblock %}
