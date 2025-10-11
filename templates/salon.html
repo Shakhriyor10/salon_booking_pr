@@ -2,207 +2,247 @@
 {% load static %}
 {% load form_tags %}
 
+{% block hero %}
+<section class="hero hero--salons py-5">
+  <div class="container py-4 py-lg-5">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-7">
+        <span class="hero-badge"><i class="bi bi-magic"></i> Beauty &amp; Wellness</span>
+        <h1 class="hero-title mt-3">Найдите салон, который подчеркнёт ваш стиль</h1>
+        <p class="hero-subtitle mb-4">Выбирайте лучших мастеров города, сравнивайте рейтинги и бронируйте свободные окна в пару кликов. Мы собрали всё, что нужно для идеальной записи.</p>
+        <div class="d-flex flex-wrap gap-3">
+          <a class="btn btn-primary btn-lg" href="#filter"><i class="bi bi-calendar-plus me-2"></i>Записаться онлайн</a>
+          <a class="btn btn-outline-light btn-lg" href="{% url 'service_booking' %}"><i class="bi bi-list-stars me-2"></i>Подобрать услуги</a>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <div class="hero-card p-4 p-lg-5">
+          <p class="mb-4 text-white-50">GoBeauty помогает клиентам и салонам встречаться в нужный момент: свежие окна, подтверждения по SMS и персональные рекомендации.</p>
+          <div class="hero-stats">
+            <div class="hero-stats__item">
+              <div class="hero-stats__value">{{ salons|length }}</div>
+              <div class="hero-stats__label">Салонов рядом с вами</div>
+            </div>
+            <div class="hero-stats__item">
+              <div class="hero-stats__value"><i class="bi bi-star-fill me-1"></i>4.8</div>
+              <div class="hero-stats__label">Средний рейтинг салонов</div>
+            </div>
+            <div class="hero-stats__item">
+              <div class="hero-stats__value">24/7</div>
+              <div class="hero-stats__label">Онлайн-подтверждение</div>
+            </div>
+            <div class="hero-stats__item">
+              <div class="hero-stats__value">3 шага</div>
+              <div class="hero-stats__label">До записи мечты</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
 {% block content %}
-<!--<form method="get" class="row gy-2 gx-3 align-items-center mb-4">-->
-<!--  &lt;!&ndash; Тип салона &ndash;&gt;-->
-<!--<div class="col-sm-4 col-md-3">-->
-<!--  <select name="type" class="form-select">-->
-<!--    <option value="">Тип салона</option>-->
-<!--    <option value="male" {% if selected_type == 'male' %}selected{% endif %}>Мужской</option>-->
-<!--    <option value="female" {% if selected_type == 'female' %}selected{% endif %}>Женский</option>-->
-<!--    <option value="both" {% if selected_type == 'both' %}selected{% endif %}>Обе</option>-->
-<!--  </select>-->
-<!--</div>-->
+<div class="glass-card filter-card mb-5" id="filter">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h2 class="h4 mb-2">Выберите салон под настроение</h2>
+      <p class="text-muted mb-0">Отфильтруйте по типу, рейтингу или найдите нужную услугу — система предложит лучшие варианты поблизости.</p>
+    </div>
+    <div class="filter-tags">
+      <span class="filter-tag"><i class="bi bi-stars"></i> Проверенные мастера</span>
+      <span class="filter-tag"><i class="bi bi-clock-history"></i> Свободные окна</span>
+      <span class="filter-tag"><i class="bi bi-heart"></i> Индивидуальный подход</span>
+    </div>
+  </div>
 
-<!--  &lt;!&ndash; Рейтинг &ndash;&gt;-->
-<!--  <div class="col-sm-4 col-md-3">-->
-<!--    <select name="rating" class="form-select">-->
-<!--      <option value="">Рейтинг</option>-->
-<!--      <option value="4" {% if selected_rating == '4' %}selected{% endif %}>4+</option>-->
-<!--      <option value="3.5" {% if selected_rating == '3.5' %}selected{% endif %}>3.5+</option>-->
-<!--      <option value="3" {% if selected_rating == '3' %}selected{% endif %}>3+</option>-->
-<!--    </select>-->
-<!--  </div>-->
-
-<!--  &lt;!&ndash; Поиск услуги &ndash;&gt;-->
-<!--  <div class="col-sm-8 col-md-4 position-relative">-->
-<!--    <input type="text" id="serviceSearch" name="service" class="form-control" placeholder="Поиск услуги..." autocomplete="off">-->
-<!--    <ul id="suggestions" class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1000;"></ul>-->
-<!--  </div>-->
-
-<!--  &lt;!&ndash; Кнопка поиска &ndash;&gt;-->
-<!--  <div class="col-sm-4 col-md-2">-->
-<!--    <button class="btn btn-primary w-100" type="submit">Поиск</button>-->
-<!--  </div>-->
-<!--</form>-->
-
-<h3 class="text-center fw-semibold mt-4 mb-3">Поиск и фильтр</h3>
-<form id="filterForm" method="get" class="mb-4">
-  <div class="container-fluid">
-    <div class="row gx-3 gy-2 align-items-center">
-
-      <!-- Фильтр: Тип салона -->
-      <div class="col-12 col-md-2">
-          <select name="type" class="form-select">
-  <option value="">Тип</option>
-  <option value="male" {% if selected_type == "male" %}selected{% endif %}>Мужской</option>
-  <option value="female" {% if selected_type == "female" %}selected{% endif %}>Женский</option>
-  <option value="both" {% if selected_type == "both" %}selected{% endif %}>Оба</option>
-</select>
+  <form id="filterForm" method="get">
+    <div class="row g-3 g-lg-4 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label text-muted">Тип салона</label>
+        <select name="type" class="form-select">
+          <option value="">Любой</option>
+          <option value="male" {% if selected_type == "male" %}selected{% endif %}>Мужской</option>
+          <option value="female" {% if selected_type == "female" %}selected{% endif %}>Женский</option>
+          <option value="both" {% if selected_type == "both" %}selected{% endif %}>Универсальный</option>
+        </select>
       </div>
 
-      <!-- Фильтр: Рейтинг -->
-      <div class="col-12 col-md-2">
+      <div class="col-12 col-md-3">
+        <label class="form-label text-muted">Рейтинг салона</label>
         <select name="rating" class="form-select">
-          <option value="">Рейтинг</option>
+          <option value="">Любой</option>
           {% for i in "54321" %}
             <option value="{{ i }}" {% if i == selected_rating %}selected{% endif %}>от {{ i }}★</option>
           {% endfor %}
         </select>
       </div>
 
-      <!-- Поиск -->
-      <div class="col-12 col-md-6 position-relative">
+      <div class="col-12 col-md-4 position-relative">
+        <label class="form-label text-muted">Поиск по названию или услуге</label>
         <input
           type="text"
           id="searchInput"
           name="search_value"
-          placeholder="Поиск по салону или услуге"
+          placeholder="Например, окрашивание или GoBeauty Studio"
           autocomplete="off"
           value="{{ selected_service }}"
           class="form-control"
         >
         <input type="hidden" name="search_type" id="searchTypeInput" value="{{ request.GET.search_type }}">
-
         <ul
           id="suggestions"
-          class="list-group position-absolute w-100"
-          style="top: 100%; left: 0; z-index: 1050; max-height: 200px; overflow-y: auto; display: none;"
+          class="list-group suggestions-list position-absolute w-100"
+          style="top: 100%; left: 0; z-index: 1050; max-height: 240px; overflow-y: auto; display: none;"
         ></ul>
       </div>
 
-      <!-- Кнопка -->
       <div class="col-12 col-md-2 d-grid">
-        <button type="submit" class="btn" style="background-color: #486b71; color: #fff;">Найти</button>
+        <button type="submit" class="btn btn-primary"><i class="bi bi-search me-2"></i>Найти</button>
       </div>
+    </div>
+  </form>
+</div>
 
+<div class="row g-4 stats-row">
+  <div class="col-md-4">
+    <div class="mini-stat h-100">
+      <div class="mini-stat__value"><i class="bi bi-geo-alt me-2"></i>Ближайшие</div>
+      <div class="mini-stat__label">Укажите ваш город — и мы покажем салон в нескольких минутах от вас.</div>
     </div>
   </div>
-</form>
-<h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
-<div class="row">
+  <div class="col-md-4">
+    <div class="mini-stat h-100">
+      <div class="mini-stat__value"><i class="bi bi-gift me-2"></i>Бонусы</div>
+      <div class="mini-stat__label">Кэшбек и персональные предложения от партнёров каждую неделю.</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="mini-stat h-100">
+      <div class="mini-stat__value"><i class="bi bi-chat-dots me-2"></i>Поддержка</div>
+      <div class="mini-stat__label">Наши стилисты готовы проконсультировать и помочь с выбором услуг.</div>
+    </div>
+  </div>
+</div>
+
+<h3 class="fw-semibold mt-5 mb-4 text-center text-md-start">Салоны</h3>
+<div class="row g-4">
     {% for salon in salons %}
-        <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm border-0">
+        <div class="col-md-6 col-xl-4">
+            <div class="card salon-card h-100">
                 {% if salon.photo %}
-                    <img src="{{ salon.photo.url }}" class="card-img-top rounded-top" alt="{{ salon.name }}">
+                    <img src="{{ salon.photo.url }}" class="card-img-top" alt="{{ salon.name }}">
                 {% else %}
-                    <img src="{% static 'img/default_salon.jpg' %}" class="card-img-top rounded-top" alt="No photo">
+                    <img src="{% static 'img/default_salon.jpg' %}" class="card-img-top" alt="{{ salon.name }}">
                 {% endif %}
-                <div class="card-body d-flex flex-column text-center">
-                    <h5 class="card-title fw-semibold">{{ salon.name }}</h5>
-
-                    <!-- Рейтинг -->
-                    <div class="mb-2">
-                        {% for _ in salon.stars.full %}
-                            <i class="text-warning bi bi-star-fill"></i>
-                        {% endfor %}
-                        {% if salon.stars.half %}
-                            <i class="text-warning bi bi-star-half"></i>
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title fw-semibold mb-0">{{ salon.name }}</h5>
+                        {% if salon.get_type_display %}
+                            <span class="badge text-uppercase">{{ salon.get_type_display }}</span>
                         {% endif %}
-                        {% for _ in salon.stars.empty %}
-                            <i class="text-muted bi bi-star"></i>
-                        {% endfor %}
-                        <span class="text-muted">({{ salon.rating_value }}/5)</span>
                     </div>
-
-                    <p class="card-text text-muted">{{ salon.city.name }}</p>
-                    <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn mt-auto rounded-3"
-                       style="background-color: #486b71; color: #fff;">Посмотреть</a>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <div class="rating-stars">
+                            {% for _ in salon.stars.full %}
+                                <i class="text-warning bi bi-star-fill"></i>
+                            {% endfor %}
+                            {% if salon.stars.half %}
+                                <i class="text-warning bi bi-star-half"></i>
+                            {% endif %}
+                            {% for _ in salon.stars.empty %}
+                                <i class="text-muted bi bi-star"></i>
+                            {% endfor %}
+                        </div>
+                        <span class="text-muted small">({{ salon.rating_value }}/5)</span>
+                    </div>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <div class="text-muted small d-flex align-items-center gap-2">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>{{ salon.city.name }}{% if salon.address %}, {{ salon.address }}{% endif %}</span>
+                        </div>
+                        {% if salon.phone %}
+                        <div class="text-muted small d-flex align-items-center gap-2">
+                            <i class="bi bi-telephone"></i>
+                            <span>{{ salon.phone }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if salon.description %}
+                        <p class="card-text line-clamp-2">{{ salon.description }}</p>
+                    {% else %}
+                        <p class="card-text line-clamp-2">Индивидуальные программы ухода и внимание к каждой детали.</p>
+                    {% endif %}
+                    <div class="mt-auto pt-3">
+                        <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn btn-primary w-100">Подробнее о салоне</a>
+                    </div>
                 </div>
             </div>
         </div>
     {% empty %}
-        <p>Салоны не найдены.</p>
+        <div class="col-12">
+            <div class="glass-card p-5 text-center">
+                <h4 class="fw-semibold mb-2">Салоны не найдены</h4>
+                <p class="text-muted mb-0">Попробуйте изменить параметры поиска или выберите другую услугу.</p>
+            </div>
+        </div>
     {% endfor %}
 </div>
-<!--<script>-->
-<!--document.getElementById('serviceSearch').addEventListener('input', function () {-->
-<!--    let query = this.value;-->
-<!--    if (query.length < 2) return;-->
+{% endblock %}
 
-<!--    fetch(`/services/search/?q=${query}`)-->
-<!--        .then(response => response.json())-->
-<!--        .then(data => {-->
-<!--            let suggestions = document.getElementById('suggestions');-->
-<!--            suggestions.innerHTML = '';-->
-<!--            data.forEach(item => {-->
-<!--                let li = document.createElement('li');-->
-<!--                li.className = 'list-group-item';-->
-<!--                li.textContent = item;-->
-<!--                li.onclick = function () {-->
-<!--                    document.getElementById('serviceSearch').value = this.textContent;-->
-<!--                    suggestions.innerHTML = '';-->
-<!--                };-->
-<!--                suggestions.appendChild(li);-->
-<!--            });-->
-<!--        });-->
-<!--});-->
-<!--</script>-->
-
+{% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const input = document.getElementById("searchInput");
-  const suggestionsBox = document.getElementById("suggestions");
-  const searchTypeInput = document.getElementById("searchTypeInput");
-  let suggestions = [];
+  document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("searchInput");
+    const suggestionsBox = document.getElementById("suggestions");
+    const searchTypeInput = document.getElementById("searchTypeInput");
+    let suggestions = [];
 
-  input.addEventListener("input", function () {
-    const query = input.value.trim();
-    searchTypeInput.value = ""; // сбрасываем search_type, если пользователь вводит вручную
+    input.addEventListener("input", function () {
+      const query = input.value.trim();
+      searchTypeInput.value = "";
 
-    if (query.length < 2) {
-      suggestionsBox.style.display = "none";
-      return;
-    }
+      if (query.length < 2) {
+        suggestionsBox.style.display = "none";
+        return;
+      }
 
-    fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
-      .then(response => response.json())
-      .then(data => {
-        suggestions = data;
-        suggestionsBox.innerHTML = "";
-        if (suggestions.length === 0) {
-          suggestionsBox.style.display = "none";
-          return;
-        }
+      fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          suggestions = data;
+          suggestionsBox.innerHTML = "";
+          if (suggestions.length === 0) {
+            suggestionsBox.style.display = "none";
+            return;
+          }
 
-        suggestions.forEach(item => {
-          const li = document.createElement("li");
-          let label = item.label;
+          suggestions.forEach(item => {
+            const li = document.createElement("li");
+            let label = item.label;
             if (item.type === "service" && item.gender) {
               label += ` (${item.gender})`;
             }
             li.textContent = label;
-          li.classList.add("list-group-item", "list-group-item-action");
-          li.addEventListener("click", () => {
-            input.value = item.label;
-            searchTypeInput.value = item.type;
-            suggestionsBox.style.display = "none";
+            li.classList.add("list-group-item", "list-group-item-action");
+            li.addEventListener("click", () => {
+              input.value = item.label;
+              searchTypeInput.value = item.type;
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(li);
           });
-          suggestionsBox.appendChild(li);
+
+          suggestionsBox.style.display = "block";
         });
+    });
 
-        suggestionsBox.style.display = "block";
-      });
+    document.addEventListener("click", function (e) {
+      if (!suggestionsBox.contains(e.target) && e.target !== input) {
+        suggestionsBox.style.display = "none";
+      }
+    });
   });
-
-  // Скрыть подсказки при клике вне
-  document.addEventListener("click", function (e) {
-    if (!suggestionsBox.contains(e.target) && e.target !== input) {
-      suggestionsBox.style.display = "none";
-    }
-  });
-});
 </script>
-
 {% endblock %}
