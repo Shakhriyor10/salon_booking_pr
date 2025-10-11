@@ -230,9 +230,16 @@
                                     <div class="row g-4">
                                         <div class="col-lg-5">
                                             <label for="slot" class="form-label fw-semibold">🕒 Выберите время</label>
+                                            {% if auto_selected_slot_dt %}
+                                                <div class="alert alert-success py-2 px-3 mb-3">
+                                                    Мы нашли ближайшее доступное время: <strong>{{ auto_selected_slot_dt|date:'d.m.Y H:i' }}</strong>.
+                                                </div>
+                                            {% endif %}
                                             <select name="slot" id="slot" class="form-select form-select-lg" required>
                                                 {% for slot in selected_stylist_slot.slots %}
-                                                    <option value="{{ slot|date:'Y-m-d\\TH:i' }}">{{ slot|date:'H:i' }}</option>
+                                                    {% with slot_value=slot|date:'Y-m-d\\TH:i' %}
+                                                        <option value="{{ slot_value }}" {% if auto_selected_slot == slot_value %}selected{% endif %}>{{ slot|date:'H:i' }}</option>
+                                                    {% endwith %}
                                                 {% endfor %}
                                             </select>
                                         </div>
@@ -286,8 +293,27 @@
                                     </div>
                                 </form>
                             {% else %}
-                                <div class="alert alert-warning mb-0">
-                                    На выбранную дату нет свободных слотов. Попробуйте изменить дату или уменьшить набор услуг.
+                                <div class="alert alert-warning d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-0">
+                                    <div>
+                                        На выбранную дату нет свободных слотов. Попробуйте изменить дату или уменьшить набор услуг.
+                                    </div>
+                                    {% if next_available_slot %}
+                                        <div class="d-flex flex-column align-items-lg-end gap-2">
+                                            <div class="text-muted small">Ближайшее свободное время: <strong>{{ next_available_slot.slot|date:'d.m.Y H:i' }}</strong></div>
+                                            <form method="get" class="d-flex align-items-center gap-2">
+                                                <input type="hidden" name="salon" value="{{ salon.id }}">
+                                                <input type="hidden" name="stylist" value="{{ selected_stylist.id }}">
+                                                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                                                {% for sid in selected_service_ids %}
+                                                    <input type="hidden" name="services" value="{{ sid }}">
+                                                {% endfor %}
+                                                <input type="hidden" name="find_next" value="1">
+                                                <button type="submit" class="btn btn-outline-secondary btn-sm">Найти ближайшее время</button>
+                                            </form>
+                                        </div>
+                                    {% elif next_slot_not_found %}
+                                        <div class="text-muted small">Ближайшие 14 дней не содержат свободных слотов для выбранного набора услуг.</div>
+                                    {% endif %}
                                 </div>
                             {% endif %}
                         {% else %}

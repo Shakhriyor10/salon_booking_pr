@@ -515,6 +515,8 @@ def service_booking(request):
     today = now().date()
     max_date = today + timedelta(days=14)
     date_str = request.GET.get('date')
+    find_next_requested = request.GET.get('find_next') == '1'
+    next_slot_not_found = False
 
     try:
         selected_date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else today
@@ -522,8 +524,6 @@ def service_booking(request):
         selected_date = today
 
     selected_date = min(max(selected_date, today), max_date)
-    weekday = selected_date.weekday()
-
     try:
         selected_service_ids = list(dict.fromkeys(int(sid) for sid in raw_service_ids))
     except (TypeError, ValueError):
@@ -570,6 +570,11 @@ def service_booking(request):
     total_duration = timedelta()
     stylist_slots = []
     selected_stylist_slot = None
+    next_available_slot = None
+    auto_selected_slot = request.GET.get('auto_slot')
+    auto_selected_slot_dt = None
+
+    stylist_to_services = defaultdict(list)
 
     if selected_service_ids:
         filters = {
@@ -587,15 +592,18 @@ def service_booking(request):
             .select_related('stylist', 'salon_service', 'salon_service__service')
         )
 
-        stylist_to_services = defaultdict(list)
         for ss in all_stylist_services:
             stylist_to_services[ss.stylist_id].append(ss)
 
-        for services_list in stylist_to_services.values():
+        def build_slot_entry(stylist_id, target_date):
+            services_list = stylist_to_services.get(stylist_id)
+            if not services_list:
+                return None
+
             stylist = services_list[0].stylist
             matched_ids = {s.salon_service.service_id for s in services_list}
             if not set(selected_service_ids).issubset(matched_ids):
-                continue
+                return None
 
             relevant_services = [
                 s for s in services_list if s.salon_service.service_id in selected_service_ids
@@ -607,12 +615,13 @@ def service_booking(request):
             )
 
             if ss_duration.total_seconds() <= 0:
-                continue
+                return None
 
+            weekday_local = target_date.weekday()
             slots = []
-            for wh in stylist.working_hours.filter(weekday=weekday):
-                start = make_aware(datetime.combine(selected_date, wh.start_time))
-                end = make_aware(datetime.combine(selected_date, wh.end_time))
+            for wh in stylist.working_hours.filter(weekday=weekday_local):
+                start = make_aware(datetime.combine(target_date, wh.start_time))
+                end = make_aware(datetime.combine(target_date, wh.end_time))
                 current = start
 
                 while current + ss_duration <= end:
@@ -630,7 +639,7 @@ def service_booking(request):
 
                     in_dayoff = StylistDayOff.objects.filter(
                         stylist=stylist,
-                        date=selected_date
+                        date=target_date
                     ).filter(
                         Q(from_time__isnull=True, to_time__isnull=True)
                         | Q(from_time__lt=(current + ss_duration).time(), to_time__gt=current.time())
@@ -641,23 +650,63 @@ def service_booking(request):
 
                     current += timedelta(minutes=15)
 
-            if slots:
-                slot_entry = {
-                    'stylist': stylist,
-                    'services': relevant_services,
-                    'price': ss_price,
-                    'duration': ss_duration,
-                    'slots': slots
-                }
+            if not slots:
+                return None
 
-                stylist_slots.append(slot_entry)
+            return {
+                'stylist': stylist,
+                'services': relevant_services,
+                'price': ss_price,
+                'duration': ss_duration,
+                'slots': slots
+            }
 
-                if (selected_stylist and stylist.id == selected_stylist.id) or not selected_stylist:
-                    total_price = ss_price
-                    total_duration = ss_duration
+        for stylist_id in stylist_to_services:
+            slot_entry = build_slot_entry(stylist_id, selected_date)
+            if not slot_entry:
+                continue
 
-                if selected_stylist and stylist.id == selected_stylist.id:
-                    selected_stylist_slot = slot_entry
+            stylist_slots.append(slot_entry)
+
+            stylist = slot_entry['stylist']
+            if (selected_stylist and stylist.id == selected_stylist.id) or not selected_stylist:
+                total_price = slot_entry['price']
+                total_duration = slot_entry['duration']
+
+            if selected_stylist and stylist.id == selected_stylist.id:
+                selected_stylist_slot = slot_entry
+
+        if auto_selected_slot and selected_stylist_slot:
+            for slot in selected_stylist_slot.get('slots', []):
+                if slot.strftime('%Y-%m-%dT%H:%M') == auto_selected_slot:
+                    auto_selected_slot_dt = slot
+                    break
+
+        if selected_stylist and (not selected_stylist_slot or not selected_stylist_slot.get('slots')):
+            search_date = selected_date + timedelta(days=1)
+            while search_date <= max_date:
+                slot_entry = build_slot_entry(selected_stylist.id, search_date)
+                if slot_entry:
+                    next_available_slot = {
+                        'date': search_date,
+                        'slot': slot_entry['slots'][0],
+                        'price': slot_entry['price'],
+                        'duration': slot_entry['duration'],
+                    }
+                    break
+
+                search_date += timedelta(days=1)
+
+        if find_next_requested and next_available_slot:
+            query_params = request.GET.copy()
+            if 'find_next' in query_params:
+                del query_params['find_next']
+            query_params['date'] = next_available_slot['date'].isoformat()
+            query_params['auto_slot'] = next_available_slot['slot'].strftime('%Y-%m-%dT%H:%M')
+            redirect_url = f"{reverse('service_booking')}?{query_params.urlencode()}"
+            return redirect(redirect_url)
+        elif find_next_requested and not next_available_slot:
+            next_slot_not_found = True
 
     context = {
         'services': ordered_services,
@@ -674,6 +723,10 @@ def service_booking(request):
         'stylist_available_services': stylist_available_services,
         'removed_services': removed_services,
         'selected_stylist_slot': selected_stylist_slot,
+        'next_available_slot': next_available_slot,
+        'auto_selected_slot': auto_selected_slot,
+        'auto_selected_slot_dt': auto_selected_slot_dt,
+        'next_slot_not_found': next_slot_not_found,
     }
 
     return render(request, 'service_booking.html', context)
