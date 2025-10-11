@@ -2,80 +2,339 @@
 {% load static %}
 
 {% block content %}
-<div id="content" class="py-4 py-lg-5">
+<style>
+    .booking-page {
+        position: relative;
+        z-index: 1;
+    }
+
+    .booking-hero {
+        background: linear-gradient(135deg, rgba(72, 107, 113, 0.95) 0%, rgba(32, 39, 54, 0.92) 100%);
+        color: #fff;
+        border-radius: 26px;
+    }
+
+    .booking-hero .hero-side {
+        background: rgba(255, 255, 255, 0.14);
+        backdrop-filter: blur(6px);
+        min-height: 100%;
+    }
+
+    .booking-hero h1 {
+        font-weight: 700;
+        letter-spacing: 0.4px;
+    }
+
+    .service-chip {
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        padding: 0.55rem 1.1rem;
+        border-radius: 999px;
+        font-weight: 500;
+    }
+
+    .hero-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .hero-meta-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        background: rgba(255, 255, 255, 0.18);
+        color: #fff;
+    }
+
+    .hero-meta-title {
+        font-size: 0.85rem;
+        opacity: 0.9;
+    }
+
+    .hero-meta-value {
+        font-size: 1.05rem;
+        font-weight: 600;
+    }
+
+    .booking-filter {
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 20px;
+        padding: 1.75rem;
+        box-shadow: 0 15px 35px rgba(19, 22, 30, 0.18);
+        color: #1f2a33;
+    }
+
+    .booking-filter label {
+        font-weight: 600;
+        color: #24323a;
+    }
+
+    .booking-filter .form-control,
+    .booking-filter .form-select {
+        border-radius: 14px;
+        border: 1px solid rgba(72, 107, 113, 0.25);
+        box-shadow: none;
+    }
+
+    .booking-filter .btn-outline-secondary {
+        border-radius: 12px;
+        border-color: rgba(72, 107, 113, 0.6);
+        color: #24323a;
+    }
+
+    .legend-card {
+        border-radius: 18px;
+        background: #fff;
+        border: 1px solid rgba(72, 107, 113, 0.08);
+    }
+
+    .legend-card .legend-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: #486b71;
+        background: rgba(72, 107, 113, 0.12);
+    }
+
+    .stylist-card {
+        border-radius: 22px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 18px 38px rgba(24, 33, 42, 0.12);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        background: #fff;
+    }
+
+    .stylist-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 24px 46px rgba(24, 33, 42, 0.2);
+    }
+
+    .stylist-card .card-header {
+        background: linear-gradient(135deg, rgba(72, 107, 113, 0.12) 0%, rgba(72, 107, 113, 0.05) 100%);
+        border-bottom: none;
+    }
+
+    .avatar-ring {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid rgba(72, 107, 113, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .avatar-ring img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .avatar-placeholder {
+        background: rgba(72, 107, 113, 0.12);
+        color: #486b71;
+        font-size: 2.4rem;
+        font-weight: 700;
+    }
+
+    .stylist-card .badge {
+        border-radius: 12px;
+        font-size: 0.8rem;
+        padding: 0.35rem 0.75rem;
+    }
+
+    .stylist-card .card-body {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .stylist-meta {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .meta-pill {
+        background: rgba(72, 107, 113, 0.06);
+        border-radius: 14px;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        color: #486b71;
+    }
+
+    .booking-button {
+        background: #486b71;
+        color: #fff;
+        border-radius: 14px;
+        font-weight: 600;
+        padding: 0.85rem 1.25rem;
+        transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .booking-button:hover {
+        background: #3b5459;
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .no-stylists-card {
+        border-radius: 20px;
+        background: linear-gradient(135deg, rgba(255, 190, 111, 0.12) 0%, rgba(255, 222, 173, 0.45) 100%);
+        border: 1px solid rgba(255, 196, 123, 0.5);
+    }
+
+    @media (max-width: 991px) {
+        .booking-hero {
+            border-radius: 22px;
+        }
+
+        .booking-hero .hero-side {
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    }
+</style>
+
+<div class="booking-page py-4 py-lg-5">
     <div class="row justify-content-center mb-4">
-        <div class="col-12 col-lg-8 col-xl-7">
-            <div class="card shadow-sm border-0 p-4">
-                <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
-                    <div>
-                        <h4 class="fw-semibold mb-2">Выбранные услуги</h4>
+        <div class="col-12 col-xl-10">
+            <div class="booking-hero shadow-lg">
+                <div class="row g-0 align-items-stretch">
+                    <div class="col-lg-7 p-4 p-lg-5">
+                        <span class="badge bg-white text-dark text-uppercase mb-3" style="border-radius: 999px; letter-spacing: 0.12em;">Шаг 2 из 3 · Выбор мастера</span>
+                        <h1 class="display-6 mb-3">Подберите мастера под ваши услуги</h1>
+                        <p class="mb-4 opacity-75">Мы подобрали стилистов, которые свободны в выбранные даты и могут выполнить все отмеченные вами услуги. Ознакомьтесь с профилями мастеров и выберите удобное время.</p>
+
                         {% if services %}
                             <div class="d-flex flex-wrap gap-2">
                                 {% for service in services %}
-                                    <span class="badge rounded-pill text-bg-light px-3 py-2 border">{{ service.name }}</span>
+                                    <span class="service-chip">{{ service.name }}</span>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <div class="alert alert-info mb-0" role="alert">
-                                Выберите одну или несколько услуг на предыдущем шаге, чтобы увидеть свободных мастеров.
+                            <div class="bg-white bg-opacity-25 border border-light border-opacity-25 rounded-4 p-3 text-white">
+                                <strong>Услуги не выбраны.</strong> Вернитесь на предыдущий шаг, чтобы отметить интересующие процедуры.
                             </div>
                         {% endif %}
+
+                        <div class="d-flex flex-wrap gap-4 mt-4">
+                            <div class="d-flex align-items-center gap-3 hero-meta">
+                                <div class="hero-meta-icon">📅</div>
+                                <div>
+                                    <div class="hero-meta-title">Дата визита</div>
+                                    <div class="hero-meta-value">{{ selected_date|date:'d MMMM, E'|default:'Не выбрано' }}</div>
+                                </div>
+                            </div>
+                            {% if salon %}
+                                <div class="d-flex align-items-center gap-3 hero-meta">
+                                    <div class="hero-meta-icon">🏢</div>
+                                    <div>
+                                        <div class="hero-meta-title">Салон</div>
+                                        <div class="hero-meta-value">{{ salon.name }}</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            <div class="d-flex align-items-center gap-3 hero-meta">
+                                <div class="hero-meta-icon">💇</div>
+                                <div>
+                                    <div class="hero-meta-title">Доступно мастеров</div>
+                                    <div class="hero-meta-value">{{ stylist_slots|length }}</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-lg-end text-muted small">
-                        {% if salon %}
-                            Салон: <strong>{{ salon.name }}</strong>
-                        {% endif %}
+                    <div class="col-lg-5 p-4 p-lg-5 hero-side d-flex align-items-center">
+                        <form method="get" class="booking-filter w-100">
+                            <input type="hidden" name="salon" value="{{ salon.id }}">
+                            {% for sid in selected_service_ids %}
+                                <input type="hidden" name="services" value="{{ sid }}">
+                            {% endfor %}
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12">
+                                    <label for="date" class="form-label">Выберите дату визита</label>
+                                    <input type="date"
+                                           name="date"
+                                           id="date"
+                                           class="form-control form-control-lg"
+                                           value="{{ selected_date|date:'Y-m-d' }}"
+                                           min="{{ today|date:'Y-m-d' }}"
+                                           max="{{ max_date|date:'Y-m-d' }}"
+                                           onchange="this.form.submit()">
+                                    <div class="form-text">Мы автоматически обновим список мастеров под выбранную дату.</div>
+                                </div>
+                                <div class="col-12 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                                    <small class="text-muted">Найдено мастеров: <strong>{{ stylist_slots|length }}</strong></small>
+                                    <a href="{{ request.META.HTTP_REFERER|default:'#' }}" class="btn btn-outline-secondary btn-sm">← К выбору услуг</a>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
-
-                <form method="get" class="row g-3 align-items-end">
-                    <input type="hidden" name="salon" value="{{ salon.id }}">
-                    {% for sid in selected_service_ids %}
-                        <input type="hidden" name="services" value="{{ sid }}">
-                    {% endfor %}
-                    <div class="col-sm-6 col-md-5">
-                        <label for="date" class="form-label fw-semibold">📅 Дата визита</label>
-                        <input type="date"
-                               name="date"
-                               id="date"
-                               class="form-control form-control-lg"
-                               value="{{ selected_date|date:'Y-m-d' }}"
-                               min="{{ today|date:'Y-m-d' }}"
-                               max="{{ max_date|date:'Y-m-d' }}"
-                               onchange="this.form.submit()">
-                    </div>
-                    <div class="col-sm-6 col-md-7 text-sm-end">
-                        <div class="text-muted small">
-                            Доступные мастера на выбранную дату: <strong>{{ stylist_slots|length }}</strong>
-                        </div>
-                        <a href="{{ request.META.HTTP_REFERER|default:'#' }}" class="btn btn-outline-secondary btn-sm mt-2">
-                            ← Вернуться к выбору услуг
-                        </a>
-                    </div>
-                </form>
             </div>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row justify-content-center mb-4">
+        <div class="col-12 col-xl-10">
+            <div class="legend-card shadow-sm p-4">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-4 d-flex gap-3">
+                        <div class="legend-icon">💡</div>
+                        <div>
+                            <h6 class="mb-1">Как выбрать мастера</h6>
+                            <p class="text-muted small mb-0">Сравните уровень специалистов, длительность и стоимость — мы уже учли все выбранные услуги.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex gap-3">
+                        <div class="legend-icon">🕒</div>
+                        <div>
+                            <h6 class="mb-1">Свободные слоты</h6>
+                            <p class="text-muted small mb-0">Выберите удобное время — слоты обновляются в режиме реального времени.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex gap-3">
+                        <div class="legend-icon">📱</div>
+                        <div>
+                            <h6 class="mb-1">Гостевой режим</h6>
+                            <p class="text-muted small mb-0">Если вы не авторизованы, оставьте имя и номер телефона для подтверждения записи.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
         {% if stylist_slots %}
             {% for item in stylist_slots %}
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card shadow-sm h-100 p-3">
-                        <div class="d-flex justify-content-center mb-3">
-                            {% if item.stylist.avatar %}
-                                <img src="{{ item.stylist.avatar.url }}" alt="Фото стилиста" class="rounded-circle"
-                                     style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6;">
-                            {% else %}
-                                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                     style="width: 120px; height: 120px; background-color: #f1f3f5; border: 3px solid #dee2e6; font-size: 42px; font-weight: 600; color: #486b71;">
-                                    {{ item.stylist.user.get_full_name|default:item.stylist.user.username|slice:':1'|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="text-center">
-                            <h5 class="fw-bold mb-1">{{ item.stylist.user.get_full_name|default:item.stylist.user.username }}</h5>
-                            <div class="mb-2">
+                <div class="col-md-6 col-xl-4 d-flex">
+                    <div class="stylist-card card flex-fill">
+                        <div class="card-header text-center py-4">
+                            <div class="avatar-ring">
+                                {% if item.stylist.avatar %}
+                                    <img src="{{ item.stylist.avatar.url }}" alt="Фото стилиста">
+                                {% else %}
+                                    <div class="avatar-placeholder w-100 h-100 d-flex align-items-center justify-content-center">
+                                        {{ item.stylist.user.get_full_name|default:item.stylist.user.username|slice:':1'|upper }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <h5 class="fw-bold mt-3 mb-1">{{ item.stylist.user.get_full_name|default:item.stylist.user.username }}</h5>
+                            <div>
                                 {% if item.stylist.level %}
                                     {% if item.stylist.level.name == "Топ Барбер" %}
                                         <span class="badge bg-warning text-dark">★ {{ item.stylist.level.name }}</span>
@@ -90,55 +349,76 @@
                                     <span class="badge bg-light text-dark">Барбер</span>
                                 {% endif %}
                             </div>
-                            <div class="text-muted small">Общая цена: <strong>{{ item.price }} сум</strong></div>
-                            <div class="text-muted small">Длительность: <strong>{{ item.duration_display|default:item.duration }}</strong></div>
                         </div>
-
-                        <form method="post" action="{% url 'make_appointment' %}" class="mt-3">
-                            {% csrf_token %}
-                            <input type="hidden" name="stylist_id" value="{{ item.stylist.id }}">
-                            <input type="hidden" name="salon" value="{{ salon.id }}">
-                            {% for sid in selected_service_ids %}
-                                <input type="hidden" name="service_ids" value="{{ sid }}">
-                            {% endfor %}
-
-                            <div class="mb-3">
-                                <label for="slot-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="form-label">🕒 Удобное время</label>
-                                <select name="slot" id="slot-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="form-select" required>
-                                    {% for slot in item.slots %}
-                                        <option value="{{ slot|date:'Y-m-d\\TH:i' }}">
-                                            {{ slot|date:'H:i' }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                        <div class="card-body px-4 pb-4">
+                            <div class="stylist-meta">
+                                <div class="meta-pill">
+                                    <div class="text-muted small">Общая цена</div>
+                                    <div class="fw-semibold">{{ item.price }} сум</div>
+                                </div>
+                                <div class="meta-pill">
+                                    <div class="text-muted small">Длительность</div>
+                                    <div class="fw-semibold">{{ item.duration_display|default:item.duration }}</div>
+                                </div>
                             </div>
 
-                            {% if not user.is_authenticated %}
-                                <div class="mb-2">
-                                    <input type="text" name="guest_name" class="form-control" placeholder="Ваше имя" required>
-                                </div>
-                                <div class="mb-3">
-                                    <input type="tel"
-                                           name="guest_phone"
-                                           class="form-control"
-                                           placeholder="Телефон в формате +998991234567"
-                                           pattern="^\+998\d{9}$"
-                                           title="Введите номер в формате +998991234567"
-                                           required>
-                                </div>
-                            {% endif %}
+                            <form method="post" action="{% url 'make_appointment' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="stylist_id" value="{{ item.stylist.id }}">
+                                <input type="hidden" name="salon" value="{{ salon.id }}">
+                                {% for sid in selected_service_ids %}
+                                    <input type="hidden" name="service_ids" value="{{ sid }}">
+                                {% endfor %}
 
-                            <button type="submit" class="btn w-100" style="background-color: #486b71; color: #fff;">
-                                📅 Записаться
-                            </button>
-                        </form>
+                                <div class="mt-3">
+                                    <label for="slot-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="form-label fw-semibold">Выберите время</label>
+                                    <select name="slot" id="slot-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="form-select" required>
+                                        {% for slot in item.slots %}
+                                            <option value="{{ slot|date:'Y-m-d\\TH:i' }}">{{ slot|date:'H:i' }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                {% if not user.is_authenticated %}
+                                    <div class="mt-3">
+                                        <label class="form-label fw-semibold" for="guest-name-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">Представьтесь, пожалуйста</label>
+                                        <input type="text" id="guest-name-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" name="guest_name" class="form-control" placeholder="Ваше имя" required>
+                                    </div>
+                                    <div class="mt-3">
+                                        <label class="form-label fw-semibold" for="guest-phone-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">Телефон для подтверждения</label>
+                                        <input type="tel"
+                                               id="guest-phone-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                                               name="guest_phone"
+                                               class="form-control"
+                                               placeholder="Телефон в формате +998991234567"
+                                               pattern="^\+998\d{9}$"
+                                               title="Введите номер в формате +998991234567"
+                                               required>
+                                        <div class="form-text">Мы отправим напоминание о записи на указанный номер.</div>
+                                    </div>
+                                {% endif %}
+
+                                <button type="submit" class="btn booking-button w-100 mt-4">📅 Записаться</button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             {% endfor %}
         {% else %}
             <div class="col-12">
-                <div class="alert alert-warning shadow-sm" role="alert">
-                    На выбранную дату нет доступных мастеров для этих услуг. Попробуйте выбрать другую дату или уменьшить набор услуг.
+                <div class="no-stylists-card p-4 p-lg-5 shadow-sm">
+                    <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-4">
+                        <div class="display-4">😔</div>
+                        <div>
+                            <h4 class="fw-semibold mb-3">На выбранную дату нет доступных мастеров для этих услуг</h4>
+                            <p class="mb-3">Попробуйте изменить дату или уменьшить количество услуг, чтобы увидеть больше свободных специалистов.</p>
+                            <ul class="mb-0 text-muted small">
+                                <li>Попробуйте выбрать соседнюю дату — расписание обновляется ежедневно.</li>
+                                <li>Уберите одну из услуг и проверьте доступность мастеров.</li>
+                                <li>Свяжитесь с салоном напрямую для индивидуального подбора времени.</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         {% endif %}
