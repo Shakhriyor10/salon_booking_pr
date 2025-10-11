@@ -207,6 +207,26 @@
     color: #486b71;
   }
 
+  .stylist-services-list {
+    max-width: 240px;
+  }
+
+  .stylist-services-list li + li {
+    margin-top: 0.25rem;
+  }
+
+  .view-all-services {
+    color: #486b71;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .view-all-services:hover,
+  .view-all-services:focus {
+    color: #2f484d;
+    text-decoration: underline;
+  }
+
   .stylist-card .badge-level {
     display: inline-flex;
     align-items: center;
@@ -634,16 +654,42 @@
 
                 {% with services_list=stylist.salon_services_for_display %}
                   {% if services_list %}
-                    <ul class="list-unstyled small text-muted text-start mx-auto flex-grow-1">
+                    <ul class="list-unstyled small text-muted text-start mx-auto flex-grow-1 stylist-services-list">
                       {% for ss in services_list|slice:":3" %}
                         <li>• {{ ss.salon_service.service.name }}</li>
                       {% endfor %}
-                      {% with total=services_list|length %}
-                        {% if total > 3 %}
-                          <li class="text-muted">и ещё {{ total|add:"-3" }} услуг</li>
-                        {% endif %}
-                      {% endwith %}
                     </ul>
+                    {% with total=services_list|length %}
+                      {% if total > 3 %}
+                        <button type="button"
+                                class="btn btn-link px-0 small view-all-services"
+                                data-bs-toggle="modal"
+                                data-bs-target="#stylistServicesModal{{ stylist.id }}">
+                          <i class="bi bi-eye"></i> Все услуги ({{ total }})
+                        </button>
+                        <div class="modal fade" id="stylistServicesModal{{ stylist.id }}" tabindex="-1"
+                             aria-labelledby="stylistServicesModalLabel{{ stylist.id }}" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-header">
+                                <h5 class="modal-title" id="stylistServicesModalLabel{{ stylist.id }}">Услуги мастера {{ name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                <ul class="list-unstyled mb-0">
+                                  {% for ss in services_list %}
+                                    <li class="mb-2">• {{ ss.salon_service.service.name }}</li>
+                                  {% endfor %}
+                                </ul>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-theme" data-bs-dismiss="modal">Закрыть</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      {% endif %}
+                    {% endwith %}
                   {% else %}
                     <p class="text-muted small flex-grow-1">Услуги мастера пока не добавлены.</p>
                   {% endif %}
