@@ -553,6 +553,35 @@ def service_booking(request):
 
     ordered_services = [services_map[sid] for sid in selected_service_ids]
 
+    services_with_actions = []
+    for service in ordered_services:
+        query_copy = request.GET.copy()
+        current_services = [value for value in query_copy.getlist('services') if value]
+        filtered_services = [sid for sid in current_services if sid != str(service.id)]
+
+        if filtered_services:
+            query_copy.setlist('services', filtered_services)
+        else:
+            try:
+                del query_copy['services']
+            except KeyError:
+                pass
+
+        services_with_actions.append({
+            'service': service,
+            'remove_query': query_copy.urlencode(),
+        })
+
+    salon_service_options = list(
+        Service.objects.filter(
+            salon_services__salon=salon,
+            salon_services__is_active=True,
+            is_active=True,
+        )
+        .order_by(Lower('name'))
+        .distinct()
+    )
+
     selected_stylist = None
     stylist_available_services = []
     removed_services = []
@@ -749,10 +778,12 @@ def service_booking(request):
         'auto_selected_slot': auto_selected_slot,
         'auto_selected_slot_dt': auto_selected_slot_dt,
         'next_slot_not_found': next_slot_not_found,
+        'salon_service_options': salon_service_options,
+        'services_with_actions': services_with_actions,
     }
 
     template_name = 'service_booking.html'
-    if selected_service_ids and not selected_stylist:
+    if not selected_stylist:
         template_name = 'service_booking_services.html'
 
     return render(request, template_name, context)
