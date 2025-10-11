@@ -3,6 +3,12 @@
 
 {% block content %}
 <style>
+    [data-dynamic-container].is-loading {
+        opacity: 0.6;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
     .booking-card {
         border: none;
         border-radius: 24px;
@@ -83,7 +89,7 @@
     }
 </style>
 
-<div id="content" class="py-4 py-lg-5">
+<div id="content" class="py-4 py-lg-5" data-dynamic-container>
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-9">
             {% if removed_services %}
@@ -145,7 +151,7 @@
                         </div>
                     {% endif %}
 
-                    <form method="get" class="mt-4" id="booking-options-form">
+                    <form method="get" class="mt-4" id="booking-options-form" data-dynamic-form>
                         <input type="hidden" name="salon" value="{{ salon.id }}">
                         {% if selected_stylist %}
                             <input type="hidden" name="stylist" value="{{ selected_stylist.id }}">
@@ -158,7 +164,7 @@
                                        id="date"
                                        value="{{ selected_date|date:'Y-m-d' }}"
                                        class="form-control form-control-lg"
-                                       onchange="this.form.submit()"
+                                       data-auto-submit
                                        min="{{ today|date:'Y-m-d' }}"
                                        max="{{ max_date|date:'Y-m-d' }}">
                             </div>
@@ -181,7 +187,8 @@
                                 <h5 class="fw-semibold mb-0">Услуги мастера</h5>
                                 {% if services %}
                                     <a href="{% url 'service_booking' %}?salon={{ salon.id }}&stylist={{ selected_stylist.id }}&date={{ selected_date|date:'Y-m-d' }}"
-                                       class="btn btn-sm btn-outline-secondary">Сбросить выбор</a>
+                                       class="btn btn-sm btn-outline-secondary"
+                                       data-dynamic-link>Сбросить выбор</a>
                                 {% endif %}
                             </div>
 
@@ -195,6 +202,8 @@
                                                        id="service-{{ service_id }}"
                                                        name="services"
                                                        value="{{ service_id }}"
+                                                       data-auto-submit
+                                                       data-auto-submit-delay="250"
                                                        {% if service_id in selected_service_ids %}checked{% endif %}>
                                                 <label class="form-check-label ms-2 w-100" for="service-{{ service_id }}">
                                                     <span class="fw-semibold">{{ ss.salon_service.service.name }}</span>
@@ -300,7 +309,7 @@
                                     {% if next_available_slot %}
                                         <div class="d-flex flex-column align-items-lg-end gap-2">
                                             <div class="text-muted small">Ближайшее свободное время: <strong>{{ next_available_slot.slot|date:'d.m.Y H:i' }}</strong></div>
-                                            <form method="get" class="d-flex align-items-center gap-2">
+                                            <form method="get" class="d-flex align-items-center gap-2" data-dynamic-form>
                                                 <input type="hidden" name="salon" value="{{ salon.id }}">
                                                 <input type="hidden" name="stylist" value="{{ selected_stylist.id }}">
                                                 <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
@@ -328,38 +337,5 @@
     </div>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('booking-options-form');
-        if (!form) {
-            return;
-        }
-
-        const checkboxes = form.querySelectorAll('input[type="checkbox"][name="services"]');
-        let submitTimeoutId = null;
-
-        const submitForm = () => {
-            if (form.dataset.submitting === 'true') {
-                return;
-            }
-
-            form.dataset.submitting = 'true';
-            form.submit();
-        };
-
-        form.addEventListener('submit', () => {
-            form.dataset.submitting = 'true';
-        });
-
-        checkboxes.forEach((checkbox) => {
-            checkbox.addEventListener('change', () => {
-                if (submitTimeoutId) {
-                    clearTimeout(submitTimeoutId);
-                }
-
-                submitTimeoutId = setTimeout(submitForm, 250);
-            });
-        });
-    });
-</script>
+<script src="{% static 'js/dynamic_booking.js' %}"></script>
 {% endblock %}

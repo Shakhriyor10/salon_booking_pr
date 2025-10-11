@@ -8,6 +8,12 @@
         z-index: 1;
     }
 
+    [data-dynamic-container].is-loading {
+        opacity: 0.6;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
     .booking-hero {
         position: relative;
         overflow: hidden;
@@ -508,7 +514,7 @@
     }
 </style>
 
-<div class="booking-page py-4 py-lg-5">
+<div class="booking-page py-4 py-lg-5" data-dynamic-container>
     <div class="row justify-content-center mb-4">
         <div class="col-12 col-xl-12">
             <div class="booking-hero shadow-lg">
@@ -536,6 +542,7 @@
                                     {% for item in services_with_actions %}
                                         <a href="?{{ item.remove_query }}"
                                            class="service-chip service-chip-removable"
+                                           data-dynamic-link="true"
                                            title="Убрать услугу {{ item.service.name }}">
                                             <span class="service-chip-label">{{ item.service.name }}</span>
                                             <span class="service-chip-remove" aria-hidden="true">&times;</span>
@@ -549,7 +556,7 @@
                                 </div>
                             {% endif %}
                             {% if salon_service_options %}
-                                <form method="get" class="add-service-form {% if services %}mt-3{% else %}mt-4{% endif %} d-flex flex-wrap align-items-end gap-3">
+                                <form method="get" data-dynamic-form class="add-service-form {% if services %}mt-3{% else %}mt-4{% endif %} d-flex flex-wrap align-items-end gap-3">
                                     {% for key, value in request.GET.items %}
                                         {% if key != 'services' %}
                                             <input type="hidden" name="{{ key }}" value="{{ value }}">
@@ -583,7 +590,7 @@
 
                     </div>
                     <div class="col-lg-5 p-4 p-lg-5 hero-side d-flex align-items-center">
-                        <form method="get" class="booking-filter w-100">
+                        <form method="get" data-dynamic-form class="booking-filter w-100">
                             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
                                 <div>
                                     <div class="text-uppercase text-muted small fw-semibold">Расписание</div>
@@ -606,8 +613,9 @@
                                            value="{{ selected_date|date:'Y-m-d' }}"
                                            min="{{ today|date:'Y-m-d' }}"
                                            max="{{ max_date|date:'Y-m-d' }}"
-                                           onchange="this.form.submit()">
+                                           data-auto-submit>
                                     <div class="form-text">Мы автоматически обновим список мастеров под выбранную дату.</div>
+                                    <button type="submit" class="visually-hidden" aria-hidden="true">Обновить</button>
                                 </div>
                                 <div class="col-12 d-flex flex-wrap gap-2 justify-content-between align-items-center">
                                     <small class="text-muted">Найдено мастеров: <strong>{{ stylist_slots|length }}</strong></small>
@@ -760,4 +768,6 @@
         {% endif %}
     </div>
 </div>
+
+<script src="{% static 'js/dynamic_booking.js' %}"></script>
 {% endblock %}
