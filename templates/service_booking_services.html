@@ -106,6 +106,9 @@
     }
 
     .service-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
         background: rgba(255, 255, 255, 0.15);
         border: 1px solid rgba(255, 255, 255, 0.28);
         color: #fff;
@@ -113,6 +116,62 @@
         border-radius: 999px;
         font-weight: 500;
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+        text-decoration: none;
+    }
+
+    .service-chip:hover,
+    .service-chip:focus-visible {
+        background: rgba(255, 255, 255, 0.22);
+        color: #fff;
+        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 6px 18px rgba(0, 0, 0, 0.15);
+    }
+
+    .service-chip-removable {
+        position: relative;
+        padding-right: 0.9rem;
+    }
+
+    .service-chip-remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.28);
+        font-size: 0.8rem;
+        line-height: 1;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .add-service-form {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 0.85rem 1rem;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .add-service-form .form-label {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .add-service-form .form-select {
+        border-radius: 12px;
+        border-color: rgba(255, 255, 255, 0.25);
+        background-color: rgba(18, 27, 43, 0.35);
+        color: #fff;
+    }
+
+    .add-service-form .form-select option {
+        color: #1f2a33;
+    }
+
+    .add-service-form .btn {
+        border-radius: 12px;
     }
 
     .selected-services {
@@ -467,13 +526,47 @@
                                         <strong>{{ services|length }}</strong>
                                         <span class="text-white-50">услуг{{ services|length|pluralize:'у,и' }}</span>
                                     </span>
-                                    <small class="text-white-50">Нужно изменить выбор? Вернитесь на предыдущий шаг — данные сохранены.</small>
+                                    <small class="text-white-50">Нужно изменить выбор? Удалите или добавьте услуги прямо здесь — мы обновим мастеров автоматически.</small>
                                 </div>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% for service in services %}
-                                        <span class="service-chip">{{ service.name }}</span>
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
+                                    {% for item in services_with_actions %}
+                                        <a href="?{{ item.remove_query }}"
+                                           class="service-chip service-chip-removable"
+                                           title="Убрать услугу {{ item.service.name }}">
+                                            <span class="service-chip-label">{{ item.service.name }}</span>
+                                            <span class="service-chip-remove" aria-hidden="true">&times;</span>
+                                            <span class="visually-hidden">Удалить услугу {{ item.service.name }}</span>
+                                        </a>
                                     {% endfor %}
                                 </div>
+                                {% if salon_service_options %}
+                                    <form method="get" class="add-service-form mt-3 d-flex flex-wrap align-items-end gap-3">
+                                        {% for key, value in request.GET.items %}
+                                            {% if key != 'services' %}
+                                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% for sid in selected_service_ids %}
+                                            <input type="hidden" name="services" value="{{ sid }}">
+                                        {% endfor %}
+                                        <div class="flex-grow-1">
+                                            <label for="add-service-select" class="form-label mb-2">Добавить услугу салона</label>
+                                            <select id="add-service-select"
+                                                    name="services"
+                                                    class="form-select"
+                                                    required>
+                                                <option value="" selected disabled>Выберите услугу</option>
+                                                {% for option in salon_service_options %}
+                                                    <option value="{{ option.id }}"
+                                                            {% if option.id in selected_service_ids %}disabled{% endif %}>
+                                                        {{ option.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-outline-light">Добавить услугу</button>
+                                    </form>
+                                {% endif %}
                             </div>
                         {% else %}
                             <div class="bg-white bg-opacity-20 border border-light border-opacity-25 rounded-4 p-3 text-white mb-4">
