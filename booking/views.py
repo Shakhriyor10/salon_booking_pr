@@ -553,6 +553,7 @@ def service_booking(request):
     total_price = Decimal('0')
     total_duration = timedelta()
     stylist_slots = []
+    selected_stylist_slot = None
 
     if selected_service_ids:
         filters = {
@@ -625,17 +626,22 @@ def service_booking(request):
                     current += timedelta(minutes=15)
 
             if slots:
-                stylist_slots.append({
+                slot_entry = {
                     'stylist': stylist,
                     'services': relevant_services,
                     'price': ss_price,
                     'duration': ss_duration,
                     'slots': slots
-                })
+                }
+
+                stylist_slots.append(slot_entry)
 
                 if (selected_stylist and stylist.id == selected_stylist.id) or not selected_stylist:
                     total_price = ss_price
                     total_duration = ss_duration
+
+                if selected_stylist and stylist.id == selected_stylist.id:
+                    selected_stylist_slot = slot_entry
 
     context = {
         'services': ordered_services,
@@ -651,6 +657,7 @@ def service_booking(request):
         'selected_stylist': selected_stylist,
         'stylist_available_services': stylist_available_services,
         'removed_services': removed_services,
+        'selected_stylist_slot': selected_stylist_slot,
     }
 
     return render(request, 'service_booking.html', context)
