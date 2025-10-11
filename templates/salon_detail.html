@@ -6,250 +6,748 @@
 
 {% block content %}
 <style>
-  .add-to-cart {
-  background-color: #486b71;
-  color: #fff;
-  border: 1px solid #486b71;
-  padding: 8px 16px;
-  border-radius: 6px;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.add-to-cart:hover {
-  background-color: #36565a;
-  border-color: #36565a;
-  color: #fff;
-}
-
-.add-to-cart.added {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
-}
-
-.add-to-cart.added:hover {
-  background-color: #218838;
-  border-color: #218838;
-}
-  .floating-cart {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 999;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+  .salon-detail-page {
+    color: #2c3e50;
   }
 
-  .floating-cart.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+  .salon-hero {
+    --hero-primary: rgba(72, 107, 113, 0.95);
+    --hero-secondary: rgba(19, 41, 45, 0.92);
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--hero-primary), var(--hero-secondary));
+    color: #fff;
+    padding: 3rem;
+    box-shadow: 0 25px 45px rgba(10, 25, 28, 0.25);
+    transition: background 0.6s ease;
+  }
+
+  .salon-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  .salon-hero .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .salon-hero .hero-info {
+    flex: 1 1 360px;
+  }
+
+  .salon-hero .hero-info h1 {
+    font-size: clamp(2.2rem, 3vw, 3rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .salon-hero .salon-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .salon-hero .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+  }
+
+  .salon-hero .hero-image-wrapper {
+    flex: 0 0 260px;
+    max-width: 320px;
+    aspect-ratio: 4 / 5;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.35);
+  }
+
+  .salon-hero .hero-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .section-heading {
+    position: relative;
+    font-weight: 700;
+    text-align: center;
+    margin: 4rem 0 2.5rem;
+    font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+    color: #152a2d;
+  }
+
+  .section-heading::after {
+    content: "";
+    display: block;
+    width: 80px;
+    height: 3px;
+    margin: 0.75rem auto 0;
+    background: linear-gradient(90deg, #486b71, #82a7ad);
+    border-radius: 999px;
+  }
+
+  .info-paragraph {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .category-card,
+  .service-card,
+  .stylist-card,
+  .contact-card,
+  .reviews-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(15, 34, 36, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #fff;
+  }
+
+  .category-card:hover,
+  .service-card:hover,
+  .stylist-card:hover,
+  .reviews-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 45px rgba(15, 34, 36, 0.12);
+  }
+
+  .category-card img,
+  .service-card img {
+    height: 220px;
+    object-fit: cover;
+  }
+
+  .category-card .card-body,
+  .service-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .btn-theme {
+    background: linear-gradient(135deg, #486b71, #355257);
+    color: #fff !important;
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .btn-theme:hover,
+  .btn-theme:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(72, 107, 113, 0.25);
+  }
+
+  .btn-outline-theme {
+    border-radius: 999px;
+    border: 1px solid #486b71;
+    color: #486b71;
+    padding: 0.55rem 1.3rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+  }
+
+  .btn-outline-theme:hover,
+  .btn-outline-theme.added {
+    color: #fff;
+    background: linear-gradient(135deg, #4caf50, #3c8c40);
+    border-color: transparent;
+  }
+
+  .btn-outline-theme.added:hover {
+    background: linear-gradient(135deg, #e2574c, #cc473d);
+  }
+
+  .stylist-card .avatar-wrapper {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 6px solid rgba(72, 107, 113, 0.12);
+    box-shadow: 0 10px 25px rgba(19, 41, 45, 0.12);
+  }
+
+  .stylist-card .avatar-wrapper img,
+  .stylist-card .avatar-wrapper .placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #f0f4f5, #e5eced);
+    color: #486b71;
+  }
+
+  .stylist-card .badge-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(72, 107, 113, 0.12);
+    color: #2c3e50;
+  }
+
+  .stylist-card ul {
+    background: #f7f9fa;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    min-height: 120px;
+  }
+
+  .contact-card {
+    padding: 2rem;
+  }
+
+  .contact-card .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .contact-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(72, 107, 113, 0.12);
+    color: #486b71;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .reviews-card {
+    margin-top: 2rem;
+    background: #f9fbfb;
+  }
+
+  .review-form .form-label {
+    font-weight: 600;
+    color: #1d3236;
+  }
+
+  .review-item + .review-item {
+    border-top: 1px solid rgba(15, 34, 36, 0.08);
+    padding-top: 1.25rem;
+    margin-top: 1.25rem;
+  }
+
+  #star-rating i {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+
+  #star-rating i:hover {
+    transform: scale(1.15);
+  }
+
+  .floating-cart {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    box-shadow: 0 18px 35px rgba(18, 42, 45, 0.18);
+    gap: 0.75rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
   .floating-cart.d-none {
     opacity: 0;
     pointer-events: none;
-    transform: translateX(-50%) translateY(20px);
+    transform: translate(-50%, 30px);
   }
 
-  .btn-custom {
-    background-color: #486b71;
+  .floating-cart .btn-custom {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #486b71, #36565a);
     color: #fff;
     border: none;
-    padding: 12px 24px;
-    font-weight: 500;
-    border-radius: 8px;
+    padding: 0.65rem 1.5rem;
+    font-weight: 600;
   }
 
-  .btn-custom:hover {
-    background-color: #36565a;
+  .floating-cart .btn-outline-danger {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 991px) {
+    .salon-hero {
+      padding: 2.2rem;
+      border-radius: 18px;
+    }
+
+    .salon-hero .hero-content {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .salon-hero .salon-meta {
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .salon-hero {
+      padding: 1.8rem;
+    }
+
+    .salon-hero .hero-image-wrapper {
+      width: 100%;
+      aspect-ratio: 3 / 2;
+    }
+
+    .floating-cart {
+      left: 16px;
+      right: 16px;
+      transform: translateY(0);
+      border-radius: 18px;
+      justify-content: space-between;
+    }
+
+    .floating-cart.d-none {
+      transform: translateY(30px);
+    }
   }
 </style>
-{% if categories %}
-  <h3 class="text-center fw-semibold mt-4 mb-3">Категории</h3>
-  <div class="row">
-    {% for category in categories %}
-      <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm">
-          {% if category.photo %}
-            <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.photo.url }}">
+
+<div class="salon-detail-page">
+  <section class="salon-hero">
+    <div class="hero-content">
+      <div class="hero-info">
+        <h1>{{ salon.name }}</h1>
+        <div class="salon-meta">
+          <div class="meta-chip"><i class="bi bi-geo-alt"></i> {{ salon.address }}</div>
+          {% if salon.phone %}
+            <div class="meta-chip"><i class="bi bi-telephone"></i> {{ salon.phone }}</div>
           {% endif %}
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title text-center">{{ category.name }}</h5>
-            <a href="{% url 'category_services' category.id %}?salon={{ salon.id }}" class="btn mt-auto"
-               style="background-color: #486b71; color: #fff">Открыть</a>
-          </div>
+          <div class="meta-chip"><i class="bi bi-star-fill text-warning"></i> {{ average_rating|floatformat:1 }}/5</div>
         </div>
+        {% if salon.description %}
+          <p class="info-paragraph mb-4">{{ salon.description }}</p>
+        {% endif %}
+        <a href="{% url 'service_booking' %}?salon={{ salon.id }}" class="btn btn-theme">
+          Забронировать услугу
+        </a>
       </div>
-    {% endfor %}
-  </div>
-{% endif %}
-
-
-{% if uncategorized_services %}
-  <h3 class="text-center fw-semibold mt-4 mb-3">Все услуги</h3>
-  <div class="row">
-    {% for salon_service in uncategorized_services %}
-      <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm">
-          {% if salon_service.service.photo %}
-            <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
-          {% endif %}
-          <div class="card-body d-flex flex-column">
-            <h5 class="card-title text-center">{{ salon_service.service.name }}</h5>
-<button
-              class="btn btn-outline-primary mt-auto add-to-cart"
-              data-service-id="{{ salon_service.service.id }}">
-              ➕ Добавить услугу
-            </button>
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-
-{% if stylists %}
-  <h3 class="text-center fw-semibold mt-4 mb-3">Наши мастера</h3>
-  <div class="row">
-    {% for stylist in stylists %}
-      <div class="col-md-4 col-sm-6 mb-4">
-        <div class="card h-100 shadow-sm">
-          <div class="card-body d-flex flex-column">
-            {% with name=stylist.user.get_full_name|default:stylist.user.username %}
-            <div class="d-flex justify-content-center mb-3">
-              {% if stylist.avatar %}
-                <img src="{{ stylist.avatar.url }}" alt="{{ name }}"
-                     class="rounded-circle"
-                     style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #dee2e6;">
-              {% else %}
-                <div class="rounded-circle d-flex align-items-center justify-content-center"
-                     style="width: 120px; height: 120px; background-color: #f1f3f5; border: 3px solid #dee2e6;">
-                  <span class="fw-semibold" style="font-size: 42px; color: #486b71;">
-                    {{ name|slice:":1"|upper }}
-                  </span>
-                </div>
-              {% endif %}
-            </div>
-
-            <h5 class="card-title text-center">{{ name }}</h5>
-
-            <div class="text-center mb-3">
-              {% if stylist.level %}
-                {% if stylist.level.name == "Топ Барбер" %}
-                  <span class="badge bg-warning text-dark">★ {{ stylist.level.name }}</span>
-                {% elif stylist.level.name == "Старший Барбер" %}
-                  <span class="badge bg-success">💈 {{ stylist.level.name }}</span>
-                {% elif stylist.level.name == "Барбер" %}
-                  <span class="badge bg-secondary">✂️ {{ stylist.level.name }}</span>
-                {% else %}
-                  <span class="badge bg-light text-dark">{{ stylist.level.name }}</span>
-                {% endif %}
-              {% else %}
-                <span class="badge bg-light text-dark">Барбер</span>
-              {% endif %}
-            </div>
-
-            {% with services_list=stylist.salon_services_for_display %}
-              {% if services_list %}
-                <ul class="list-unstyled small text-muted flex-grow-1">
-                  {% for ss in services_list|slice:":3" %}
-                    <li>• {{ ss.salon_service.service.name }}</li>
-                  {% endfor %}
-                  {% with total=services_list|length %}
-                    {% if total > 3 %}
-                      <li class="text-muted">и ещё {{ total|add:"-3" }} услуг</li>
-                    {% endif %}
-                  {% endwith %}
-                </ul>
-              {% else %}
-                <p class="text-muted small text-center flex-grow-1">Услуги мастера пока не добавлены.</p>
-              {% endif %}
-            {% endwith %}
-
-            <a href="{% url 'service_booking' %}?salon={{ salon.id }}&stylist={{ stylist.id }}"
-               class="btn mt-auto"
-               style="background-color: #486b71; color: #fff;">
-              Выбрать мастера
-            </a>
-            {% endwith %}
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-
-<h3 class="text-center fw-semibold mt-4 mb-3">Контакты</h3>
-
-  <div class="row">
-    <!-- Карта -->
-    <div class="col-md-8 mb-4">
-      <div class="ratio ratio-4x3 rounded shadow">
-        {% if salon.latitude and salon.longitude %}
-        {% with lat=salon.latitude|stringformat:"f"|cut:","|add:"." %}
-        {% with lon=salon.longitude|stringformat:"f"|cut:","|add:"." %}
-        <iframe
-                src="https://yandex.ru/map-widget/v1/?ll={{ lon }},{{ lat }}&z=15&pt={{ lon }},{{ lat }},pm2rdm"
-                width="100%"
-                height="400"
-                frameborder="0"
-                allowfullscreen>
-        </iframe>
-        {% endwith %}
-        {% endwith %}
+      <div class="hero-image-wrapper">
+        {% if salon.photo %}
+          <img src="{{ salon.photo.url }}" alt="{{ salon.name }}">
         {% else %}
-        <p>Координаты не указаны.</p>
+          <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" alt="Salon placeholder">
         {% endif %}
       </div>
     </div>
+  </section>
 
-    <!-- Информация -->
-    <div class="col-md-4">
-      <h2>{{ salon.name }}</h2>
-      {% if salon.photo %}
-        <img src="{{ salon.photo.url }}" alt="{{ salon.name }}" class="img-fluid rounded mb-3">
-      {% endif %}
-      <p><strong>Адрес:</strong> {{ salon.address }}</p>
-      <p><strong>Телефон:</strong> {{ salon.phone }}</p>
-      <p><strong>Описание:</strong> {{ salon.description }}</p>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const heroSection = document.querySelector(".salon-hero");
+      const heroImage = heroSection?.querySelector(".hero-image-wrapper img");
+
+      if (!heroSection || !heroImage) {
+        return;
+      }
+
+      const computedStyles = getComputedStyle(heroSection);
+      const fallbackPrimary = (computedStyles.getPropertyValue("--hero-primary") || "rgba(72, 107, 113, 0.95)").trim();
+      const fallbackSecondary = (computedStyles.getPropertyValue("--hero-secondary") || "rgba(19, 41, 45, 0.92)").trim();
+
+      const applyGradient = (primary, secondary) => {
+        heroSection.style.setProperty("--hero-primary", primary);
+        heroSection.style.setProperty("--hero-secondary", secondary);
+        heroSection.style.background = `linear-gradient(135deg, ${primary}, ${secondary})`;
+      };
+
+      const rgbToHsl = (r, g, b) => {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h = 0;
+        let s = 0;
+        const l = (max + min) / 2;
+
+        if (max !== min) {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+          switch (max) {
+            case r:
+              h = (g - b) / d + (g < b ? 6 : 0);
+              break;
+            case g:
+              h = (b - r) / d + 2;
+              break;
+            default:
+              h = (r - g) / d + 4;
+          }
+
+          h /= 6;
+        }
+
+        return { h, s, l };
+      };
+
+      const hueToRgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+
+      const hslToRgba = (h, s, l, alpha) => {
+        let r;
+        let g;
+        let b;
+
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hueToRgb(p, q, h + 1 / 3);
+          g = hueToRgb(p, q, h);
+          b = hueToRgb(p, q, h - 1 / 3);
+        }
+
+        return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${alpha})`;
+      };
+
+      const createGradientFromColor = (r, g, b) => {
+        const { h, s, l } = rgbToHsl(r, g, b);
+        const elevatedSaturation = Math.min(1, s * 1.05 + 0.02);
+        const softerSaturation = Math.min(1, s * 0.85 + 0.05);
+        const lighterTone = Math.min(0.9, l + 0.12);
+        const deeperTone = Math.max(0.12, l - 0.22);
+        const primary = hslToRgba(h, softerSaturation, lighterTone, 0.95);
+        const secondary = hslToRgba(h, elevatedSaturation, deeperTone, 0.92);
+        applyGradient(primary, secondary);
+      };
+
+      const extractAverageColor = image => {
+        try {
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+
+          if (!context) {
+            throw new Error("Canvas not supported");
+          }
+
+          const sampleWidth = 80;
+          const aspectRatio = image.naturalHeight && image.naturalWidth
+            ? image.naturalHeight / image.naturalWidth
+            : 1;
+          const sampleHeight = Math.max(1, Math.round(sampleWidth * aspectRatio));
+
+          canvas.width = sampleWidth;
+          canvas.height = sampleHeight;
+
+          context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+
+          const { data } = context.getImageData(0, 0, sampleWidth, sampleHeight);
+
+          let r = 0;
+          let g = 0;
+          let b = 0;
+          let count = 0;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            if (alpha < 32) {
+              continue;
+            }
+
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            count += 1;
+          }
+
+          if (!count) {
+            throw new Error("No opaque pixels detected");
+          }
+
+          createGradientFromColor(Math.round(r / count), Math.round(g / count), Math.round(b / count));
+        } catch (error) {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+        }
+      };
+
+      const prepareImageForSampling = () => {
+        const sampleSource = heroImage.currentSrc || heroImage.src;
+
+        if (!sampleSource) {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+          return;
+        }
+
+        const sampler = new Image();
+        const isSameOrigin = sampleSource.startsWith(window.location.origin);
+
+        if (!isSameOrigin) {
+          sampler.crossOrigin = "anonymous";
+        }
+
+        sampler.src = sampleSource;
+
+        if (sampler.complete && sampler.naturalWidth) {
+          extractAverageColor(sampler);
+        } else {
+          sampler.onload = () => extractAverageColor(sampler);
+          sampler.onerror = () => applyGradient(fallbackPrimary, fallbackSecondary);
+        }
+      };
+
+      if (heroImage.complete && heroImage.naturalWidth) {
+        prepareImageForSampling();
+      } else {
+        heroImage.addEventListener("load", prepareImageForSampling, { once: true });
+        heroImage.addEventListener("error", () => applyGradient(fallbackPrimary, fallbackSecondary), { once: true });
+      }
+    });
+  </script>
+
+  {% if categories %}
+    <h2 class="section-heading">Категории услуг</h2>
+    <div class="row g-4">
+      {% for category in categories %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card category-card h-100">
+            {% if category.photo %}
+              <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ category.name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title text-center fw-semibold">{{ category.name }}</h5>
+              <a href="{% url 'category_services' category.id %}?salon={{ salon.id }}" class="btn btn-theme mt-auto">Открыть категорию</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if uncategorized_services %}
+    <h2 class="section-heading">Популярные услуги</h2>
+    <div class="row g-4">
+      {% for salon_service in uncategorized_services %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card service-card h-100">
+            {% if salon_service.service.photo %}
+              <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1502786129293-79981df4e689?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ salon_service.service.name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title text-center fw-semibold">{{ salon_service.service.name }}</h5>
+              <button class="btn btn-outline-theme add-to-cart mt-auto" data-service-id="{{ salon_service.service.id }}">
+                ➕ Добавить услугу
+              </button>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if stylists %}
+    <h2 class="section-heading">Наши мастера</h2>
+    <div class="row g-4">
+      {% for stylist in stylists %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card stylist-card h-100">
+            <div class="card-body d-flex flex-column text-center">
+              {% with name=stylist.user.get_full_name|default:stylist.user.username %}
+                <div class="avatar-wrapper">
+                  {% if stylist.avatar %}
+                    <img src="{{ stylist.avatar.url }}" alt="{{ name }}">
+                  {% else %}
+                    <div class="placeholder">{{ name|slice:":1"|upper }}</div>
+                  {% endif %}
+                </div>
+
+                <h5 class="fw-semibold">{{ name }}</h5>
+
+                <div class="mb-3">
+                  {% if stylist.level %}
+                    {% if stylist.level.name == "Топ Барбер" %}
+                      <span class="badge-level" style="background: rgba(255, 193, 7, 0.18); color: #9a6b00;">★ {{ stylist.level.name }}</span>
+                    {% elif stylist.level.name == "Старший Барбер" %}
+                      <span class="badge-level" style="background: rgba(25, 135, 84, 0.15); color: #19633d;">💈 {{ stylist.level.name }}</span>
+                    {% elif stylist.level.name == "Барбер" %}
+                      <span class="badge-level" style="background: rgba(108, 117, 125, 0.18); color: #495057;">✂️ {{ stylist.level.name }}</span>
+                    {% else %}
+                      <span class="badge-level">{{ stylist.level.name }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge-level">Барбер</span>
+                  {% endif %}
+                </div>
+
+                {% with services_list=stylist.salon_services_for_display %}
+                  {% if services_list %}
+                    <ul class="list-unstyled small text-muted text-start mx-auto flex-grow-1">
+                      {% for ss in services_list|slice:":3" %}
+                        <li>• {{ ss.salon_service.service.name }}</li>
+                      {% endfor %}
+                      {% with total=services_list|length %}
+                        {% if total > 3 %}
+                          <li class="text-muted">и ещё {{ total|add:"-3" }} услуг</li>
+                        {% endif %}
+                      {% endwith %}
+                    </ul>
+                  {% else %}
+                    <p class="text-muted small flex-grow-1">Услуги мастера пока не добавлены.</p>
+                  {% endif %}
+                {% endwith %}
+
+                <a href="{% url 'service_booking' %}?salon={{ salon.id }}&stylist={{ stylist.id }}" class="btn btn-theme mt-3">
+                  Выбрать мастера
+                </a>
+              {% endwith %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <h2 class="section-heading">Контакты и расположение</h2>
+  <div class="row g-4 align-items-stretch">
+    <div class="col-lg-7">
+      <div class="ratio ratio-4x3 rounded-4 shadow-sm overflow-hidden">
+        {% if salon.latitude and salon.longitude %}
+          {% with lat=salon.latitude|stringformat:"f"|cut:","|add:"." %}
+            {% with lon=salon.longitude|stringformat:"f"|cut:","|add:"." %}
+              <iframe src="https://yandex.ru/map-widget/v1/?ll={{ lon }},{{ lat }}&z=15&pt={{ lon }},{{ lat }},pm2rdm" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+            {% endwith %}
+          {% endwith %}
+        {% else %}
+          <div class="d-flex flex-column justify-content-center align-items-center h-100 text-muted">
+            <i class="bi bi-geo-alt display-5 mb-3"></i>
+            <p class="mb-0">Координаты не указаны.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card contact-card h-100">
+        <div class="card-body">
+          <div class="contact-item">
+            <div class="contact-icon"><i class="bi bi-building"></i></div>
+            <div>
+              <div class="text-muted text-uppercase small">Салон</div>
+              <h5 class="mb-0">{{ salon.name }}</h5>
+            </div>
+          </div>
+          <div class="contact-item">
+            <div class="contact-icon"><i class="bi bi-geo"></i></div>
+            <div>
+              <div class="text-muted text-uppercase small">Адрес</div>
+              <p class="mb-0">{{ salon.address }}</p>
+            </div>
+          </div>
+          {% if salon.phone %}
+            <div class="contact-item">
+              <div class="contact-icon"><i class="bi bi-telephone"></i></div>
+              <div>
+                <div class="text-muted text-uppercase small">Телефон</div>
+                <a href="tel:{{ salon.phone }}" class="text-decoration-none fw-semibold text-dark">{{ salon.phone }}</a>
+              </div>
+            </div>
+          {% endif %}
+          {% if salon.description %}
+            <div class="contact-item mb-0">
+              <div class="contact-icon"><i class="bi bi-card-text"></i></div>
+              <div>
+                <div class="text-muted text-uppercase small">О салоне</div>
+                <p class="mb-0">{{ salon.description }}</p>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
     </div>
   </div>
 
-
-
-  <!-- Название салона -->
-  <div class="card mb-4 shadow-sm">
+  <section class="card reviews-card border-0 mt-5">
     <div class="card-body">
-      <h2 class="card-title">{{ object.name }}</h2>
-
-      <!-- Средняя оценка -->
-      <div class="d-flex align-items-center mt-3 mb-4">
-        <div class="me-2 text-warning fs-5">
-          {% for _ in stars.full %}
-            <i class="bi bi-star-fill"></i>
-          {% endfor %}
-          {% if stars.half %}
-            <i class="bi bi-star-half"></i>
-          {% endif %}
-          {% for _ in stars.empty %}
-            <i class="bi bi-star"></i>
-          {% endfor %}
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div>
+          <h3 class="mb-1">Отзывы клиентов</h3>
+          <div class="d-flex align-items-center text-warning fs-5">
+            {% for _ in stars.full %}
+              <i class="bi bi-star-fill"></i>
+            {% endfor %}
+            {% if stars.half %}
+              <i class="bi bi-star-half"></i>
+            {% endif %}
+            {% for _ in stars.empty %}
+              <i class="bi bi-star"></i>
+            {% endfor %}
+            <span class="ms-2 text-muted">{{ average_rating|floatformat:1 }} / 5</span>
+          </div>
         </div>
-        <span class="text-muted">({{ average_rating|floatformat:1 }}/5)</span>
+        <a href="#review-form" class="btn btn-theme mt-3 mt-md-0">Оставить отзыв</a>
       </div>
 
-      <!-- Блок отправки отзыва -->
-      <div class="card mb-5">
+      <div class="card mb-4 border-0 shadow-sm">
         <div class="card-header bg-light">
-          <h5 class="mb-0">Оставить отзыв</h5>
+          <h5 class="mb-0">Поделитесь впечатлением</h5>
         </div>
         <div class="card-body">
-          <form method="post">
+          <form method="post" id="review-form" class="review-form">
             {% csrf_token %}
-
-            <!-- Рейтинг звёздами -->
             <div class="mb-3">
-              <label class="form-label d-block">Ваша оценка:</label>
+              <label class="form-label d-block">Ваша оценка</label>
               <div id="star-rating" class="text-warning fs-4">
                 {% for i in "12345" %}
                   <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
@@ -257,73 +755,60 @@
               </div>
               <input type="hidden" name="rating" id="rating-value" required>
             </div>
-
-            <!-- Комментарий -->
             <div class="mb-3">
               <label for="id_comment" class="form-label">Комментарий</label>
               <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
             </div>
-
-            <button type="submit" class="btn" style="background-color: #486b71; color: #fff">Отправить</button>
+            <button type="submit" class="btn btn-theme">Отправить отзыв</button>
           </form>
         </div>
       </div>
 
-      <!-- Список отзывов -->
-      <div class="card">
-        <div class="card-header bg-light">
-          <h5 class="mb-0">Отзывы клиентов</h5>
-        </div>
-        <div class="card-body">
-          {% if reviews %}
-            {% for review in reviews %}
-              <div class="border-bottom pb-3 mb-3">
-                <div class="d-flex justify-content-between mb-1">
-                  <strong>{{ review.user.username }}</strong>
-                  <small class="text-muted">{{ review.created_at|date:"d M Y, H:i" }}</small>
-                </div>
-                <div class="text-warning mb-1">
-                  {% for i in "12345"|make_list %}
-                    {% if forloop.counter <= review.rating %}
-                      <i class="bi bi-star-fill"></i>
-                    {% else %}
-                      <i class="bi bi-star"></i>
-                    {% endif %}
-                  {% endfor %}
-                </div>
-                {% if review.comment %}
-                  <p class="mb-0">{{ review.comment }}</p>
-                {% endif %}
+      {% if reviews %}
+        <div class="list-group list-group-flush">
+          {% for review in reviews %}
+            <div class="list-group-item review-item border-0 px-0">
+              <div class="d-flex justify-content-between flex-wrap gap-2 mb-1">
+                <strong>{{ review.user.username }}</strong>
+                <small class="text-muted">{{ review.created_at|date:"d M Y, H:i" }}</small>
               </div>
-            {% endfor %}
-          {% else %}
-            <p class="text-muted">Отзывов пока нет. Будьте первым!</p>
-          {% endif %}
+              <div class="text-warning mb-2">
+                {% for i in "12345"|make_list %}
+                  {% if forloop.counter <= review.rating %}
+                    <i class="bi bi-star-fill"></i>
+                  {% else %}
+                    <i class="bi bi-star"></i>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% if review.comment %}
+                <p class="mb-0">{{ review.comment }}</p>
+              {% endif %}
+            </div>
+          {% endfor %}
         </div>
-      </div>
-
+      {% else %}
+        <p class="text-muted mb-0">Отзывов пока нет. Будьте первым!</p>
+      {% endif %}
     </div>
-  </div>
+  </section>
+</div>
 
-<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center gap-2">
+<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center">
   <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
     Перейти к записи (<span id="cart-count">0</span>)
   </button>
   <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
 </div>
 
-
-  <!-- Услуги -->
 <script>
   const stars = document.querySelectorAll('#star-rating i');
   const ratingInput = document.getElementById('rating-value');
-  const form = document.querySelector('form');
+  const reviewForm = document.getElementById('review-form');
 
-  // При клике по звезде устанавливаем значение и меняем классы
   stars.forEach((star, idx) => {
     star.addEventListener('click', () => {
       ratingInput.value = idx + 1;
-
       stars.forEach((s, i) => {
         s.classList.toggle('bi-star-fill', i <= idx);
         s.classList.toggle('bi-star', i > idx);
@@ -331,8 +816,7 @@
     });
   });
 
-  // Не даём отправить форму, если звезда не выбрана
-  form.addEventListener('submit', (e) => {
+  reviewForm.addEventListener('submit', (e) => {
     if (!ratingInput.value) {
       e.preventDefault();
       alert('Пожалуйста, выберите количество звёзд.');
@@ -349,39 +833,37 @@
     localStorage.setItem("cart", JSON.stringify(cart));
   }
 
-function updateCartUI() {
-  const cart = getCart();
-  const count = cart.length;
-  document.getElementById("cart-count").textContent = count;
-  const bookingButton = document.getElementById("go-to-booking");
-  bookingButton.disabled = count === 0;
+  function updateCartUI() {
+    const cart = getCart();
+    const count = cart.length;
+    document.getElementById("cart-count").textContent = count;
+    const bookingButton = document.getElementById("go-to-booking");
+    bookingButton.disabled = count === 0;
 
-  const floatingCart = document.getElementById("floating-cart-button");
-  if (count > 0) {
-    floatingCart.classList.remove("d-none");
-    floatingCart.classList.add("show");
-  } else {
-    floatingCart.classList.remove("show");
-    floatingCart.classList.add("d-none");
-  }
-
-  document.querySelectorAll(".add-to-cart").forEach(btn => {
-    const id = parseInt(btn.dataset.serviceId);
-    if (cart.includes(id)) {
-      btn.textContent = "✅ Добавлено (нажми чтобы удалить)";
-      btn.classList.add("added");
+    const floatingCart = document.getElementById("floating-cart-button");
+    if (count > 0) {
+      floatingCart.classList.remove("d-none");
+      floatingCart.classList.add("show");
     } else {
-      btn.textContent = "➕ Добавить услугу";
-      btn.classList.remove("added");
+      floatingCart.classList.remove("show");
+      floatingCart.classList.add("d-none");
     }
-  });
-}
 
+    document.querySelectorAll(".add-to-cart").forEach(btn => {
+      const id = parseInt(btn.dataset.serviceId);
+      if (cart.includes(id)) {
+        btn.textContent = "✅ Добавлено (нажмите, чтобы удалить)";
+        btn.classList.add("added");
+      } else {
+        btn.textContent = "➕ Добавить услугу";
+        btn.classList.remove("added");
+      }
+    });
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
     updateCartUI();
 
-    // Кнопки "Добавить в корзину"
     document.querySelectorAll(".add-to-cart").forEach(button => {
       button.addEventListener("click", () => {
         const serviceId = parseInt(button.dataset.serviceId);
@@ -395,79 +877,57 @@ function updateCartUI() {
 
         saveCart(cart);
         updateCartUI();
+        localStorage.setItem("cartTimestamp", Date.now().toString());
       });
     });
 
-    // Кнопка "Перейти к записи"
     document.getElementById("go-to-booking").addEventListener("click", (event) => {
-  const cart = getCart();
-  if (cart.length === 0) return;
+      const cart = getCart();
+      if (cart.length === 0) return;
 
-  const salonId = event.target.dataset.salonId;
+      const salonId = event.target.dataset.salonId;
 
-  if (!salonId) {
-    alert("Ошибка: salon ID не найден");
-    return;
-  }
+      if (!salonId) {
+        alert("Ошибка: salon ID не найден");
+        return;
+      }
 
-  const params = new URLSearchParams();
-  params.append("salon", salonId);
-  cart.forEach(id => params.append("services", id));
+      const params = new URLSearchParams();
+      params.append("salon", salonId);
+      cart.forEach(id => params.append("services", id));
 
-  window.location.href = `/booking/?${params.toString()}`;
-});
+      window.location.href = `/booking/?${params.toString()}`;
+    });
   });
 </script>
 <script>
-  const currentSalonId = "{{ salon.id }}";  // Текущий ID салона
+  const currentSalonId = "{{ salon.id }}";
   const savedSalonId = localStorage.getItem("currentSalonId");
 
-  // Проверка: если салон сменился — удаляем корзину
   if (savedSalonId && savedSalonId !== currentSalonId) {
-    localStorage.removeItem("cart");
-    localStorage.removeItem("cartTimestamp");  // Удалим и метку времени
-  }
-
-  // Сохраняем текущий ID салона
-  localStorage.setItem("currentSalonId", currentSalonId);
-
-  // Очистка корзины по таймеру 15 минут
-  const now = Date.now();
-  const cartTimestamp = localStorage.getItem("cartTimestamp");
-
-  if (cartTimestamp && now - parseInt(cartTimestamp) > 15 * 60 * 1000) {
-    // Если прошло больше 15 минут — очищаем корзину
     localStorage.removeItem("cart");
     localStorage.removeItem("cartTimestamp");
   }
 
-  // При добавлении услуги — обновим таймер
-  document.querySelectorAll(".add-to-cart").forEach(button => {
-    button.addEventListener("click", () => {
-      localStorage.setItem("cartTimestamp", Date.now().toString());
+  localStorage.setItem("currentSalonId", currentSalonId);
+
+  const now = Date.now();
+  const cartTimestamp = localStorage.getItem("cartTimestamp");
+
+  if (cartTimestamp && now - parseInt(cartTimestamp) > 15 * 60 * 1000) {
+    localStorage.removeItem("cart");
+    localStorage.removeItem("cartTimestamp");
+  }
+
+  document.getElementById("clear-cart").addEventListener("click", function () {
+    localStorage.removeItem("cart");
+    localStorage.removeItem("cartTimestamp");
+    document.getElementById("cart-count").textContent = "0";
+    document.getElementById("floating-cart-button").classList.add("d-none");
+    document.querySelectorAll(".add-to-cart").forEach(button => {
+      button.className = "btn btn-outline-theme add-to-cart";
+      button.textContent = "➕ Добавить услугу";
     });
   });
-
-
-document.getElementById("clear-cart").addEventListener("click", function () {
-  // Очистка localStorage
-  localStorage.removeItem("cart");
-  localStorage.removeItem("cartTimestamp");
-
-  // Сбросить счётчик
-  document.getElementById("cart-count").textContent = "0";
-
-  // Скрыть кнопку корзины
-  document.getElementById("floating-cart-button").classList.add("d-none");
-
-  // Сбросить все кнопки "Добавлено" обратно в "Добавить услугу"
-  document.querySelectorAll(".add-to-cart").forEach(button => {
-    // Полный сброс классов до начального состояния
-    button.className = "btn btn-outline-primary mt-auto add-to-cart";
-    button.textContent = "➕ Добавить услугу";
-  });
-});
-
-
 </script>
 {% endblock %}
