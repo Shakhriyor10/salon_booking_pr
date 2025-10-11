@@ -47,6 +47,23 @@ from django.db.models.deletion import ProtectedError
 
 PHONE_RE = re.compile(r'^\+?\d{9,15}$')
 
+
+def format_duration(duration):
+    """Format a timedelta into a human-readable string."""
+    if not duration:
+        return "0 мин"
+
+    total_minutes = int(duration.total_seconds() // 60)
+    hours, minutes = divmod(total_minutes, 60)
+
+    parts = []
+    if hours:
+        parts.append(f"{hours} ч")
+    if minutes or not parts:
+        parts.append(f"{minutes} мин")
+
+    return " ".join(parts)
+
 class HomePageView(ListView):
     model = Salon
     template_name = 'salon.html'
@@ -658,6 +675,7 @@ def service_booking(request):
                 'services': relevant_services,
                 'price': ss_price,
                 'duration': ss_duration,
+                'duration_display': format_duration(ss_duration),
                 'slots': slots
             }
 
@@ -681,6 +699,9 @@ def service_booking(request):
                 if slot.strftime('%Y-%m-%dT%H:%M') == auto_selected_slot:
                     auto_selected_slot_dt = slot
                     break
+
+        if stylist_slots:
+            stylist_slots.sort(key=lambda entry: entry['slots'][0])
 
         if selected_stylist and (not selected_stylist_slot or not selected_stylist_slot.get('slots')):
             search_date = selected_date + timedelta(days=1)
@@ -717,6 +738,7 @@ def service_booking(request):
         'max_date': max_date,
         'service_ids': selected_service_ids,
         'selected_service_ids': selected_service_ids,
+        'services_list': selected_service_ids,
         'total_price': total_price,
         'total_duration': total_duration,
         'selected_stylist': selected_stylist,
@@ -729,7 +751,11 @@ def service_booking(request):
         'next_slot_not_found': next_slot_not_found,
     }
 
-    return render(request, 'service_booking.html', context)
+    template_name = 'service_booking.html'
+    if selected_service_ids and not selected_stylist:
+        template_name = 'service_booking_services.html'
+
+    return render(request, template_name, context)
 
 def group_appointments_by_date(appointments):
     grouped = defaultdict(list)
