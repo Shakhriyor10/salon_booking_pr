@@ -617,6 +617,7 @@ def service_booking(request):
     stylist_slots = []
     selected_stylist_slot = None
     next_available_slot = None
+    next_available_slots = []
     auto_selected_slot = request.GET.get('auto_slot')
     auto_selected_slot_dt = None
 
@@ -750,45 +751,70 @@ def service_booking(request):
                 search_date += timedelta(days=1)
 
         if not selected_stylist and not stylist_slots and stylist_to_services:
+            pending_stylists = set(stylist_to_services.keys())
             search_date = selected_date + timedelta(days=1)
-            while search_date <= max_date:
-                closest_slot = None
-                for stylist_id in stylist_to_services:
+
+            while pending_stylists and search_date <= max_date:
+                for stylist_id in list(pending_stylists):
                     slot_entry = build_slot_entry(stylist_id, search_date)
                     if not slot_entry:
                         continue
 
                     first_slot = slot_entry['slots'][0]
-                    if not closest_slot or first_slot < closest_slot['slot']:
-                        closest_slot = {
-                            'date': search_date,
-                            'slot': first_slot,
-                            'price': slot_entry['price'],
-                            'duration': slot_entry['duration'],
-                            'stylist': slot_entry['stylist'],
-                            'stylist_id': stylist_id,
-                            'auto_slot_str': first_slot.strftime('%Y-%m-%dT%H:%M'),
-                        }
+                    slot_payload = {
+                        'date': search_date,
+                        'slot': first_slot,
+                        'price': slot_entry['price'],
+                        'duration': slot_entry['duration'],
+                        'stylist': slot_entry['stylist'],
+                        'stylist_id': stylist_id,
+                        'auto_slot_str': first_slot.strftime('%Y-%m-%dT%H:%M'),
+                    }
 
-                if closest_slot:
-                    next_available_slot = closest_slot
-                    break
+                    next_available_slots.append(slot_payload)
+
+                    if not next_available_slot or first_slot < next_available_slot['slot']:
+                        next_available_slot = slot_payload
+
+                    pending_stylists.remove(stylist_id)
 
                 search_date += timedelta(days=1)
 
+            next_available_slots.sort(key=lambda entry: entry['slot'])
+
         if find_next_requested:
-            if next_available_slot:
+            target_slot = next_available_slot
+
+            preferred_stylist_id = request.GET.get('next_stylist')
+            preferred_slot_str = request.GET.get('next_slot')
+
+            if preferred_stylist_id or preferred_slot_str:
+                for slot_data in next_available_slots:
+                    stylist_match = True
+                    slot_match = True
+
+                    if preferred_stylist_id:
+                        stylist_match = str(slot_data.get('stylist_id')) == preferred_stylist_id
+
+                    if preferred_slot_str:
+                        slot_match = slot_data.get('auto_slot_str') == preferred_slot_str
+
+                    if stylist_match and slot_match:
+                        target_slot = slot_data
+                        break
+
+            if target_slot:
                 query_params = request.GET.copy()
                 if 'find_next' in query_params:
                     del query_params['find_next']
-                query_params['date'] = next_available_slot['date'].isoformat()
+                query_params['date'] = target_slot['date'].isoformat()
 
-                if next_available_slot.get('stylist_id'):
-                    query_params['stylist'] = str(next_available_slot['stylist_id'])
+                if target_slot.get('stylist_id'):
+                    query_params['stylist'] = str(target_slot['stylist_id'])
                 elif 'stylist' in query_params:
                     del query_params['stylist']
 
-                auto_slot_value = next_available_slot.get('auto_slot_str')
+                auto_slot_value = target_slot.get('auto_slot_str')
                 if auto_slot_value:
                     query_params['auto_slot'] = auto_slot_value
                 elif 'auto_slot' in query_params:
@@ -816,6 +842,7 @@ def service_booking(request):
         'removed_services': removed_services,
         'selected_stylist_slot': selected_stylist_slot,
         'next_available_slot': next_available_slot,
+        'next_available_slots': next_available_slots,
         'auto_selected_slot': auto_selected_slot,
         'auto_selected_slot_dt': auto_selected_slot_dt,
         'next_slot_not_found': next_slot_not_found,

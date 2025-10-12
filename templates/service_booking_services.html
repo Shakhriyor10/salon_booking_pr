@@ -776,29 +776,31 @@
                                 <li>Свяжитесь с салоном напрямую для индивидуального подбора времени.</li>
                             </ul>
 
-                            {% if next_available_slot %}
+                            {% if next_available_slots %}
                                 <div class="nearest-slot-alert p-3 p-lg-4 rounded-4 border">
-                                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                                        <div>
-                                            <div class="fw-semibold">Ближайшее свободное время</div>
-                                            <div class="text-muted small">
-                                                {{ next_available_slot.slot|date:'d.m.Y H:i' }}
-                                                {% if next_available_slot.stylist %}
-                                                    · {{ next_available_slot.stylist }}
-                                                {% endif %}
+                                    <div class="fw-semibold mb-3">Ближайшие свободные окна</div>
+                                    <div class="d-flex flex-column gap-3">
+                                        {% for slot in next_available_slots %}
+                                            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                                <div>
+                                                    <div class="fw-semibold">{{ slot.stylist }}</div>
+                                                    <div class="text-muted small">{{ slot.slot|date:'d.m.Y H:i' }}</div>
+                                                </div>
+                                                <form method="get" action="{% url 'service_booking' %}" class="d-flex flex-wrap align-items-center gap-2">
+                                                    <input type="hidden" name="salon" value="{{ salon.id }}">
+                                                    <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                                                    {% for sid in selected_service_ids %}
+                                                        <input type="hidden" name="services" value="{{ sid }}">
+                                                    {% endfor %}
+                                                    <input type="hidden" name="find_next" value="1">
+                                                    <input type="hidden" name="next_stylist" value="{{ slot.stylist_id }}">
+                                                    <input type="hidden" name="next_slot" value="{{ slot.auto_slot_str }}">
+                                                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                                                        Перейти к записи
+                                                    </button>
+                                                </form>
                                             </div>
-                                        </div>
-                                        <form method="get" action="{% url 'service_booking' %}" class="d-flex flex-wrap align-items-center gap-2">
-                                            <input type="hidden" name="salon" value="{{ salon.id }}">
-                                            <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-                                            {% for sid in selected_service_ids %}
-                                                <input type="hidden" name="services" value="{{ sid }}">
-                                            {% endfor %}
-                                            <input type="hidden" name="find_next" value="1">
-                                            <button type="submit" class="btn btn-outline-primary btn-sm">
-                                                Найти ближайшие слоты
-                                            </button>
-                                        </form>
+                                        {% endfor %}
                                     </div>
                                 </div>
                             {% elif next_slot_not_found %}
