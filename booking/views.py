@@ -242,6 +242,20 @@ class SalonDetailView(DetailView):
         context['average_rating'] = rating
         context['categories'] = categories
         context['uncategorized_services'] = uncategorized_services
+        stylist_services = (
+            StylistService.objects.filter(
+                salon_service__salon=salon,
+                salon_service__is_active=True,
+                salon_service__service__is_active=True,
+            )
+            .values_list('salon_service__service_id', 'stylist_id')
+        )
+
+        service_stylists_map = {}
+        for service_id, stylist_id in stylist_services:
+            service_stylists_map.setdefault(service_id, []).append(stylist_id)
+
+        context['service_stylists_map'] = service_stylists_map
         stylists = (
             salon.stylists.select_related('user', 'level')
             .annotate(

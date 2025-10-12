@@ -1041,8 +1041,13 @@
   <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
     Перейти к записи (<span id="cart-count">0</span>)
   </button>
+  <div id="cart-warning" class="text-danger small fw-semibold px-2 d-none text-center">
+    Нет мастеров для выбранных услуг
+  </div>
   <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
 </div>
+
+{{ service_stylists_map|json_script:"service-stylists-map" }}
 
 <script>
   const stars = document.querySelectorAll('#star-rating i');
@@ -1067,23 +1072,92 @@
   });
 </script>
 <script>
+  const serviceStylistsMap = (() => {
+    const element = document.getElementById("service-stylists-map");
+    if (!element) {
+      return {};
+    }
+
+    try {
+      const parsed = JSON.parse(element.textContent);
+      return Object.fromEntries(
+        Object.entries(parsed).map(([serviceId, stylists]) => [Number(serviceId), stylists])
+      );
+    } catch (error) {
+      return {};
+    }
+  })();
+
   function getCart() {
     const cart = localStorage.getItem("cart");
-    return cart ? JSON.parse(cart) : [];
+
+    if (!cart) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(cart);
+
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+
+      return parsed.map(Number).filter((value) => !Number.isNaN(value));
+    } catch (error) {
+      return [];
+    }
   }
 
   function saveCart(cart) {
     localStorage.setItem("cart", JSON.stringify(cart));
   }
 
+  function getCommonStylists(serviceIds) {
+    if (!serviceIds.length) {
+      return [];
+    }
+
+    const [firstService, ...restServices] = serviceIds;
+    const firstStylists = new Set(serviceStylistsMap[firstService] || []);
+
+    if (!firstStylists.size) {
+      return [];
+    }
+
+    restServices.forEach((serviceId) => {
+      const stylistsForService = new Set(serviceStylistsMap[serviceId] || []);
+      firstStylists.forEach((stylistId) => {
+        if (!stylistsForService.has(stylistId)) {
+          firstStylists.delete(stylistId);
+        }
+      });
+    });
+
+    return Array.from(firstStylists);
+  }
+
+  function hasCommonStylists(serviceIds) {
+    if (!serviceIds.length) {
+      return true;
+    }
+
+    return getCommonStylists(serviceIds).length > 0;
+  }
+
   function updateCartUI() {
     const cart = getCart();
     const count = cart.length;
-    document.getElementById("cart-count").textContent = count;
+    const hasCommon = hasCommonStylists(cart);
     const bookingButton = document.getElementById("go-to-booking");
-    bookingButton.disabled = count === 0;
-
     const floatingCart = document.getElementById("floating-cart-button");
+    const warning = document.getElementById("cart-warning");
+
+    document.getElementById("cart-count").textContent = count;
+    bookingButton.disabled = count === 0 || !hasCommon;
+    bookingButton.title = count > 0 && !hasCommon
+      ? "Нет мастеров, выполняющих все выбранные услуги"
+      : "";
+
     if (count > 0) {
       floatingCart.classList.remove("d-none");
       floatingCart.classList.add("show");
@@ -1092,8 +1166,16 @@
       floatingCart.classList.add("d-none");
     }
 
-    document.querySelectorAll(".add-to-cart").forEach(btn => {
-      const id = parseInt(btn.dataset.serviceId);
+    if (warning) {
+      if (count > 0 && !hasCommon) {
+        warning.classList.remove("d-none");
+      } else {
+        warning.classList.add("d-none");
+      }
+    }
+
+    document.querySelectorAll(".add-to-cart").forEach((btn) => {
+      const id = Number(btn.dataset.serviceId);
       if (cart.includes(id)) {
         btn.textContent = "✅ Добавлено (нажмите, чтобы удалить)";
         btn.classList.add("added");
@@ -1109,13 +1191,18 @@
 
     document.querySelectorAll(".add-to-cart").forEach(button => {
       button.addEventListener("click", () => {
-        const serviceId = parseInt(button.dataset.serviceId);
+        const serviceId = Number(button.dataset.serviceId);
         let cart = getCart();
 
         if (cart.includes(serviceId)) {
           cart = cart.filter(id => id !== serviceId);
         } else {
-          cart.push(serviceId);
+          const updatedCart = [...cart, serviceId];
+          if (!hasCommonStylists(updatedCart)) {
+            alert("К сожалению, нет мастера, который выполняет все выбранные услуги.");
+            return;
+          }
+          cart = updatedCart;
         }
 
         saveCart(cart);
@@ -1127,6 +1214,11 @@
     document.getElementById("go-to-booking").addEventListener("click", (event) => {
       const cart = getCart();
       if (cart.length === 0) return;
+
+      if (!hasCommonStylists(cart)) {
+        alert("К сожалению, нет мастера, который выполняет все выбранные услуги.");
+        return;
+      }
 
       const salonId = event.target.dataset.salonId;
 
@@ -1165,12 +1257,7 @@
   document.getElementById("clear-cart").addEventListener("click", function () {
     localStorage.removeItem("cart");
     localStorage.removeItem("cartTimestamp");
-    document.getElementById("cart-count").textContent = "0";
-    document.getElementById("floating-cart-button").classList.add("d-none");
-    document.querySelectorAll(".add-to-cart").forEach(button => {
-      button.className = "btn btn-outline-theme add-to-cart";
-      button.textContent = "➕ Добавить услугу";
-    });
+    updateCartUI();
   });
 </script>
 {% endblock %}
