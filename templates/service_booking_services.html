@@ -494,6 +494,20 @@
         border: 1px solid rgba(255, 196, 123, 0.5);
     }
 
+    .nearest-slot-alert {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 196, 123, 0.45);
+        box-shadow: 0 20px 45px rgba(31, 42, 51, 0.08);
+    }
+
+    .nearest-slot-alert .fw-semibold {
+        color: #2b394e;
+    }
+
+    .nearest-slot-alert .text-muted {
+        color: rgba(43, 57, 78, 0.65) !important;
+    }
+
     @media (max-width: 991px) {
         .booking-hero {
             border-radius: 22px;
@@ -753,14 +767,45 @@
                 <div class="no-stylists-card p-4 p-lg-5 shadow-sm">
                     <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-4">
                         <div class="display-4">😔</div>
-                        <div>
+                        <div class="w-100">
                             <h4 class="fw-semibold mb-3">На выбранную дату нет доступных мастеров для этих услуг</h4>
                             <p class="mb-3">Попробуйте изменить дату или уменьшить количество услуг, чтобы увидеть больше свободных специалистов.</p>
-                            <ul class="mb-0 text-muted small">
+                            <ul class="mb-4 text-muted small">
                                 <li>Попробуйте выбрать соседнюю дату — расписание обновляется ежедневно.</li>
                                 <li>Уберите одну из услуг и проверьте доступность мастеров.</li>
                                 <li>Свяжитесь с салоном напрямую для индивидуального подбора времени.</li>
                             </ul>
+
+                            {% if next_available_slot %}
+                                <div class="nearest-slot-alert p-3 p-lg-4 rounded-4 border">
+                                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                                        <div>
+                                            <div class="fw-semibold">Ближайшее свободное время</div>
+                                            <div class="text-muted small">
+                                                {{ next_available_slot.slot|date:'d.m.Y H:i' }}
+                                                {% if next_available_slot.stylist %}
+                                                    · {{ next_available_slot.stylist }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <form method="get" data-dynamic-form class="d-flex flex-wrap align-items-center gap-2">
+                                            <input type="hidden" name="salon" value="{{ salon.id }}">
+                                            <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                                            {% for sid in selected_service_ids %}
+                                                <input type="hidden" name="services" value="{{ sid }}">
+                                            {% endfor %}
+                                            <input type="hidden" name="find_next" value="1">
+                                            <button type="submit" class="btn btn-outline-primary btn-sm">
+                                                Найти ближайшие слоты
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% elif next_slot_not_found %}
+                                <div class="alert alert-light border mt-4 mb-0">
+                                    Ближайшие 14 дней не содержат свободных слотов для выбранного набора услуг.
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

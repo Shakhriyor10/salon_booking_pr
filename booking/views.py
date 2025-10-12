@@ -742,21 +742,62 @@ def service_booking(request):
                         'slot': slot_entry['slots'][0],
                         'price': slot_entry['price'],
                         'duration': slot_entry['duration'],
+                        'stylist_id': selected_stylist.id,
+                        'auto_slot_str': slot_entry['slots'][0].strftime('%Y-%m-%dT%H:%M'),
                     }
                     break
 
                 search_date += timedelta(days=1)
 
-        if find_next_requested and next_available_slot:
-            query_params = request.GET.copy()
-            if 'find_next' in query_params:
-                del query_params['find_next']
-            query_params['date'] = next_available_slot['date'].isoformat()
-            query_params['auto_slot'] = next_available_slot['slot'].strftime('%Y-%m-%dT%H:%M')
-            redirect_url = f"{reverse('service_booking')}?{query_params.urlencode()}"
-            return redirect(redirect_url)
-        elif find_next_requested and not next_available_slot:
-            next_slot_not_found = True
+        if not selected_stylist and not stylist_slots and stylist_to_services:
+            search_date = selected_date + timedelta(days=1)
+            while search_date <= max_date:
+                closest_slot = None
+                for stylist_id in stylist_to_services:
+                    slot_entry = build_slot_entry(stylist_id, search_date)
+                    if not slot_entry:
+                        continue
+
+                    first_slot = slot_entry['slots'][0]
+                    if not closest_slot or first_slot < closest_slot['slot']:
+                        closest_slot = {
+                            'date': search_date,
+                            'slot': first_slot,
+                            'price': slot_entry['price'],
+                            'duration': slot_entry['duration'],
+                            'stylist': slot_entry['stylist'],
+                            'stylist_id': stylist_id,
+                            'auto_slot_str': first_slot.strftime('%Y-%m-%dT%H:%M'),
+                        }
+
+                if closest_slot:
+                    next_available_slot = closest_slot
+                    break
+
+                search_date += timedelta(days=1)
+
+        if find_next_requested:
+            if next_available_slot:
+                query_params = request.GET.copy()
+                if 'find_next' in query_params:
+                    del query_params['find_next']
+                query_params['date'] = next_available_slot['date'].isoformat()
+
+                if next_available_slot.get('stylist_id'):
+                    query_params['stylist'] = str(next_available_slot['stylist_id'])
+                elif 'stylist' in query_params:
+                    del query_params['stylist']
+
+                auto_slot_value = next_available_slot.get('auto_slot_str')
+                if auto_slot_value:
+                    query_params['auto_slot'] = auto_slot_value
+                elif 'auto_slot' in query_params:
+                    del query_params['auto_slot']
+
+                redirect_url = f"{reverse('service_booking')}?{query_params.urlencode()}"
+                return redirect(redirect_url)
+            else:
+                next_slot_not_found = True
 
     context = {
         'services': ordered_services,
