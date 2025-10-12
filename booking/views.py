@@ -320,7 +320,7 @@ class CategoryServicesView(View):
 
         stylist_services = (
             StylistService.objects.filter(
-                salon_service__in=services,
+                salon_service__salon=salon,
                 salon_service__is_active=True,
                 salon_service__service__is_active=True,
             )

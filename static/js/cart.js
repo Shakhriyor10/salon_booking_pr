@@ -355,6 +355,16 @@
       window.location.href = `/booking/?${params.toString()}`;
     });
 
+    window.addEventListener('storage', (event) => {
+      if (!event || !event.key || event.key === CART_STORAGE_KEY) {
+        updateCartUI();
+      }
+    });
+
+    window.addEventListener('pageshow', () => {
+      updateCartUI();
+    });
+
     updateCartUI();
   };
 })();
