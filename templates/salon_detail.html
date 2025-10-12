@@ -129,19 +129,6 @@
     gap: 1.2rem;
   }
 
-  .hero-actions .btn-outline-light {
-    border-color: rgba(255, 255, 255, 0.65);
-    color: #fff;
-    background: transparent;
-  }
-
-  .hero-actions .btn-outline-light:hover,
-  .hero-actions .btn-outline-light:focus {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.85);
-  }
-
   .hero-actions__hint {
     color: rgba(255, 255, 255, 0.72);
     font-size: 0.95rem;
@@ -575,7 +562,7 @@
             <a href="{% url 'service_booking' %}?salon={{ salon.id }}" class="btn btn-theme btn-lg px-4">
               Забронировать услугу
             </a>
-            <a href="#salon-stylists" class="btn btn-outline-light btn-lg px-4" data-scroll-target="#salon-stylists">
+            <a href="#salon-stylists" class="btn btn-theme btn-lg px-4" data-scroll-target="#salon-stylists">
               Выбрать стилиста
             </a>
             <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>
