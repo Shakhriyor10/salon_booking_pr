@@ -63,18 +63,20 @@
 {% if services %}
   <div class="row">
     {% for salon_service in services %}
-      <div class="col-md-4 mb-4">
-        <div class="card h-100 shadow-sm">
+      <div class="col-lg-4 col-md-6 mb-4">
+        <div class="card service-card h-100">
           {% if salon_service.service.photo and salon_service.service.photo.url %}
             <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
+          {% else %}
+            <img src="https://images.unsplash.com/photo-1502786129293-79981df4e689?auto=format&amp;fit=crop&amp;w=900&amp;q=80" class="card-img-top" alt="{{ salon_service.service.name }}">
           {% endif %}
           <div class="card-body d-flex flex-column">
-            <h5 class="card-title text-center">{{ salon_service.service.name }}</h5>
-              <button
-                      class="btn btn-outline-theme add-to-cart mt-auto"
-                      data-service-id="{{ salon_service.service.id }}">
-                  ➕ Добавить услугу
-              </button>
+            <h5 class="card-title text-center fw-semibold">{{ salon_service.service.name }}</h5>
+            <button
+              class="btn btn-outline-theme add-to-cart mt-auto"
+              data-service-id="{{ salon_service.service.id }}">
+              ➕ Добавить услугу
+            </button>
           </div>
         </div>
       </div>
