@@ -508,6 +508,47 @@
         color: rgba(43, 57, 78, 0.65) !important;
     }
 
+    .nearest-slot-card {
+        box-shadow: 0 14px 32px rgba(24, 33, 42, 0.12);
+    }
+
+    .nearest-slot-card:hover {
+        box-shadow: 0 18px 40px rgba(24, 33, 42, 0.18);
+    }
+
+    .nearest-slot-card .card-body {
+        padding-top: 2rem;
+    }
+
+    .nearest-slot-meta {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .nearest-slot-services-wrapper {
+        background: rgba(72, 107, 113, 0.05);
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        border: 1px solid rgba(72, 107, 113, 0.12);
+    }
+
+    .nearest-slot-services li {
+        position: relative;
+        padding-left: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .nearest-slot-services li:last-child {
+        margin-bottom: 0;
+    }
+
+    .nearest-slot-services li:before {
+        content: "•";
+        position: absolute;
+        left: 0.3rem;
+        top: 0;
+        color: rgba(72, 107, 113, 0.8);
+    }
+
     @media (max-width: 991px) {
         .booking-hero {
             border-radius: 22px;
@@ -784,26 +825,83 @@
                 <div class="col-12 mt-4">
                     <div class="nearest-slot-alert p-4 p-lg-5 rounded-4 shadow-sm border">
                         <div class="fw-semibold mb-3">Ближайшие свободные окна</div>
-                        <div class="d-flex flex-column gap-3">
+                        <div class="row g-4">
                             {% for slot in next_available_slots %}
-                                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-                                    <div>
-                                        <div class="fw-semibold">{{ slot.stylist }}</div>
-                                        <div class="text-muted small">{{ slot.slot|date:'d.m.Y H:i' }}</div>
+                                <div class="col-md-6 col-xl-4 d-flex">
+                                    <div class="stylist-card nearest-slot-card card flex-fill">
+                                        <div class="card-header text-center py-4">
+                                            <div class="avatar-ring">
+                                                {% if slot.stylist.avatar %}
+                                                    <img src="{{ slot.stylist.avatar.url }}" alt="Фото стилиста">
+                                                {% else %}
+                                                    <div class="avatar-placeholder w-100 h-100 d-flex align-items-center justify-content-center">
+                                                        {{ slot.stylist.user.get_full_name|default:slot.stylist.user.username|slice:':1'|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <h5 class="fw-bold mt-3 mb-1">{{ slot.stylist.user.get_full_name|default:slot.stylist.user.username }}</h5>
+                                            <div>
+                                                {% if slot.stylist.level %}
+                                                    {% if slot.stylist.level.name == "Топ Барбер" %}
+                                                        <span class="badge bg-warning text-dark">★ {{ slot.stylist.level.name }}</span>
+                                                    {% elif slot.stylist.level.name == "Старший Барбер" %}
+                                                        <span class="badge bg-success">💈 {{ slot.stylist.level.name }}</span>
+                                                    {% elif slot.stylist.level.name == "Барбер" %}
+                                                        <span class="badge bg-secondary">✂️ {{ slot.stylist.level.name }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-light text-dark">{{ slot.stylist.level.name }}</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-light text-dark">Барбер</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="card-body px-4 pb-4">
+                                            <div class="stylist-meta nearest-slot-meta">
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Дата</div>
+                                                    <div class="fw-semibold">{{ slot.slot|date:'d.m.Y' }}</div>
+                                                </div>
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Время</div>
+                                                    <div class="fw-semibold">{{ slot.slot|date:'H:i' }}</div>
+                                                </div>
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Длительность</div>
+                                                    <div class="fw-semibold">{{ slot.duration_display|default:slot.duration }}</div>
+                                                </div>
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Общая цена</div>
+                                                    <div class="fw-semibold">{{ slot.price }} сум</div>
+                                                </div>
+                                            </div>
+
+                                            {% if slot.services %}
+                                                <div class="nearest-slot-services-wrapper">
+                                                    <div class="text-muted small mb-1">Услуги в записи</div>
+                                                    <ul class="nearest-slot-services list-unstyled small mb-0">
+                                                        {% for service in slot.services %}
+                                                            <li>{{ service.salon_service.service.name }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                            {% endif %}
+
+                                            <form method="get" action="{% url 'service_booking' %}" class="mt-4">
+                                                <input type="hidden" name="salon" value="{{ salon.id }}">
+                                                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                                                {% for sid in selected_service_ids %}
+                                                    <input type="hidden" name="services" value="{{ sid }}">
+                                                {% endfor %}
+                                                <input type="hidden" name="find_next" value="1">
+                                                <input type="hidden" name="next_stylist" value="{{ slot.stylist_id }}">
+                                                <input type="hidden" name="next_slot" value="{{ slot.auto_slot_str }}">
+                                                <button type="submit" class="btn booking-button w-100">
+                                                    📅 Перейти к записи
+                                                </button>
+                                            </form>
+                                        </div>
                                     </div>
-                                    <form method="get" action="{% url 'service_booking' %}" class="d-flex flex-wrap align-items-center gap-2">
-                                        <input type="hidden" name="salon" value="{{ salon.id }}">
-                                        <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
-                                        {% for sid in selected_service_ids %}
-                                            <input type="hidden" name="services" value="{{ sid }}">
-                                        {% endfor %}
-                                        <input type="hidden" name="find_next" value="1">
-                                        <input type="hidden" name="next_stylist" value="{{ slot.stylist_id }}">
-                                        <input type="hidden" name="next_slot" value="{{ slot.auto_slot_str }}">
-                                        <button type="submit" class="btn btn-outline-primary btn-sm">
-                                            Перейти к записи
-                                        </button>
-                                    </form>
                                 </div>
                             {% endfor %}
                         </div>

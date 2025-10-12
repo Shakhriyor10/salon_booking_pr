@@ -766,8 +766,10 @@ def service_booking(request):
                         'slot': first_slot,
                         'price': slot_entry['price'],
                         'duration': slot_entry['duration'],
+                        'duration_display': slot_entry.get('duration_display'),
                         'stylist': slot_entry['stylist'],
                         'stylist_id': stylist_id,
+                        'services': slot_entry.get('services', []),
                         'auto_slot_str': first_slot.strftime('%Y-%m-%dT%H:%M'),
                     }
 
