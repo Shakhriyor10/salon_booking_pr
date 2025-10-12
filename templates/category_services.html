@@ -5,61 +5,57 @@
 {% block content %}
 <style>
   .add-to-cart {
-  background-color: #486b71;
-  color: #fff;
-  border: 1px solid #486b71;
-  padding: 8px 16px;
-  border-radius: 6px;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.add-to-cart:hover {
-  background-color: #36565a;
-  border-color: #36565a;
-  color: #fff;
-}
-
-.add-to-cart.added {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: #fff;
-}
-
-.add-to-cart.added:hover {
-  background-color: #218838;
-  border-color: #218838;
-}
-  .floating-cart {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 999;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   }
 
-  .floating-cart.show {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
+  .add-to-cart.added {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: #fff;
+  }
+
+  .add-to-cart.added:hover {
+    background-color: #218838;
+    border-color: #218838;
+  }
+
+  .floating-cart {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    box-shadow: 0 18px 35px rgba(18, 42, 45, 0.18);
+    gap: 0.75rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
   .floating-cart.d-none {
     opacity: 0;
     pointer-events: none;
-    transform: translateX(-50%) translateY(20px);
+    transform: translate(-50%, 30px);
   }
 
-  .btn-custom {
-    background-color: #486b71;
+  .floating-cart .btn-custom {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #486b71, #36565a);
     color: #fff;
     border: none;
-    padding: 12px 24px;
-    font-weight: 500;
-    border-radius: 8px;
+    padding: 0.65rem 1.5rem;
+    font-weight: 600;
   }
 
-  .btn-custom:hover {
-    background-color: #36565a;
+  .floating-cart .btn-outline-danger {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
   }
 </style>
 <h3 class="text-center fw-semibold mt-4 mb-3">{{ category.name }}</h3>
@@ -75,7 +71,7 @@
           <div class="card-body d-flex flex-column">
             <h5 class="card-title text-center">{{ salon_service.service.name }}</h5>
               <button
-                      class="btn btn-outline-primary mt-auto add-to-cart"
+                      class="btn btn-outline-theme add-to-cart mt-auto"
                       data-service-id="{{ salon_service.service.id }}">
                   ➕ Добавить услугу
               </button>
@@ -88,111 +84,24 @@
   <p class="text-center text-muted">Услуги в этой категории пока не добавлены.</p>
 {% endif %}
 
-<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center gap-2">
+<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center">
   <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
     Перейти к записи (<span id="cart-count">0</span>)
   </button>
+  <div id="cart-warning" class="text-danger small fw-semibold px-2 d-none text-center">
+    Нет мастеров для выбранных услуг
+  </div>
   <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
 </div>
 
 
+{{ service_stylists_map|json_script:"service-stylists-map" }}
+
+<script src="{% static 'js/cart.js' %}"></script>
 <script>
-  function getCart() {
-    const cart = localStorage.getItem("cart");
-    return cart ? JSON.parse(cart) : [];
-  }
-
-  function saveCart(cart) {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }
-
-function updateCartUI() {
-  const cart = getCart();
-  const count = cart.length;
-  document.getElementById("cart-count").textContent = count;
-  const bookingButton = document.getElementById("go-to-booking");
-  bookingButton.disabled = count === 0;
-
-  const floatingCart = document.getElementById("floating-cart-button");
-  if (count > 0) {
-    floatingCart.classList.remove("d-none");
-    floatingCart.classList.add("show");
-  } else {
-    floatingCart.classList.remove("show");
-    floatingCart.classList.add("d-none");
-  }
-
-  document.querySelectorAll(".add-to-cart").forEach(btn => {
-    const id = parseInt(btn.dataset.serviceId);
-    if (cart.includes(id)) {
-      btn.textContent = "✅ Добавлено (нажми чтобы удалить)";
-      btn.classList.add("added");
-    } else {
-      btn.textContent = "➕ Добавить услугу";
-      btn.classList.remove("added");
-    }
+  document.addEventListener("DOMContentLoaded", function () {
+    initSalonCart({ salonId: "{{ salon.id }}" });
   });
-}
-
-
-  document.addEventListener("DOMContentLoaded", () => {
-    updateCartUI();
-
-    // Кнопки "Добавить в корзину"
-    document.querySelectorAll(".add-to-cart").forEach(button => {
-      button.addEventListener("click", () => {
-        const serviceId = parseInt(button.dataset.serviceId);
-        let cart = getCart();
-
-        if (cart.includes(serviceId)) {
-          cart = cart.filter(id => id !== serviceId);
-        } else {
-          cart.push(serviceId);
-        }
-
-        saveCart(cart);
-        updateCartUI();
-      });
-    });
-
-    // Кнопка "Перейти к записи"
-    document.getElementById("go-to-booking").addEventListener("click", (event) => {
-  const cart = getCart();
-  if (cart.length === 0) return;
-
-  const salonId = event.target.dataset.salonId;
-
-  if (!salonId) {
-    alert("Ошибка: salon ID не найден");
-    return;
-  }
-
-  const params = new URLSearchParams();
-  params.append("salon", salonId);
-  cart.forEach(id => params.append("services", id));
-
-  window.location.href = `/booking/?${params.toString()}`;
-});
-  });
-
-  document.getElementById("clear-cart").addEventListener("click", function () {
-  // Очистка localStorage
-  localStorage.removeItem("cart");
-  localStorage.removeItem("cartTimestamp");
-
-  // Сбросить счётчик
-  document.getElementById("cart-count").textContent = "0";
-
-  // Скрыть кнопку корзины
-  document.getElementById("floating-cart-button").classList.add("d-none");
-
-  // Сбросить все кнопки "Добавлено" обратно в "Добавить услугу"
-  document.querySelectorAll(".add-to-cart").forEach(button => {
-    // Полный сброс классов до начального состояния
-    button.className = "btn btn-outline-primary mt-auto add-to-cart";
-    button.textContent = "➕ Добавить услугу";
-  });
-});
 </script>
 
 
