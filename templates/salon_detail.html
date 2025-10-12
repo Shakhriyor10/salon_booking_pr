@@ -1047,7 +1047,7 @@
   <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
 </div>
 
-{{ service_stylists_map|default:{}|json_script:"service-stylists-map" }}
+{{ service_stylists_map|json_script:"service-stylists-map" }}
 
 <script>
   const stars = document.querySelectorAll('#star-rating i');
