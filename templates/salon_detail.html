@@ -129,12 +129,29 @@
     gap: 1.2rem;
   }
 
+  .hero-actions .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.65);
+    color: #fff;
+    background: transparent;
+  }
+
+  .hero-actions .btn-outline-light:hover,
+  .hero-actions .btn-outline-light:focus {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.85);
+  }
+
   .hero-actions__hint {
     color: rgba(255, 255, 255, 0.72);
     font-size: 0.95rem;
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+  }
+
+  .stylists-section {
+    scroll-margin-top: 120px;
   }
 
   .hero-actions__hint i {
@@ -558,6 +575,9 @@
             <a href="{% url 'service_booking' %}?salon={{ salon.id }}" class="btn btn-theme btn-lg px-4">
               Забронировать услугу
             </a>
+            <a href="#salon-stylists" class="btn btn-outline-light btn-lg px-4" data-scroll-target="#salon-stylists">
+              Выбрать стилиста
+            </a>
             <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>
           </div>
         </div>
@@ -764,6 +784,27 @@
         heroImage.addEventListener("load", prepareImageForSampling, { once: true });
         heroImage.addEventListener("error", () => applyGradient(fallbackPrimary, fallbackSecondary), { once: true });
       }
+
+      const scrollTriggers = document.querySelectorAll('[data-scroll-target]');
+
+      scrollTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', (event) => {
+          const targetSelector = trigger.getAttribute('data-scroll-target');
+
+          if (!targetSelector) {
+            return;
+          }
+
+          const targetElement = document.querySelector(targetSelector);
+
+          if (!targetElement) {
+            return;
+          }
+
+          event.preventDefault();
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
     });
   </script>
 
@@ -812,8 +853,9 @@
   {% endif %}
 
   {% if stylists %}
-    <h2 class="section-heading">Наши мастера</h2>
-    <div class="row g-4">
+    <section id="salon-stylists" class="stylists-section">
+      <h2 class="section-heading">Наши мастера</h2>
+      <div class="row g-4">
       {% for stylist in stylists %}
         <div class="col-lg-4 col-md-6">
           <div class="card stylist-card h-100">
@@ -870,7 +912,8 @@
           </div>
         </div>
       {% endfor %}
-    </div>
+      </div>
+    </section>
   {% endif %}
 
   <h2 class="section-heading">Контакты и расположение</h2>
