@@ -318,10 +318,24 @@ class CategoryServicesView(View):
             is_active=True
         ).order_by('position')  # сортировка по позиции
 
+        stylist_services = (
+            StylistService.objects.filter(
+                salon_service__in=services,
+                salon_service__is_active=True,
+                salon_service__service__is_active=True,
+            )
+            .values_list('salon_service__service_id', 'stylist_id')
+        )
+
+        service_stylists_map = {}
+        for service_id, stylist_id in stylist_services:
+            service_stylists_map.setdefault(service_id, []).append(stylist_id)
+
         return render(request, 'category_services.html', {
             'salon': salon,
             'category': category,
-            'services': services
+            'services': services,
+            'service_stylists_map': service_stylists_map,
         })
 
 class ServiceListView(ListView):
