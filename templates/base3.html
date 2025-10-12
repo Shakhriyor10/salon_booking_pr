@@ -129,10 +129,29 @@
     <div class="container">
         {% if messages %}
         {% for message in messages %}
+        {% if message == 'Запись был успешно создано' %}
+        <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header border-0">
+                <h5 class="modal-title" id="bookingSuccessModalLabel">Успешно</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+              </div>
+              <div class="modal-body text-center">
+                {{ message }}
+              </div>
+              <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-primary px-4" data-bs-dismiss="modal">Хорошо</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
         </div>
+        {% endif %}
         {% endfor %}
         {% endif %}
       {% block content %}{% endblock %}
@@ -164,6 +183,16 @@
     const form = document.getElementById('cancelForm');
 
     form.action = `/appointment/${appointmentId}/action/`;  // путь на твой view
+  });
+</script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const successModalElement = document.getElementById('bookingSuccessModal');
+    if (successModalElement) {
+      const successModal = new bootstrap.Modal(successModalElement);
+      successModal.show();
+    }
   });
 </script>
 
