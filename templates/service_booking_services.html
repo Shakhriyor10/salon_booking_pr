@@ -494,6 +494,61 @@
         border: 1px solid rgba(255, 196, 123, 0.5);
     }
 
+    .nearest-slot-alert {
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(255, 196, 123, 0.45);
+        box-shadow: 0 20px 45px rgba(31, 42, 51, 0.08);
+    }
+
+    .nearest-slot-alert .fw-semibold {
+        color: #2b394e;
+    }
+
+    .nearest-slot-alert .text-muted {
+        color: rgba(43, 57, 78, 0.65) !important;
+    }
+
+    .nearest-slot-card {
+        box-shadow: 0 14px 32px rgba(24, 33, 42, 0.12);
+    }
+
+    .nearest-slot-card:hover {
+        box-shadow: 0 18px 40px rgba(24, 33, 42, 0.18);
+    }
+
+    .nearest-slot-card .card-body {
+        padding-top: 2rem;
+    }
+
+    .nearest-slot-meta {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+
+    .nearest-slot-services-wrapper {
+        background: rgba(72, 107, 113, 0.05);
+        border-radius: 16px;
+        padding: 1rem 1.25rem;
+        border: 1px solid rgba(72, 107, 113, 0.12);
+    }
+
+    .nearest-slot-services li {
+        position: relative;
+        padding-left: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .nearest-slot-services li:last-child {
+        margin-bottom: 0;
+    }
+
+    .nearest-slot-services li:before {
+        content: "•";
+        position: absolute;
+        left: 0.3rem;
+        top: 0;
+        color: rgba(72, 107, 113, 0.8);
+    }
+
     @media (max-width: 991px) {
         .booking-hero {
             border-radius: 22px;
@@ -753,10 +808,10 @@
                 <div class="no-stylists-card p-4 p-lg-5 shadow-sm">
                     <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-4">
                         <div class="display-4">😔</div>
-                        <div>
+                        <div class="w-100">
                             <h4 class="fw-semibold mb-3">На выбранную дату нет доступных мастеров для этих услуг</h4>
                             <p class="mb-3">Попробуйте изменить дату или уменьшить количество услуг, чтобы увидеть больше свободных специалистов.</p>
-                            <ul class="mb-0 text-muted small">
+                            <ul class="mb-4 text-muted small">
                                 <li>Попробуйте выбрать соседнюю дату — расписание обновляется ежедневно.</li>
                                 <li>Уберите одну из услуг и проверьте доступность мастеров.</li>
                                 <li>Свяжитесь с салоном напрямую для индивидуального подбора времени.</li>
@@ -765,6 +820,99 @@
                     </div>
                 </div>
             </div>
+
+            {% if next_available_slots %}
+                <h2 class="section-heading" style="text-align: center">Ближайшие свободные окна</h2>
+                <div class="col-12 mt-4">
+                        <div class="row g-4">
+                            {% for slot in next_available_slots %}
+                                <div class="col-md-6 col-xl-4 d-flex">
+                                    <div class="stylist-card nearest-slot-card card flex-fill">
+                                        <div class="card-header text-center py-4">
+                                            <div class="avatar-ring">
+                                                {% if slot.stylist.avatar %}
+                                                    <img src="{{ slot.stylist.avatar.url }}" alt="Фото стилиста">
+                                                {% else %}
+                                                    <div class="avatar-placeholder w-100 h-100 d-flex align-items-center justify-content-center">
+                                                        {{ slot.stylist.user.get_full_name|default:slot.stylist.user.username|slice:':1'|upper }}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <h5 class="fw-bold mt-3 mb-1">{{ slot.stylist.user.get_full_name|default:slot.stylist.user.username }}</h5>
+                                            <div>
+                                                {% if slot.stylist.level %}
+                                                    {% if slot.stylist.level.name == "Топ Барбер" %}
+                                                        <span class="badge bg-warning text-dark">★ {{ slot.stylist.level.name }}</span>
+                                                    {% elif slot.stylist.level.name == "Старший Барбер" %}
+                                                        <span class="badge bg-success">💈 {{ slot.stylist.level.name }}</span>
+                                                    {% elif slot.stylist.level.name == "Барбер" %}
+                                                        <span class="badge bg-secondary">✂️ {{ slot.stylist.level.name }}</span>
+                                                    {% else %}
+                                                        <span class="badge bg-light text-dark">{{ slot.stylist.level.name }}</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-light text-dark">Барбер</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="card-body px-4 pb-4">
+                                            <div class="stylist-meta nearest-slot-meta">
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Дата</div>
+                                                    <div class="fw-semibold">{{ slot.slot|date:'d.m.Y' }}</div>
+                                                </div>
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Время</div>
+                                                    <div class="fw-semibold">{{ slot.slot|date:'H:i' }}</div>
+                                                </div>
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Длительность</div>
+                                                    <div class="fw-semibold">{{ slot.duration_display|default:slot.duration }}</div>
+                                                </div>
+                                                <div class="meta-pill">
+                                                    <div class="text-muted small">Общая цена</div>
+                                                    <div class="fw-semibold">{{ slot.price }} сум</div>
+                                                </div>
+                                            </div>
+
+                                            {% if slot.services %}
+                                                <div class="nearest-slot-services-wrapper">
+                                                    <div class="text-muted small mb-1">Услуги в записи</div>
+                                                    <ul class="nearest-slot-services list-unstyled small mb-0">
+                                                        {% for service in slot.services %}
+                                                            <li>{{ service.salon_service.service.name }}</li>
+                                                        {% endfor %}
+                                                    </ul>
+                                                </div>
+                                            {% endif %}
+
+                                            <form method="get" action="{% url 'service_booking' %}" class="mt-4">
+                                                <input type="hidden" name="salon" value="{{ salon.id }}">
+                                                <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+                                                {% for sid in selected_service_ids %}
+                                                    <input type="hidden" name="services" value="{{ sid }}">
+                                                {% endfor %}
+                                                <input type="hidden" name="find_next" value="1">
+                                                <input type="hidden" name="next_stylist" value="{{ slot.stylist_id }}">
+                                                <input type="hidden" name="next_slot" value="{{ slot.auto_slot_str }}">
+                                                <button type="submit" class="btn booking-button w-100">
+                                                    📅 Перейти к записи
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                </div>
+            {% elif next_slot_not_found %}
+                <div class="col-12 mt-4">
+                    <div class="alert alert-light border mb-0">
+                        Ближайшие 14 дней не содержат свободных слотов для выбранного набора услуг.
+                    </div>
+                </div>
+            {% endif %}
         {% endif %}
     </div>
 </div>
