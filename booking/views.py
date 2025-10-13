@@ -45,7 +45,13 @@ import pytz
 from django.db.models import Avg, Q
 from django.db.models.deletion import ProtectedError
 
-PHONE_RE = re.compile(r'^\+?\d{9,15}$')
+PHONE_INPUT_RE = re.compile(r'^\d{2}-\d{3}-\d{2}-\d{2}$')
+
+
+def normalize_uzbek_phone(phone_value: str) -> str:
+    """Convert a masked Uzbek phone (xx-xxx-xx-xx) to +998XXXXXXXXX format."""
+    digits = re.sub(r"\D", "", phone_value or "")
+    return f"+998{digits}" if digits else ""
 
 
 def format_duration(duration):
@@ -501,10 +507,12 @@ class AppointmentCreateView(View):
         if request.user.is_authenticated:
             customer = request.user
             if not hasattr(customer, 'profile') or not customer.profile.phone:
-                guest_phone = request.POST.get('guest_phone', '').strip()
-                if not PHONE_RE.match(guest_phone):
-                    messages.error(request, 'Укажите корректный номер телефона.')
+                guest_phone_input = request.POST.get('guest_phone', '').strip()
+                if not PHONE_INPUT_RE.match(guest_phone_input):
+                    messages.error(request, 'Укажите корректный номер телефона в формате 93-123-45-67.')
                     return redirect('home')
+
+                guest_phone = normalize_uzbek_phone(guest_phone_input)
 
                 if not hasattr(customer, 'profile'):
                     Profile.objects.create(user=customer, phone=guest_phone)
@@ -513,11 +521,13 @@ class AppointmentCreateView(View):
                     customer.profile.save(update_fields=['phone'])
         else:
             guest_name = request.POST.get('guest_name', '').strip()
-            guest_phone = request.POST.get('guest_phone', '').strip()
+            guest_phone_input = request.POST.get('guest_phone', '').strip()
 
-            if not guest_name or not PHONE_RE.match(guest_phone):
-                messages.error(request, 'Укажите имя и корректный номер телефона.')
+            if not guest_name or not PHONE_INPUT_RE.match(guest_phone_input):
+                messages.error(request, 'Укажите имя и корректный номер телефона в формате 93-123-45-67.')
                 return redirect('home')
+
+            guest_phone = normalize_uzbek_phone(guest_phone_input)
 
         # Создаём запись
         appointment = Appointment.objects.create(
@@ -1257,7 +1267,7 @@ class ManualAppointmentCreateView(View):
         service_ids = request.POST.getlist('service_ids')  # Используем getlist для множественного выбора
         time_str = request.POST.get('start_time')
         guest_name = request.POST.get('guest_name', '').strip()
-        guest_phone = request.POST.get('guest_phone', '').strip()
+        guest_phone_input = request.POST.get('guest_phone', '').strip()
 
         stylist = get_object_or_404(Stylist, id=stylist_id)
 
@@ -1296,6 +1306,12 @@ class ManualAppointmentCreateView(View):
         ).exists():
             messages.error(request, "Мастер занят в это время.")
             return redirect('manual_appointment')
+
+        if guest_phone_input and not PHONE_INPUT_RE.match(guest_phone_input):
+            messages.error(request, "Введите телефон в формате 93-123-45-67.")
+            return redirect('manual_appointment')
+
+        guest_phone = normalize_uzbek_phone(guest_phone_input) if guest_phone_input else ''
 
         # Создаём запись
         appointment = Appointment.objects.create(
@@ -1442,7 +1458,7 @@ class StylistManualAppointmentCreateView(View):
         date = request.POST.get('date')
         time = request.POST.get('time')
         guest_name = request.POST.get('guest_name', '').strip()
-        guest_phone = request.POST.get('guest_phone', '').strip()
+        guest_phone_input = request.POST.get('guest_phone', '').strip()
 
         if not all([service_ids, date, time]):
             messages.error(request, "Заполните все поля.")
@@ -1480,6 +1496,12 @@ class StylistManualAppointmentCreateView(View):
         if overlap:
             messages.error(request, "Выбранное время занято.")
             return redirect('stylist_manual_appointment')
+
+        if guest_phone_input and not PHONE_INPUT_RE.match(guest_phone_input):
+            messages.error(request, "Введите телефон в формате 93-123-45-67.")
+            return redirect('stylist_manual_appointment')
+
+        guest_phone = normalize_uzbek_phone(guest_phone_input) if guest_phone_input else ''
 
         # ✅ Создаём Appointment
         appointment = Appointment.objects.create(

@@ -785,14 +785,19 @@
                                     </div>
                                     <div class="mt-3">
                                         <label class="form-label fw-semibold" for="guest-phone-{{ forloop.parentloop.counter }}-{{ forloop.counter }}">Телефон для подтверждения</label>
-                                        <input type="tel"
-                                               id="guest-phone-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
-                                               name="guest_phone"
-                                               class="form-control"
-                                               placeholder="Телефон в формате +998991234567"
-                                               pattern="^\+998\d{9}$"
-                                               title="Введите номер в формате +998991234567"
-                                               required>
+                                        <div class="input-group">
+                                            <span class="input-group-text">+998</span>
+                                            <input type="tel"
+                                                   id="guest-phone-{{ forloop.parentloop.counter }}-{{ forloop.counter }}"
+                                                   name="guest_phone"
+                                                   class="form-control"
+                                                   inputmode="numeric"
+                                                   placeholder="93-123-45-67"
+                                                   pattern="^\d{2}-\d{3}-\d{2}-\d{2}$"
+                                                   title="Введите номер в формате 93-123-45-67"
+                                                   data-uzbek-phone-input
+                                                   required>
+                                        </div>
                                         <div class="form-text">Мы отправим напоминание о записи на указанный номер.</div>
                                     </div>
                                 {% endif %}
