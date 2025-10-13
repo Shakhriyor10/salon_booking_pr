@@ -2,66 +2,454 @@
 {% load static %}
 
 {% block content %}
-<div class="bg-white p-4 rounded shadow-sm">
-    <h2 class="text-center mb-4">📋 Мои записи</h2>
+<style>
+  .appointments-dashboard {
+    color: #1c1c1c;
+  }
 
-    {% if appointments %}
-    <div class="table-responsive">
-      <table class="table table-bordered table-hover align-middle text-center">
-        <thead class="table-light">
-          <tr>
-            <th>Мастер</th>
-            <th>Услуга</th>
-            <th>Дата и время</th>
-            <th>Статус</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for appointment in appointments %}
-          <tr>
-            <td>{{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
-              {{ appointment.stylist_service.salon_service.salon.name }}
-            </td>
-            <td>
-  {% for s in appointment.services.all %}
-    {{ s.stylist_service.salon_service.service.name }}{% if not forloop.last %}, {% endif %}
-  {% endfor %}
-</td>
-            <td>{{ appointment.start_time|date:"d.m.Y H:i" }}</td>
-            <td>
-              {% if appointment.status == "P" %}
-              <span class="badge bg-warning text-dark">Ожидает</span>
-              {% elif appointment.status == "C" %}
-              <span class="badge bg-info">Принято</span>
-              {% elif appointment.status == "D" %}
-              <span class="badge bg-success">Выполнено</span>
-              {% elif appointment.status == "canceled" %}
-              <span class="badge bg-danger">Отменено</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if appointment.status == "P" or appointment.status == "C" %}
-              <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-sm"
-                        onclick="return confirm('Точно отменить запись?')">
-                  Отменить
-                </button>
-              </form>
-              {% else %}
-              <span class="text-muted">—</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  .appointments-hero {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(233, 227, 255, 0.95)),
+                url('{% static "img/hero-texture.svg" %}') center/cover;
+    border-radius: 28px;
+    padding: 48px clamp(24px, 6vw, 72px);
+    box-shadow: 0 32px 60px rgba(31, 41, 55, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .appointments-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(132, 94, 247, 0.2), transparent 45%),
+                radial-gradient(circle at bottom left, rgba(255, 148, 114, 0.25), transparent 50%);
+    pointer-events: none;
+  }
+
+  .appointments-hero h1 {
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 42px);
+    color: #1a1a1a;
+  }
+
+  .appointments-hero p {
+    max-width: 520px;
+    font-size: 1.05rem;
+    color: #5a5a5a;
+  }
+
+  .appointments-hero .cta-btn {
+    background: linear-gradient(135deg, #845ef7, #5f3dc4);
+    color: #fff;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .appointments-hero .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 18px 35px rgba(95, 61, 196, 0.35);
+    color: #fff;
+  }
+
+  .summary-grid {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 18px;
+  }
+
+  .summary-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 22px 24px;
+    box-shadow: 0 18px 40px rgba(17, 24, 39, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .summary-card .badge-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .summary-card h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .summary-card p {
+    margin: 0;
+    color: #7d7d7d;
+    font-size: 0.95rem;
+  }
+
+  .summary-card.total .badge-icon {
+    background: rgba(132, 94, 247, 0.15);
+    color: #5f3dc4;
+  }
+
+  .summary-card.pending .badge-icon {
+    background: rgba(255, 214, 102, 0.22);
+    color: #c9980a;
+  }
+
+  .summary-card.confirmed .badge-icon {
+    background: rgba(123, 211, 234, 0.24);
+    color: #0c8599;
+  }
+
+  .summary-card.done .badge-icon {
+    background: rgba(104, 226, 140, 0.24);
+    color: #2b8a3e;
+  }
+
+  .summary-card.canceled .badge-icon {
+    background: rgba(252, 161, 158, 0.24);
+    color: #c92a2a;
+  }
+
+  .timeline {
+    margin-top: 48px;
+    position: relative;
+    padding-left: 18px;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, rgba(132, 94, 247, 0.4), rgba(95, 61, 196, 0));
+  }
+
+  .appointment-card {
+    margin-bottom: 28px;
+    margin-left: 22px;
+    background: #fff;
+    border-radius: 22px;
+    padding: 24px 26px;
+    box-shadow: 0 22px 45px rgba(15, 23, 42, 0.1);
+    border: 1px solid rgba(132, 94, 247, 0.08);
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .appointment-card::before {
+    content: "";
+    position: absolute;
+    left: -34px;
+    top: 32px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid #845ef7;
+    box-shadow: 0 0 0 6px rgba(132, 94, 247, 0.12);
+  }
+
+  .appointment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 28px 55px rgba(15, 23, 42, 0.15);
+  }
+
+  .appointment-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 16px;
+  }
+
+  .appointment-header .salon-name {
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #1f1f1f;
+  }
+
+  .appointment-header .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .status-pending {
+    background: rgba(255, 214, 102, 0.18);
+    color: #b88402;
+  }
+
+  .status-confirmed {
+    background: rgba(123, 211, 234, 0.18);
+    color: #0b7285;
+  }
+
+  .status-done {
+    background: rgba(104, 226, 140, 0.18);
+    color: #2b8a3e;
+  }
+
+  .status-canceled {
+    background: rgba(252, 161, 158, 0.18);
+    color: #c92a2a;
+  }
+
+  .services-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .services-list li {
+    background: rgba(132, 94, 247, 0.08);
+    color: #5235a5;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-size: 0.92rem;
+  }
+
+  .appointment-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 22px;
+  }
+
+  .appointment-footer .time-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #444;
+    font-weight: 600;
+  }
+
+  .appointment-footer .actions button {
+    border-radius: 999px;
+    padding: 8px 20px;
+  }
+
+  .empty-state {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 240, 255, 0.9));
+    border: 1px dashed rgba(132, 94, 247, 0.4);
+    border-radius: 24px;
+    padding: 56px 36px;
+    text-align: center;
+    color: #4c4c4c;
+    box-shadow: inset 0 0 0 1px rgba(132, 94, 247, 0.08);
+  }
+
+  .empty-state h3 {
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #1f1f1f;
+  }
+
+  .wellbeing-box {
+    margin-top: 48px;
+    background: linear-gradient(135deg, rgba(94, 234, 212, 0.16), rgba(34, 197, 94, 0.12));
+    border-radius: 26px;
+    padding: 32px;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+
+  .wellbeing-box ul {
+    margin: 0;
+    padding-left: 18px;
+    color: #2b8a3e;
+    font-size: 0.98rem;
+  }
+
+  .wellbeing-box strong {
+    color: #1f6f43;
+  }
+
+  @media (max-width: 992px) {
+    .appointments-hero {
+      padding: 38px 28px;
+    }
+    .appointment-card {
+      margin-left: 14px;
+    }
+    .appointment-card::before {
+      left: -26px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .appointments-hero {
+      text-align: center;
+    }
+    .appointments-hero p {
+      margin: 0 auto;
+    }
+    .appointments-hero .cta-btn {
+      justify-content: center;
+    }
+    .timeline {
+      padding-left: 0;
+    }
+    .timeline::before {
+      left: -9999px;
+    }
+    .appointment-card {
+      margin-left: 0;
+    }
+    .appointment-card::before {
+      display: none;
+    }
+    .wellbeing-box {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+    .wellbeing-box ul {
+      text-align: left;
+    }
+  }
+</style>
+
+<div class="appointments-dashboard">
+  <div class="appointments-hero">
+    <div class="position-relative" style="z-index: 1;">
+      <span class="badge rounded-pill bg-dark-subtle text-dark fw-semibold mb-3 px-3 py-2">Ваш персональный календарь</span>
+      <h1>✨ Мои записи</h1>
+      <p>Следите за предстоящими процедурами, отслеживайте статус каждой записи и планируйте свой идеальный бьюти-график.</p>
+      <a href="{% url 'home' %}" class="cta-btn">Записаться еще раз <i class="bi bi-arrow-right-short fs-4"></i></a>
     </div>
-    {% else %}
-    <p class="text-center text-muted mt-4">У вас пока нет записей.</p>
-    {% endif %}
   </div>
+
+  {% if appointments %}
+  {% regroup appointments by status as status_groups %}
+  <div class="summary-grid">
+    <div class="summary-card total">
+      <div class="badge-icon"><i class="bi bi-calendar-heart"></i></div>
+      <h3>{{ appointments|length }}</h3>
+      <p>Всего запланировано</p>
+    </div>
+
+    {% for group in status_groups %}
+    <div class="summary-card {% if group.grouper == 'P' %}pending{% elif group.grouper == 'C' %}confirmed{% elif group.grouper == 'D' %}done{% elif group.grouper == 'canceled' %}canceled{% endif %}">
+      <div class="badge-icon">
+        {% if group.grouper == 'P' %}
+          <i class="bi bi-hourglass-split"></i>
+        {% elif group.grouper == 'C' %}
+          <i class="bi bi-check2-circle"></i>
+        {% elif group.grouper == 'D' %}
+          <i class="bi bi-stars"></i>
+        {% elif group.grouper == 'canceled' %}
+          <i class="bi bi-x-octagon"></i>
+        {% endif %}
+      </div>
+      <h3>{{ group.list|length }}</h3>
+      <p>
+        {% if group.grouper == 'P' %}Ожидают подтверждения{% elif group.grouper == 'C' %}Подтверждено{% elif group.grouper == 'D' %}Завершено{% elif group.grouper == 'canceled' %}Отменено{% endif %}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="timeline">
+    {% for appointment in appointments %}
+    <article class="appointment-card">
+      <header class="appointment-header">
+        <div>
+          <div class="salon-name">{{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}</div>
+          <div class="text-muted small">{{ appointment.stylist_service.salon_service.salon.name }}</div>
+        </div>
+        <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'canceled' %}status-canceled{% endif %}">
+          {% if appointment.status == 'P' %}
+            <i class="bi bi-hourglass-split"></i> Ожидает
+          {% elif appointment.status == 'C' %}
+            <i class="bi bi-check2-circle"></i> Принято
+          {% elif appointment.status == 'D' %}
+            <i class="bi bi-stars"></i> Выполнено
+          {% elif appointment.status == 'canceled' %}
+            <i class="bi bi-x-octagon"></i> Отменено
+          {% endif %}
+        </span>
+      </header>
+
+      <section>
+        <h6 class="fw-semibold text-uppercase text-secondary mb-3">Услуги</h6>
+        <ul class="services-list">
+          {% for s in appointment.services.all %}
+            <li>{{ s.stylist_service.salon_service.service.name }}</li>
+          {% empty %}
+            <li class="bg-light text-muted">Услуги не указаны</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <footer class="appointment-footer">
+        <div class="time-block">
+          <span class="badge bg-dark-subtle text-dark rounded-pill px-3 py-2 fw-semibold">
+            <i class="bi bi-clock-history me-1"></i> {{ appointment.start_time|date:"d E" }} в {{ appointment.start_time|date:"H:i" }}
+          </span>
+          <span class="text-muted">{{ appointment.start_time|date:"l"|capfirst }}</span>
+        </div>
+        <div class="actions">
+          {% if appointment.status == "P" or appointment.status == "C" %}
+          <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm px-4"
+                    onclick="return confirm('Точно отменить запись?')">
+              Отменить запись
+            </button>
+          </form>
+          {% else %}
+          <span class="text-muted fst-italic">Действия недоступны</span>
+          {% endif %}
+        </div>
+      </footer>
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="display-5 mb-3">🌸</div>
+    <h3>У вас пока нет записей</h3>
+    <p class="mb-4">Создайте первую запись и позвольте нашей команде позаботиться о вашем стиле. Мы подготовили лучшие предложения специально для вас.</p>
+    <a href="{% url 'home' %}" class="btn btn-dark btn-lg rounded-pill px-5">Найти услугу</a>
+  </div>
+  {% endif %}
+
+  <div class="wellbeing-box mt-5">
+    <div>
+      <h4 class="fw-bold mb-3">Советы по подготовке к визиту</h4>
+      <p class="text-muted mb-3">Чтобы каждая процедура прошла идеально, мы подготовили для вас небольшой чек-лист.</p>
+      <ul>
+        <li><strong>За день до записи:</strong> уточните желаемый результат и подготовьте примеры, которые вдохновляют.</li>
+        <li><strong>За 2 часа:</strong> постарайтесь не использовать сильные укладочные средства и снимите украшения.</li>
+        <li><strong>После процедуры:</strong> добавьте напоминание, чтобы записаться на следующий визит вовремя.</li>
+      </ul>
+    </div>
+    <div class="text-center">
+      <img src="{% static 'img/beauty-time.svg' %}" alt="Beauty time" class="img-fluid" style="max-width: 240px;">
+    </div>
+  </div>
+</div>
 {% endblock %}
-
-
