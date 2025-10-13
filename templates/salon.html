@@ -211,11 +211,13 @@
         <div class="col">
             <div class="salon-card h-100">
                 <div class="salon-card__image-wrapper">
-                    {% if salon.photo %}
-                        <img src="{{ salon.photo.url }}" alt="{{ salon.name }}">
-                    {% else %}
-                        <img src="{% static 'img/default_salon.jpg' %}" alt="{{ salon.name }}">
-                    {% endif %}
+                    {% with photos=salon.get_photos %}
+                        {% if photos %}
+                            <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
+                        {% else %}
+                            <img src="{% static 'img/default_salon.jpg' %}" alt="{{ salon.name }}">
+                        {% endif %}
+                    {% endwith %}
                     {% with salon.get_type_display as type_display %}
                       {% if type_display and type_display != 'Не указано' %}
                         <span class="salon-card__badge">{{ type_display }}</span>

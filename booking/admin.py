@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
@@ -30,11 +31,43 @@ admin.site.register(User, CustomUserAdmin)
 class CityAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
+class SalonAdminForm(forms.ModelForm):
+    class Meta:
+        model = Salon
+        fields = '__all__'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get('photo'):
+            raise forms.ValidationError('Добавьте хотя бы одно основное фото салона.')
+        return cleaned_data
+
+
 @admin.register(Salon)
 class SalonAdmin(admin.ModelAdmin):
+    form = SalonAdminForm
     list_display = ('name', 'city', 'status', 'position')
     list_filter = ('city', 'status')
     search_fields = ('name', 'address')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'city',
+                'name',
+                'description',
+                'address',
+                'latitude',
+                'longitude',
+                'phone',
+                'status',
+                'position',
+                'type',
+            )
+        }),
+        ('Фото салона', {
+            'fields': ('photo', 'photo_2', 'photo_3', 'photo_4', 'photo_5')
+        }),
+    )
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -196,4 +229,3 @@ class AppointmentServiceAdmin(admin.ModelAdmin):
         total_minutes = int(duration.total_seconds() // 60)
         return f"{total_minutes} мин"
     get_duration.short_description = 'Длительность'
-
