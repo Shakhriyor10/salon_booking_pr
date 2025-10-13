@@ -44,6 +44,7 @@ from django.http import HttpResponseForbidden
 import pytz
 from django.db.models import Avg, Q
 from django.db.models.deletion import ProtectedError
+from users.forms import ProfileUpdateForm
 
 PHONE_INPUT_RE = re.compile(r'^\d{2}-\d{3}-\d{2}-\d{2}$')
 
@@ -1146,9 +1147,28 @@ def my_appointments(request):
         .filter(customer=request.user)
         .order_by("-start_time")
     )
+
+    upcoming_appointment = (
+        appointments
+        .filter(start_time__gte=now())
+        .order_by("start_time")
+        .first()
+    )
+
+    if request.method == "POST" and request.POST.get("profile_form"):
+        profile_form = ProfileUpdateForm(request.user, request.POST)
+        if profile_form.is_valid():
+            profile_form.save()
+            messages.success(request, "Профиль обновлён.")
+            return redirect('my_appointments')
+    else:
+        profile_form = ProfileUpdateForm(request.user)
+
     return render(request, "my_appointments.html", {
         "appointments": appointments,
         "now": now(),
+        "upcoming_appointment": upcoming_appointment,
+        "profile_form": profile_form,
     })
 
 @login_required

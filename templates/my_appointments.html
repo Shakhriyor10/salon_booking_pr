@@ -2,66 +2,759 @@
 {% load static %}
 
 {% block content %}
-<div class="bg-white p-4 rounded shadow-sm">
-    <h2 class="text-center mb-4">📋 Мои записи</h2>
+<style>
+  .appointments-wrapper {
+    background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 80%);
+    border-radius: 32px;
+    padding: clamp(28px, 4vw, 48px);
+    box-shadow: 0 32px 70px rgba(15, 23, 42, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
 
-    {% if appointments %}
-    <div class="table-responsive">
-      <table class="table table-bordered table-hover align-middle text-center">
-        <thead class="table-light">
-          <tr>
-            <th>Мастер</th>
-            <th>Услуга</th>
-            <th>Дата и время</th>
-            <th>Статус</th>
-            <th>Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for appointment in appointments %}
-          <tr>
-            <td>{{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
-              {{ appointment.stylist_service.salon_service.salon.name }}
-            </td>
-            <td>
-  {% for s in appointment.services.all %}
-    {{ s.stylist_service.salon_service.service.name }}{% if not forloop.last %}, {% endif %}
-  {% endfor %}
-</td>
-            <td>{{ appointment.start_time|date:"d.m.Y H:i" }}</td>
-            <td>
-              {% if appointment.status == "P" %}
-              <span class="badge bg-warning text-dark">Ожидает</span>
-              {% elif appointment.status == "C" %}
-              <span class="badge bg-info">Принято</span>
-              {% elif appointment.status == "D" %}
-              <span class="badge bg-success">Выполнено</span>
-              {% elif appointment.status == "canceled" %}
-              <span class="badge bg-danger">Отменено</span>
-              {% endif %}
-            </td>
-            <td>
-              {% if appointment.status == "P" or appointment.status == "C" %}
-              <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-outline-danger btn-sm"
-                        onclick="return confirm('Точно отменить запись?')">
-                  Отменить
-                </button>
-              </form>
-              {% else %}
-              <span class="text-muted">—</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  .appointments-wrapper::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 48%),
+                radial-gradient(circle at bottom left, rgba(244, 114, 182, 0.1), transparent 55%);
+    pointer-events: none;
+  }
+
+  .appointments-hero {
+    position: relative;
+    z-index: 1;
+    margin-bottom: clamp(32px, 4vw, 56px);
+  }
+
+  .hero-grid {
+    display: grid;
+    gap: clamp(24px, 4vw, 40px);
+  }
+
+  @media (min-width: 992px) {
+    .hero-grid {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      align-items: stretch;
+    }
+  }
+
+  .hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(17, 24, 39, 0.08);
+    color: #111827;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  .hero-title {
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+  }
+
+  .hero-description {
+    color: #4b5563;
+    max-width: 520px;
+    font-size: 1.05rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    margin-top: clamp(16px, 3vw, 28px);
+  }
+
+  .hero-actions .cta-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 18px 35px rgba(99, 102, 241, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hero-actions .cta-btn:hover {
+    transform: translateY(-2px);
+    color: #fff;
+    box-shadow: 0 24px 45px rgba(99, 102, 241, 0.35);
+  }
+
+  .next-appointment-card {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 16px 20px;
+    border: 1px solid rgba(99, 102, 241, 0.16);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    min-width: 260px;
+  }
+
+  .next-appointment-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: #4338ca;
+    margin-bottom: 6px;
+  }
+
+  .next-appointment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #111827;
+  }
+
+  .next-appointment-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-card {
+    background: rgba(17, 24, 39, 0.92);
+    color: #f8fafc;
+    border-radius: 26px;
+    padding: clamp(20px, 3vw, 28px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(129, 140, 248, 0.85));
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .profile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .profile-meta small {
+    color: rgba(226, 232, 240, 0.8);
+  }
+
+  .profile-details {
+    margin: 18px 0;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(148, 163, 184, 0.12);
+    font-size: 0.95rem;
+  }
+
+  .profile-details div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .profile-details span:first-child {
+    color: rgba(226, 232, 240, 0.7);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+
+  .profile-update-btn {
+    background: rgba(248, 250, 252, 0.12);
+    color: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .profile-update-btn:hover {
+    background: rgba(248, 250, 252, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .profile-form {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .profile-form label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(148, 163, 184, 0.8);
+  }
+
+  .profile-form .form-control {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #f8fafc;
+  }
+
+  .profile-form .form-control:focus {
+    border-color: rgba(129, 140, 248, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.25);
+  }
+
+  .profile-form .invalid-feedback {
+    color: #fecdd3;
+  }
+
+  .summary-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: clamp(32px, 4vw, 48px);
+  }
+
+  .summary-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 22px;
+    padding: 22px 24px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .summary-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+  }
+
+  .summary-card h3 {
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1f2937;
+  }
+
+  .summary-card p {
+    margin: 0;
+    color: #6b7280;
+  }
+
+  .summary-card.total .summary-icon {
+    background: rgba(99, 102, 241, 0.18);
+    color: #4338ca;
+  }
+
+  .summary-card.pending .summary-icon {
+    background: rgba(253, 230, 138, 0.28);
+    color: #b45309;
+  }
+
+  .summary-card.confirmed .summary-icon {
+    background: rgba(167, 243, 208, 0.32);
+    color: #047857;
+  }
+
+  .summary-card.done .summary-icon {
+    background: rgba(191, 219, 254, 0.32);
+    color: #1d4ed8;
+  }
+
+  .summary-card.canceled .summary-icon {
+    background: rgba(254, 202, 202, 0.32);
+    color: #b91c1c;
+  }
+
+  .timeline {
+    position: relative;
+    z-index: 1;
+    padding-left: 24px;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, rgba(129, 140, 248, 0.35), rgba(14, 165, 233, 0));
+  }
+
+  .appointment-card {
+    position: relative;
+    background: #ffffff;
+    border-radius: 22px;
+    padding: clamp(22px, 3vw, 28px);
+    margin-left: 22px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    box-shadow: 0 24px 44px rgba(148, 163, 184, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .appointment-card::before {
+    content: "";
+    position: absolute;
+    left: -32px;
+    top: 32px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 0 6px rgba(129, 140, 248, 0.12);
+  }
+
+  .appointment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 30px 55px rgba(15, 23, 42, 0.16);
+  }
+
+  .appointment-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .appointment-header .salon-name {
+    font-weight: 700;
+    color: #111827;
+    font-size: 1.1rem;
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .status-pending {
+    background: rgba(253, 230, 138, 0.28);
+    color: #92400e;
+  }
+
+  .status-confirmed {
+    background: rgba(134, 239, 172, 0.28);
+    color: #047857;
+  }
+
+  .status-done {
+    background: rgba(191, 219, 254, 0.32);
+    color: #1d4ed8;
+  }
+
+  .status-canceled {
+    background: rgba(254, 202, 202, 0.32);
+    color: #b91c1c;
+  }
+
+  .services-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .services-list li {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+    border-radius: 14px;
+    padding: 6px 14px;
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+
+  .appointment-footer {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .appointment-footer .time-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #4b5563;
+    font-weight: 600;
+  }
+
+  .appointment-footer .time-block .badge {
+    background: rgba(15, 23, 42, 0.08);
+    color: #1f2937;
+    border-radius: 999px;
+  }
+
+  .aftercare {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(40px, 5vw, 60px);
+  }
+
+  .aftercare-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .aftercare-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+  }
+
+  .aftercare-card .icon {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+  }
+
+  .aftercare-card h6 {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+  }
+
+  .aftercare-card p {
+    color: #6b7280;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .empty-state {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: clamp(40px, 6vw, 64px) clamp(24px, 4vw, 48px);
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 28px;
+    border: 1px dashed rgba(129, 140, 248, 0.4);
+    box-shadow: 0 20px 44px rgba(99, 102, 241, 0.12);
+  }
+
+  .empty-state .emoji {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+
+  .empty-state p {
+    color: #4b5563;
+    max-width: 480px;
+    margin: 0 auto 24px;
+  }
+
+  .empty-state .tips {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .appointments-wrapper {
+      padding: 24px 18px;
+    }
+
+    .timeline {
+      padding-left: 0;
+    }
+
+    .timeline::before,
+    .appointment-card::before {
+      display: none;
+    }
+
+    .appointment-card {
+      margin-left: 0;
+    }
+
+    .profile-card {
+      border-radius: 24px;
+    }
+  }
+</style>
+
+<div class="appointments-wrapper">
+  <section class="appointments-hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="hero-kicker"><i class="bi bi-stars"></i> Ваш бьюти-план</span>
+        <h1 class="hero-title">✨ Мои записи</h1>
+        <p class="hero-description">Следите за статусами, планируйте новые визиты и держите важные детали под рукой в одном месте.</p>
+
+        <div class="hero-actions">
+          <a href="{% url 'home' %}" class="cta-btn">Записаться ещё <i class="bi bi-arrow-right-short fs-4"></i></a>
+
+          {% if upcoming_appointment %}
+          <div class="next-appointment-card">
+            <span class="next-appointment-label"><i class="bi bi-clock-history"></i> Ближайшая запись</span>
+            <div class="next-appointment-meta">
+              <span><i class="bi bi-calendar3"></i> {{ upcoming_appointment.start_time|date:"d E" }} • {{ upcoming_appointment.start_time|date:"H:i" }}</span>
+              {% with first_service=upcoming_appointment.services.all|first %}
+                <span><i class="bi bi-geo-alt"></i>
+                  {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                    {{ first_service.stylist_service.salon_service.salon.name }}
+                  {% else %}
+                    {{ upcoming_appointment.stylist.salon.name|default:"Салон уточняется" }}
+                  {% endif %}
+                </span>
+              {% endwith %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <aside class="profile-card">
+        <div>
+          <div class="profile-header">
+            <div class="profile-avatar">
+              {% firstof request.user.first_name|slice:":1" request.user.username|slice:":1" %}
+            </div>
+            <div class="profile-meta">
+              <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+              <small>Персональный профиль</small>
+            </div>
+          </div>
+
+          <div class="profile-details mt-3">
+            <div>
+              <span>Электронная почта</span>
+              <span>{{ request.user.email|default:"Не указано" }}</span>
+            </div>
+            <div class="mt-2">
+              <span>Телефон</span>
+              <span>{{ request.user.profile.phone|default:"Добавьте номер" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="profile-update-btn" type="button" data-bs-toggle="collapse" data-bs-target="#profileForm" aria-expanded="false" aria-controls="profileForm">
+          <i class="bi bi-sliders"></i> Обновить профиль
+        </button>
+
+        <div class="collapse profile-form" id="profileForm">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="profile_form" value="1">
+            {% if profile_form.non_field_errors %}
+              <div class="invalid-feedback d-block mb-2">
+                {{ profile_form.non_field_errors|join:", " }}
+              </div>
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">{{ profile_form.first_name.label }}</label>
+                {{ profile_form.first_name }}
+                {% if profile_form.first_name.errors %}
+                  <div class="invalid-feedback d-block">{{ profile_form.first_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ profile_form.last_name.label }}</label>
+                {{ profile_form.last_name }}
+                {% if profile_form.last_name.errors %}
+                  <div class="invalid-feedback d-block">{{ profile_form.last_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ profile_form.phone.label }}</label>
+                {{ profile_form.phone }}
+                {% if profile_form.phone.errors %}
+                  <div class="invalid-feedback d-block">{{ profile_form.phone.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-grid mt-3">
+              <button type="submit" class="btn btn-light text-dark fw-semibold">Сохранить изменения</button>
+            </div>
+          </form>
+        </div>
+      </aside>
     </div>
-    {% else %}
-    <p class="text-center text-muted mt-4">У вас пока нет записей.</p>
-    {% endif %}
-  </div>
+  </section>
+
+  {% if appointments %}
+    {% regroup appointments by status as status_groups %}
+    <div class="summary-grid">
+      <div class="summary-card total">
+        <div class="summary-icon"><i class="bi bi-calendar-heart"></i></div>
+        <h3>{{ appointments|length }}</h3>
+        <p>Всего записей</p>
+      </div>
+
+      {% for group in status_groups %}
+        <div class="summary-card {% if group.grouper == 'P' %}pending{% elif group.grouper == 'C' %}confirmed{% elif group.grouper == 'D' %}done{% elif group.grouper == 'X' %}canceled{% endif %}">
+          <div class="summary-icon">
+            {% if group.grouper == 'P' %}
+              <i class="bi bi-hourglass-split"></i>
+            {% elif group.grouper == 'C' %}
+              <i class="bi bi-check2-circle"></i>
+            {% elif group.grouper == 'D' %}
+              <i class="bi bi-stars"></i>
+            {% elif group.grouper == 'X' %}
+              <i class="bi bi-x-octagon"></i>
+            {% endif %}
+          </div>
+          <h3>{{ group.list|length }}</h3>
+          <p>
+            {% if group.grouper == 'P' %}Ожидают подтверждения{% elif group.grouper == 'C' %}Подтверждено{% elif group.grouper == 'D' %}Завершено{% elif group.grouper == 'X' %}Отменено{% endif %}
+          </p>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="timeline">
+      {% for appointment in appointments %}
+      <article class="appointment-card">
+        <header class="appointment-header">
+          <div>
+            <div class="salon-name">
+              {{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
+            </div>
+            {% with first_service=appointment.services.all|first %}
+              <div class="text-muted small">
+                {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                  {{ first_service.stylist_service.salon_service.salon.name }}
+                {% else %}
+                  {% if appointment.stylist.salon %}
+                    {{ appointment.stylist.salon.name }}
+                  {% else %}
+                    Салон уточняется
+                  {% endif %}
+                {% endif %}
+              </div>
+            {% endwith %}
+          </div>
+          <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'X' %}status-canceled{% endif %}">
+            {% if appointment.status == 'P' %}
+              <i class="bi bi-hourglass-split"></i> Ожидает
+            {% elif appointment.status == 'C' %}
+              <i class="bi bi-check2-circle"></i> Принято
+            {% elif appointment.status == 'D' %}
+              <i class="bi bi-stars"></i> Выполнено
+            {% elif appointment.status == 'X' %}
+              <i class="bi bi-x-octagon"></i> Отменено
+            {% endif %}
+          </span>
+        </header>
+
+        <section>
+          <h6 class="fw-semibold text-uppercase text-secondary mb-3">Услуги</h6>
+          <ul class="services-list">
+            {% for service in appointment.services.all %}
+              {% if service.stylist_service and service.stylist_service.salon_service %}
+                <li>{{ service.stylist_service.salon_service.service.name }}</li>
+              {% else %}
+                <li class="bg-light text-muted">Услуга уточняется</li>
+              {% endif %}
+            {% empty %}
+              <li class="bg-light text-muted">Услуги не указаны</li>
+            {% endfor %}
+          </ul>
+        </section>
+
+        <footer class="appointment-footer">
+          <div class="time-block">
+            <span class="badge px-3 py-2 fw-semibold"><i class="bi bi-clock"></i> {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}</span>
+            <span class="text-muted">{{ appointment.start_time|date:"l"|capfirst }}</span>
+          </div>
+          <div class="actions">
+            {% if appointment.status == 'P' or appointment.status == 'C' %}
+            <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-outline-danger btn-sm px-4" onclick="return confirm('Точно отменить запись?')">
+                Отменить запись
+              </button>
+            </form>
+            {% else %}
+            <span class="text-muted fst-italic">Действия недоступны</span>
+            {% endif %}
+          </div>
+        </footer>
+      </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="emoji">💫</div>
+      <h3 class="fw-bold mb-3">У вас пока нет записей</h3>
+      <p>Создайте первую запись, чтобы составить персональный план ухода и получать напоминания о самых важных процедурах.</p>
+      <a href="{% url 'home' %}" class="btn btn-dark btn-lg rounded-pill px-5">Найти услугу</a>
+      <div class="tips">
+        <span><i class="bi bi-lightning-charge"></i> Подсказка: заполните профиль, чтобы мастера знали, как с вами связаться.</span>
+      </div>
+    </div>
+  {% endif %}
+
+  <section class="aftercare">
+    <h4 class="fw-bold mb-3">Как сделать следующий визит ещё приятнее</h4>
+    <div class="aftercare-grid">
+      <div class="aftercare-card">
+        <div class="icon">🗓️</div>
+        <h6>Запланируйте заранее</h6>
+        <p>Выбирайте удобные окна, пока они свободны, и получайте подтверждение от мастера без ожидания.</p>
+      </div>
+      <div class="aftercare-card">
+        <div class="icon">💬</div>
+        <h6>Делитесь ожиданиями</h6>
+        <p>Добавляйте комментарии при записи — это поможет мастеру подготовиться и подобрать лучшее решение.</p>
+      </div>
+      <div class="aftercare-card">
+        <div class="icon">🎁</div>
+        <h6>Сохраняйте любимых</h6>
+        <p>Возвращайтесь к мастерам и услугам, которые вам понравились, чтобы поддерживать идеальный образ.</p>
+      </div>
+    </div>
+  </section>
+</div>
 {% endblock %}
-
-
