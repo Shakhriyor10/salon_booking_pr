@@ -283,14 +283,18 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <label class="form-label fw-semibold" for="guest_phone">📞 Телефон</label>
-                                                <input type="tel"
-                                                       name="guest_phone"
-                                                       id="guest_phone"
-                                                       class="form-control form-control-lg"
-                                                       placeholder="Телефон в формате +998991234567"
-                                                       pattern="^\+998\d{9}$"
-                                                       title="Введите номер в формате +998991234567"
-                                                       required>
+                                                <div class="input-group input-group-lg">
+                                                    <span class="input-group-text">+998</span>
+                                                    <input type="tel"
+                                                           name="guest_phone"
+                                                           id="guest_phone"
+                                                           class="form-control"
+                                                           inputmode="numeric"
+                                                           placeholder="93-123-45-67"
+                                                           pattern="^\d{2}-\d{3}-\d{2}-\d{2}$"
+                                                           title="Введите номер в формате 93-123-45-67"
+                                                           required>
+                                                </div>
                                             </div>
                                         {% endif %}
 
