@@ -86,10 +86,20 @@ class AppointmentAdmin(admin.ModelAdmin):
     get_client_name.short_description = 'Клиент'
 
     def get_service_name(self, obj):
-        return ', '.join([
-            s.stylist_service.salon_service.service.name
-            for s in obj.services.all()
-        ])
+        services = []
+        queryset = obj.services.select_related(
+            'stylist_service__salon_service__service'
+        )
+        for appointment_service in queryset:
+            stylist_service = appointment_service.stylist_service
+            if not stylist_service:
+                continue
+            salon_service = stylist_service.salon_service
+            if not salon_service or not salon_service.service:
+                continue
+            services.append(salon_service.service.name)
+
+        return ', '.join(services) if services else '—'
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -156,18 +166,35 @@ class AppointmentServiceAdmin(admin.ModelAdmin):
     list_select_related = ('appointment', 'stylist_service', 'stylist_service__salon_service', 'stylist_service__stylist')
 
     def service_name(self, obj):
-        return obj.stylist_service.salon_service.service.name
+        stylist_service = obj.stylist_service
+        if (
+            stylist_service and
+            stylist_service.salon_service and
+            stylist_service.salon_service.service
+        ):
+            return stylist_service.salon_service.service.name
+        return '—'
     service_name.short_description = 'Услуга'
 
     def stylist_name(self, obj):
-        return obj.stylist_service.stylist.user.get_full_name() or obj.stylist_service.stylist.user.username
+        stylist_service = obj.stylist_service
+        if stylist_service and stylist_service.stylist:
+            user = stylist_service.stylist.user
+            return user.get_full_name() or user.username
+        return '—'
 
     def get_price(self, obj):
+        if not obj.stylist_service:
+            return '—'
         return f"{obj.get_price()} сум"
     get_price.short_description = 'Цена'
 
     def get_duration(self, obj):
-        return f"{obj.get_duration()} мин"
+        if not obj.stylist_service or not obj.stylist_service.salon_service:
+            return '—'
+        duration = obj.get_duration()
+        total_minutes = int(duration.total_seconds() // 60)
+        return f"{total_minutes} мин"
     get_duration.short_description = 'Длительность'
 
 
