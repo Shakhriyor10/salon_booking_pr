@@ -285,7 +285,12 @@ class SalonDetailView(DetailView):
                     to_attr='salon_services_for_display'
                 )
             )
-            .order_by('user__first_name', 'user__last_name', 'user__username')
+            .order_by(
+                F('level__order').desc(nulls_last=True),
+                'user__first_name',
+                'user__last_name',
+                'user__username',
+            )
         )
         context['stylists'] = stylists
         return context
@@ -365,6 +370,17 @@ class StylistListView(ListView):
     model = Stylist
     template_name = 'stylists.html'
     context_object_name = 'stylists'
+
+    def get_queryset(self):
+        return (
+            Stylist.objects.select_related('user', 'level')
+            .order_by(
+                F('level__order').desc(nulls_last=True),
+                'user__first_name',
+                'user__last_name',
+                'user__username',
+            )
+        )
 
 
 class StylistDetailView(DetailView):
