@@ -69,8 +69,12 @@ class ProfileUpdateForm(forms.Form):
         for name, field in self.fields.items():
             css_class = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = f"form-control {css_class}".strip()
-            if name == 'phone' and 'placeholder' not in field.widget.attrs:
-                field.widget.attrs['placeholder'] = '93-123-45-67'
+
+            if name == 'phone':
+                field.widget.attrs.setdefault('placeholder', '93-123-45-67')
+                field.widget.attrs.setdefault('data-uzbek-phone-input', 'true')
+                field.widget.attrs.setdefault('inputmode', 'numeric')
+                field.widget.attrs.setdefault('autocomplete', 'tel')
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '')
