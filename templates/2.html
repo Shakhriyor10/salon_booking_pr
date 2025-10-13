@@ -1,3 +1,5 @@
+{% load static %}
+
 <div class="container py-3">
 
   <h2 class="text-center mb-4">Запись на "{{ service.name }}"</h2>
@@ -58,7 +60,7 @@
                   <div class="col-12 col-md-6">
                     <div class="input-group">
                       <span class="input-group-text">+998</span>
-                      <input type="tel" name="guest_phone" class="form-control" inputmode="numeric" placeholder="93-123-45-67" pattern="^\d{2}-\d{3}-\d{2}-\d{2}$" title="Введите номер в формате 93-123-45-67" required>
+                      <input type="tel" name="guest_phone" class="form-control" inputmode="numeric" placeholder="93-123-45-67" pattern="^\d{2}-\d{3}-\d{2}-\d{2}$" title="Введите номер в формате 93-123-45-67" data-uzbek-phone-input required>
                     </div>
                   </div>
                 {% endif %}
@@ -77,3 +79,5 @@
     <p class="text-muted">Нет доступных мастеров на выбранную дату.</p>
   {% endif %}
 </div>
+
+<script src="{% static 'js/uzbek-phone-mask.js' %}"></script>
