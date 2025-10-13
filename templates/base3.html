@@ -57,7 +57,28 @@
   }
 
   .bg-gradient-success {
-    background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%);
+    background: linear-gradient(135deg, #0f0f0f 0%, #2b2b2b 45%, #1a1a1a 100%);
+  }
+
+  .modal-content.luxe-celebration {
+    background-color: #111;
+    color: #f8f9fa;
+  }
+
+  .modal-content.luxe-celebration .text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+
+  .modal-content.luxe-celebration .btn-outline-light {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: #f8f9fa;
+  }
+
+  .modal-content.luxe-celebration .btn-outline-light:hover,
+  .modal-content.luxe-celebration .btn-outline-light:focus {
+    border-color: #ffffff;
+    color: #111;
+    background-color: #ffffff;
   }
 </style>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
@@ -136,20 +157,20 @@
             {% if 'booking-success-modal' in message.tags %}
               <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
-                  <div class="modal-content border-0 shadow-lg overflow-hidden">
+                  <div class="modal-content border-0 shadow-lg overflow-hidden luxe-celebration">
                     <div class="position-relative">
                       <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                       <div class="bg-gradient-success position-absolute top-0 start-0 w-100 h-100"></div>
                       <div class="position-relative text-white text-center py-5 px-4">
-                        <div class="display-4 mb-3">✨ Спасибо, что выбрали нас!</div>
-                        <p class="lead mb-0">Мы уже уведомили мастеров о вашей записи.</p>
+                        <div class="display-4 fw-semibold mb-3">✨ Спасибо, что выбрали нас!</div>
+                        <p class="lead mb-0 text-white-50">Мы уже уведомили мастеров о вашей записи.</p>
                       </div>
                     </div>
                     <div class="modal-body text-center p-5">
-                      <div class="display-6 text-success mb-3">✂️</div>
-                      <h5 class="fw-bold mb-2">Запись успешно создана</h5>
+                      <div class="display-6 text-white-50 mb-3">✂️</div>
+                      <h5 class="fw-bold mb-2 text-white">Запись успешно создана</h5>
                       <p class="text-muted mb-4">{{ message }}</p>
-                      <button type="button" class="btn btn-success px-4" data-bs-dismiss="modal">Закрыть</button>
+                      <button type="button" class="btn btn-outline-light px-4" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
                 </div>
