@@ -567,10 +567,6 @@
           </div>
 
           <div class="profile-details mt-3">
-            <div>
-              <span>Электронная почта</span>
-              <span>{{ request.user.email|default:"Не указано" }}</span>
-            </div>
             <div class="mt-2">
               <span>Телефон</span>
               <span>{{ request.user.profile.phone|default:"Добавьте номер" }}</span>

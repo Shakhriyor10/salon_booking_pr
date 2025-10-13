@@ -269,13 +269,23 @@ class AppointmentService(models.Model):
                                         null=True, blank=True)
 
     def get_duration(self):
-        return self.stylist_service.salon_service.duration
+        if self.stylist_service and self.stylist_service.salon_service:
+            return self.stylist_service.salon_service.duration
+        return timedelta()
 
     def get_price(self):
-        return self.stylist_service.price
+        if self.stylist_service:
+            return self.stylist_service.price
+        return Decimal('0')
 
     def __str__(self):
-        return self.stylist_service.salon_service.service.name
+        if (
+            self.stylist_service and
+            self.stylist_service.salon_service and
+            self.stylist_service.salon_service.service
+        ):
+            return self.stylist_service.salon_service.service.name
+        return f"AppointmentService #{self.pk}"
 
 
 class StylistService(models.Model):
