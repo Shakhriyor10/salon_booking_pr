@@ -1383,9 +1383,9 @@
       </div>
 
       {% if reviews %}
-        <div class="review-list">
+        <div class="review-list" id="review-list">
           {% for review in reviews %}
-            <article class="review-item">
+            <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}">
               <div class="review-avatar">{{ review.user.username|first|upper }}</div>
               <div>
                 <div class="review-meta">
@@ -1408,12 +1408,43 @@
             </article>
           {% endfor %}
         </div>
+        {% if reviews|length > 5 %}
+          <div class="text-center mt-4">
+            <button class="btn btn-outline-theme" id="load-more-reviews" data-batch="5">Показать ещё</button>
+          </div>
+        {% endif %}
       {% else %}
         <p class="reviews-empty">Отзывов пока нет. Будьте первым!</p>
       {% endif %}
     </div>
   </section>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const loadMoreButton = document.getElementById('load-more-reviews');
+    if (!loadMoreButton) {
+      return;
+    }
+
+    const batchSize = parseInt(loadMoreButton.dataset.batch, 10) || 5;
+    const hiddenReviews = Array.from(document.querySelectorAll('.review-item.extra-review'));
+
+    if (!hiddenReviews.length) {
+      loadMoreButton.classList.add('d-none');
+      return;
+    }
+
+    loadMoreButton.addEventListener('click', () => {
+      const remainingHidden = hiddenReviews.filter((review) => review.classList.contains('d-none'));
+      remainingHidden.slice(0, batchSize).forEach((review) => review.classList.remove('d-none'));
+
+      if (remainingHidden.length <= batchSize) {
+        loadMoreButton.classList.add('d-none');
+      }
+    });
+  });
+</script>
 
 <div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center">
   <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
