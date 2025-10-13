@@ -133,11 +133,12 @@
     <div class="container">
         {% if messages %}
           {% for message in messages %}
-            {% if 'success' in message.tags and 'Запись успешно создана' in message %}
+            {% if 'booking-success-modal' in message.tags %}
               <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                   <div class="modal-content border-0 shadow-lg overflow-hidden">
                     <div class="position-relative">
+                      <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                       <div class="bg-gradient-success position-absolute top-0 start-0 w-100 h-100"></div>
                       <div class="position-relative text-white text-center py-5 px-4">
                         <div class="display-4 mb-3">✨ Спасибо, что выбрали нас!</div>
@@ -178,13 +179,44 @@
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         const successModalEl = document.getElementById('bookingSuccessModal');
-        if (successModalEl && window.bootstrap && typeof window.bootstrap.Modal === 'function') {
+
+        if (!successModalEl) {
+          return;
+        }
+
+        if (window.bootstrap && typeof window.bootstrap.Modal === 'function') {
           const modal = new window.bootstrap.Modal(successModalEl, {
             backdrop: 'static',
-            keyboard: false
+            keyboard: false,
           });
           modal.show();
+          return;
         }
+
+        successModalEl.classList.remove('fade');
+        successModalEl.classList.add('show', 'd-block');
+        successModalEl.removeAttribute('aria-hidden');
+        successModalEl.setAttribute('aria-modal', 'true');
+        document.body.classList.add('modal-open');
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'modal-backdrop show';
+        document.body.appendChild(backdrop);
+
+        const closeModal = () => {
+          successModalEl.classList.remove('show', 'd-block');
+          successModalEl.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
+          if (backdrop.parentNode) {
+            backdrop.parentNode.removeChild(backdrop);
+          }
+        };
+
+        const closeButtons = successModalEl.querySelectorAll('[data-dismiss="modal"], [data-bs-dismiss="modal"]');
+        closeButtons.forEach((button) => {
+          button.addEventListener('click', closeModal);
+        });
+
       });
     </script>
     <script>
