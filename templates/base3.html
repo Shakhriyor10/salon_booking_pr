@@ -50,74 +50,155 @@
     margin: 0;
     display: flex;
     flex-direction: column;
+    background: #f8f9fb;
   }
 
   main {
     flex: 1;
   }
+
+  .gb-navbar {
+    background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 50%, #f953c6 100%);
+    padding: 0.75rem 0;
+    box-shadow: 0 15px 35px rgba(80, 36, 143, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    backdrop-filter: blur(10px);
+  }
+
+  .gb-navbar .navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .gb-navbar .navbar-brand span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    font-size: 1.2rem;
+  }
+
+  .gb-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+    border-radius: 12px;
+    padding: 0.55rem 1rem;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.95rem;
+  }
+
+  .gb-navbar .nav-link:hover,
+  .gb-navbar .nav-link:focus,
+  .gb-navbar .nav-link.active {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-2px);
+  }
+
+  .gb-navbar .navbar-toggler {
+    border: none;
+    padding: 0.35rem 0.6rem;
+  }
+
+  .gb-navbar .navbar-toggler:focus {
+    box-shadow: none;
+  }
+
+  .gb-navbar .navbar-toggler-icon {
+    filter: brightness(5);
+  }
+
+  .gb-navbar .dropdown-menu {
+    border-radius: 16px;
+    border: none;
+    padding: 0.5rem;
+    box-shadow: 0 20px 40px rgba(78, 25, 148, 0.2);
+  }
+
+  @media (max-width: 991.98px) {
+    .gb-navbar .nav-link {
+      margin-bottom: 0.25rem;
+    }
+  }
 </style>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+<nav class="navbar navbar-expand-lg gb-navbar">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'home' %}">GoBeauty</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-      aria-controls="navbarNav" aria-expanded="false" aria-label="Переключить навигацию">
+    <a class="navbar-brand" href="{% url 'home' %}">
+      <span class="bi bi-stars"></span>
+      GoBeauty
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#gb-navbarNav"
+      aria-controls="gb-navbarNav" aria-expanded="false" aria-label="Переключить навигацию">
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
+    <div class="collapse navbar-collapse" id="gb-navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'home' %}">🏠 Главная</a>
+          <a class="nav-link {% block nav_home_active %}{% endblock %}" href="{% url 'home' %}"><i class="bi bi-house-door"></i> Главная</a>
         </li>
-        {% if user.is_authenticated  %}
+        {% if user.is_authenticated %}
           {% if user.is_staff or user.profile.is_salon_admin %}
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'reports' %}">📅 Отчеты</a>
+              <a class="nav-link" href="{% url 'reports' %}"><i class="bi bi-calendar2-week"></i> Отчеты</a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">📊 Записи</a>
-          </li>
-
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'manual_appointment' %}">📑 Создать запись</a>
+              <a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-bar-chart"></i> Записи</a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
+              <a class="nav-link" href="{% url 'manual_appointment' %}"><i class="bi bi-plus-circle"></i> Создать запись</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-gear"></i> Настройки</a>
           </li>
           {% endif %}
         {% endif %}
         {% if user.is_authenticated and user.stylist_profile and not user.is_staff and not user.profile.is_salon_admin %}
-          <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_manual_appointment' %}">⚙️ Создать запись</a>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stylist_manual_appointment' %}"><i class="bi bi-pencil-square"></i> Создать запись</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_dashboard' %}">📅 Мои записи</a>
+          <a class="nav-link" href="{% url 'stylist_dashboard' %}"><i class="bi bi-journal-check"></i> Мои записи</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_reports' %}">📊 Мои отчеты</a>
+          <a class="nav-link" href="{% url 'stylist_reports' %}"><i class="bi bi-graph-up"></i> Мои отчеты</a>
         </li>
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
-          </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-sliders"></i> Настройки</a>
+        </li>
         {% endif %}
-          {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'my_appointments' %}">📊 Мои записи</a>
-          </li>
-          {% endif %}
+        {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'my_appointments' %}"><i class="bi bi-bookmark-check"></i> Мои записи</a>
+        </li>
+        {% endif %}
       </ul>
 
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav ms-lg-4 align-items-lg-center">
         {% if user.is_authenticated %}
-        <li class="nav-item">
-          <a class="nav-link disabled" href="#">👤 {{ user.username }}</a>
+        <li class="nav-item me-lg-2">
+          <span class="nav-link disabled text-white-50"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'logout' %}">🚪 Выйти</a>
+          <a class="nav-link" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Выйти</a>
         </li>
         {% else %}
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'login' %}">🔐 Войти</a>
+          <a class="nav-link" href="{% url 'login' %}"><i class="bi bi-shield-lock"></i> Войти</a>
         </li>
         {% endif %}
       </ul>
@@ -146,26 +227,24 @@
           <p class="mt-2 small text-secondary">Сделано с ❤️ в BrightLab</p>
       </div>
   </footer>
-</body>
 
-</html>
-
-{% block extra_js %}
-{% endblock %}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'js/main.js' %}"></script>
-</body>
+<script src="{% static 'js/main.js' %}"></script>
 <script>
   const cancelModal = document.getElementById('cancelModal');
-  cancelModal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const appointmentId = button.getAttribute('data-appointment-id');
-    const form = document.getElementById('cancelForm');
+  if (cancelModal) {
+    cancelModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const appointmentId = button.getAttribute('data-appointment-id');
+      const form = document.getElementById('cancelForm');
 
-    form.action = `/appointment/${appointmentId}/action/`;  // путь на твой view
-  });
+      if (form) {
+        form.action = `/appointment/${appointmentId}/action/`;
+      }
+    });
+  }
 </script>
-
-
+</body>
 </html>
