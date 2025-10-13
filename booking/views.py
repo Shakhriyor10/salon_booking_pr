@@ -541,7 +541,11 @@ class AppointmentCreateView(View):
             text=msg
         )
 
-        messages.success(request, 'Запись успешно создана! ✂️')
+        messages.success(
+            request,
+            'Запись успешно создана! ✂️',
+            extra_tags='booking-success-modal',
+        )
         if request.user.is_authenticated:
             return redirect('my_appointments')
         return redirect(self.success_url)
