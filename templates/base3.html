@@ -149,7 +149,7 @@
                       <div class="display-6 text-success mb-3">✂️</div>
                       <h5 class="fw-bold mb-2">Запись успешно создана</h5>
                       <p class="text-muted mb-4">{{ message }}</p>
-                      <a href="{% url 'home' %}" class="btn btn-success px-4">Перейти на главную</a>
+                      <button type="button" class="btn btn-success px-4" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
                 </div>
@@ -186,8 +186,8 @@
 
         if (window.bootstrap && typeof window.bootstrap.Modal === 'function') {
           const modal = new window.bootstrap.Modal(successModalEl, {
-            backdrop: 'static',
-            keyboard: false,
+            backdrop: true,
+            keyboard: true,
           });
           modal.show();
           return;
@@ -210,11 +210,26 @@
           if (backdrop.parentNode) {
             backdrop.parentNode.removeChild(backdrop);
           }
+          document.removeEventListener('keydown', handleEsc);
         };
+
+        const handleEsc = (event) => {
+          if (event.key === 'Escape') {
+            closeModal();
+          }
+        };
+
+        document.addEventListener('keydown', handleEsc);
 
         const closeButtons = successModalEl.querySelectorAll('[data-dismiss="modal"], [data-bs-dismiss="modal"]');
         closeButtons.forEach((button) => {
           button.addEventListener('click', closeModal);
+        });
+
+        successModalEl.addEventListener('click', (event) => {
+          if (event.target === successModalEl) {
+            closeModal();
+          }
         });
 
       });
