@@ -192,9 +192,10 @@
   .salon-gallery__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     gap: 1rem;
     margin-bottom: 1.75rem;
+    text-align: center;
   }
 
   .salon-gallery__title {
@@ -202,14 +203,6 @@
     font-weight: 700;
     margin: 0;
     color: #2c3e50;
-  }
-
-  .salon-gallery__hint {
-    color: #6c7a89;
-    font-size: 0.95rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
   }
 
   .salon-gallery__grid {
@@ -1021,7 +1014,6 @@
       <section class="salon-gallery">
         <div class="salon-gallery__header">
           <h2 class="salon-gallery__title">Галерея салона</h2>
-          <span class="salon-gallery__hint"><i class="bi bi-camera"></i>Настоящие кадры из салона</span>
         </div>
         <div class="salon-gallery__grid">
           {% for photo in photos %}
