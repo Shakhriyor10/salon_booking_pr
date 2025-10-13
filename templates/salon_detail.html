@@ -1017,7 +1017,7 @@
   </section>
 
   {% with photos=salon.get_photos %}
-    {% if photos %}
+    {% if photos|length >= 3 %}
       <section class="salon-gallery">
         <div class="salon-gallery__header">
           <h2 class="salon-gallery__title">Галерея салона</h2>
