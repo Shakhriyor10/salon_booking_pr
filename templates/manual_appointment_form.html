@@ -43,8 +43,11 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Телефон:</label>
-                <input type="text" name="guest_phone" class="form-control" required>
+                <label class="form-label" for="guest_phone">Телефон:</label>
+                <div class="input-group">
+                    <span class="input-group-text">+998</span>
+                    <input type="tel" name="guest_phone" id="guest_phone" class="form-control" inputmode="numeric" placeholder="93-123-45-67" pattern="^\d{2}-\d{3}-\d{2}-\d{2}$" title="Введите номер в формате 93-123-45-67" data-uzbek-phone-input required>
+                </div>
             </div>
 
             <button type="submit" class="btn w-100" style="background-color: #212529; color: #fff">➕ Добавить</button>
@@ -124,5 +127,4 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 {% endblock %}
-
 
