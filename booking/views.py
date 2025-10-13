@@ -244,7 +244,7 @@ class SalonDetailView(DetailView):
             'half': has_half_star,
             'empty': range(empty_stars)
         }
-        context['reviews'] = salon.reviews.order_by('-created_at')[:10]
+        context['reviews'] = salon.reviews.order_by('-created_at')
         context['review_form'] = ReviewForm()
         context['average_rating'] = rating
         context['categories'] = categories

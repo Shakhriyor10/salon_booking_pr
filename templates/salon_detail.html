@@ -488,8 +488,122 @@
   }
 
   .reviews-card {
-    margin-top: 2rem;
-    background: #f9fbfb;
+    margin-top: 3rem;
+    background: linear-gradient(145deg, #f6f9fa, #edf2f3);
+    border: 1px solid rgba(72, 107, 113, 0.1);
+  }
+
+  .reviews-card .card-body {
+    padding: clamp(1.75rem, 3vw, 2.75rem);
+  }
+
+  .reviews-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .reviews-header__info {
+    max-width: 580px;
+  }
+
+  .reviews-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(72, 107, 113, 0.12);
+    color: #355257;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 0.85rem;
+  }
+
+  .reviews-title {
+    font-size: clamp(1.9rem, 2.5vw, 2.35rem);
+    margin-bottom: 1rem;
+    color: #152a2d;
+    font-weight: 700;
+  }
+
+  .reviews-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 1.35rem;
+    color: #f4b400;
+  }
+
+  .reviews-stars span {
+    margin-left: 0.6rem;
+    color: #5f7579;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .reviews-summary {
+    background: linear-gradient(135deg, rgba(72, 107, 113, 0.92), rgba(33, 56, 60, 0.94));
+    border-radius: 22px;
+    padding: 1.6rem 1.9rem;
+    color: #fff;
+    display: grid;
+    gap: 0.65rem;
+    box-shadow: 0 18px 40px rgba(15, 34, 36, 0.25);
+    align-self: stretch;
+  }
+
+  .reviews-score {
+    font-size: clamp(2.3rem, 3vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .reviews-summary small {
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .reviews-count {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .reviews-summary .btn-theme {
+    justify-self: start;
+    padding-inline: 1.6rem;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .review-form-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.9rem;
+    margin: 2rem 0 1.5rem;
+    box-shadow: 0 18px 45px rgba(15, 34, 36, 0.12);
+    border: 1px solid rgba(72, 107, 113, 0.08);
+  }
+
+  .review-form-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .review-form-card__header i {
+    font-size: 2rem;
+    color: rgba(72, 107, 113, 0.8);
+  }
+
+  .review-form-card__header p {
+    margin-bottom: 0;
+    color: #5f7579;
   }
 
   .review-form .form-label {
@@ -497,19 +611,148 @@
     color: #1d3236;
   }
 
-  .review-item + .review-item {
-    border-top: 1px solid rgba(15, 34, 36, 0.08);
-    padding-top: 1.25rem;
-    margin-top: 1.25rem;
+  .review-form .form-control {
+    border-radius: 16px;
+    border-color: rgba(72, 107, 113, 0.25);
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .review-form .form-control:focus {
+    border-color: rgba(72, 107, 113, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(72, 107, 113, 0.18);
+  }
+
+  .rating-select {
+    background: rgba(72, 107, 113, 0.08);
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  #star-rating {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
   }
 
   #star-rating i {
     cursor: pointer;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, filter 0.2s ease;
   }
 
   #star-rating i:hover {
-    transform: scale(1.15);
+    transform: translateY(-2px) scale(1.08);
+    filter: drop-shadow(0 4px 8px rgba(244, 180, 0, 0.35));
+  }
+
+  .review-list {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .review-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.2rem;
+    padding: 1.3rem 1.6rem;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(72, 107, 113, 0.08);
+    box-shadow: 0 15px 35px rgba(15, 34, 36, 0.08);
+  }
+
+  .review-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(72, 107, 113, 0.85), rgba(19, 41, 45, 0.85));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    box-shadow: 0 12px 30px rgba(15, 34, 36, 0.18);
+  }
+
+  .review-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.45rem;
+  }
+
+  .review-meta strong {
+    font-size: 1.05rem;
+    color: #1d3236;
+  }
+
+  .review-date {
+    color: #7a9094;
+    font-size: 0.85rem;
+  }
+
+  .review-rating {
+    color: #f4b400;
+    display: inline-flex;
+    gap: 0.2rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .review-comment {
+    margin-bottom: 0;
+    color: #2c3e50;
+    line-height: 1.55;
+  }
+
+  .reviews-empty {
+    margin-bottom: 0;
+    color: #5f7579;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px dashed rgba(72, 107, 113, 0.25);
+  }
+
+  @media (min-width: 768px) {
+    .reviews-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .reviews-summary {
+      max-width: 320px;
+    }
+
+    .review-form-card {
+      padding: 2.25rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .reviews-summary {
+      padding: 1.3rem 1.4rem;
+    }
+
+    .review-item {
+      grid-template-columns: 1fr;
+      text-align: left;
+    }
+
+    .review-avatar {
+      width: 48px;
+      height: 48px;
+      font-size: 1.1rem;
+    }
   }
 
   .floating-cart {
@@ -1078,10 +1321,11 @@
 
   <section class="card reviews-card border-0 mt-5">
     <div class="card-body">
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
-        <div>
-          <h3 class="mb-1">Отзывы клиентов</h3>
-          <div class="d-flex align-items-center text-warning fs-5">
+      <div class="reviews-header">
+        <div class="reviews-header__info">
+          <span class="reviews-eyebrow"><i class="bi bi-chat-dots"></i> Голос клиентов</span>
+          <h3 class="reviews-title">Отзывы клиентов</h3>
+          <div class="reviews-stars">
             {% for _ in stars.full %}
               <i class="bi bi-star-fill"></i>
             {% endfor %}
@@ -1091,66 +1335,116 @@
             {% for _ in stars.empty %}
               <i class="bi bi-star"></i>
             {% endfor %}
-            <span class="ms-2 text-muted">{{ average_rating|floatformat:1 }} / 5</span>
+            <span>{{ average_rating|floatformat:1 }} / 5</span>
           </div>
         </div>
-        <a href="#review-form" class="btn btn-theme mt-3 mt-md-0">Оставить отзыв</a>
+        <div class="reviews-summary">
+          <div class="reviews-score">{{ average_rating|floatformat:1 }}</div>
+          <small>Средняя оценка</small>
+          {% with total=salon.reviews.count %}
+            {% if total %}
+              <div class="reviews-count">Всего отзывов: {{ total }}</div>
+            {% else %}
+              <div class="reviews-count">Пока нет отзывов</div>
+            {% endif %}
+          {% endwith %}
+          <a href="#review-form" class="btn btn-theme">Оставить отзыв</a>
+        </div>
       </div>
 
-      <div class="card mb-4 border-0 shadow-sm">
-        <div class="card-header bg-light">
-          <h5 class="mb-0">Поделитесь впечатлением</h5>
+      <div class="review-form-card">
+        <div class="review-form-card__header">
+          <div>
+            <h5 class="mb-1">Поделитесь впечатлением</h5>
+            <p class="mb-0">Оцените сервис и расскажите о вашем визите.</p>
+          </div>
+          <i class="bi bi-chat-heart"></i>
         </div>
-        <div class="card-body">
-          <form method="post" id="review-form" class="review-form">
-            {% csrf_token %}
-            <div class="mb-3">
-              <label class="form-label d-block">Ваша оценка</label>
+        <form method="post" id="review-form" class="review-form">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label d-block">Ваша оценка</label>
+            <div class="rating-select">
+              <span class="text-muted small text-uppercase">Выберите количество звезд</span>
               <div id="star-rating" class="text-warning fs-4">
                 {% for i in "12345" %}
                   <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
                 {% endfor %}
               </div>
-              <input type="hidden" name="rating" id="rating-value" required>
             </div>
-            <div class="mb-3">
-              <label for="id_comment" class="form-label">Комментарий</label>
-              <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
-            </div>
-            <button type="submit" class="btn btn-theme">Отправить отзыв</button>
-          </form>
-        </div>
+            <input type="hidden" name="rating" id="rating-value" required>
+          </div>
+          <div class="mb-3">
+            <label for="id_comment" class="form-label">Комментарий</label>
+            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
+          </div>
+          <button type="submit" class="btn btn-theme">Отправить отзыв</button>
+        </form>
       </div>
 
       {% if reviews %}
-        <div class="list-group list-group-flush">
+        <div class="review-list" id="review-list">
           {% for review in reviews %}
-            <div class="list-group-item review-item border-0 px-0">
-              <div class="d-flex justify-content-between flex-wrap gap-2 mb-1">
-                <strong>{{ review.user.username }}</strong>
-                <small class="text-muted">{{ review.created_at|date:"d M Y, H:i" }}</small>
+            <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}">
+              <div class="review-avatar">{{ review.user.username|first|upper }}</div>
+              <div>
+                <div class="review-meta">
+                  <strong>{{ review.user.username }}</strong>
+                  <span class="review-date">{{ review.created_at|date:"d M Y, H:i" }}</span>
+                </div>
+                <div class="review-rating">
+                  {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= review.rating %}
+                      <i class="bi bi-star-fill"></i>
+                    {% else %}
+                      <i class="bi bi-star"></i>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% if review.comment %}
+                  <p class="review-comment">{{ review.comment }}</p>
+                {% endif %}
               </div>
-              <div class="text-warning mb-2">
-                {% for i in "12345"|make_list %}
-                  {% if forloop.counter <= review.rating %}
-                    <i class="bi bi-star-fill"></i>
-                  {% else %}
-                    <i class="bi bi-star"></i>
-                  {% endif %}
-                {% endfor %}
-              </div>
-              {% if review.comment %}
-                <p class="mb-0">{{ review.comment }}</p>
-              {% endif %}
-            </div>
+            </article>
           {% endfor %}
         </div>
+        {% if reviews|length > 5 %}
+          <div class="text-center mt-4">
+            <button class="btn btn-outline-theme" id="load-more-reviews" data-batch="5">Показать ещё</button>
+          </div>
+        {% endif %}
       {% else %}
-        <p class="text-muted mb-0">Отзывов пока нет. Будьте первым!</p>
+        <p class="reviews-empty">Отзывов пока нет. Будьте первым!</p>
       {% endif %}
     </div>
   </section>
 </div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const loadMoreButton = document.getElementById('load-more-reviews');
+    if (!loadMoreButton) {
+      return;
+    }
+
+    const batchSize = parseInt(loadMoreButton.dataset.batch, 10) || 5;
+    const hiddenReviews = Array.from(document.querySelectorAll('.review-item.extra-review'));
+
+    if (!hiddenReviews.length) {
+      loadMoreButton.classList.add('d-none');
+      return;
+    }
+
+    loadMoreButton.addEventListener('click', () => {
+      const remainingHidden = hiddenReviews.filter((review) => review.classList.contains('d-none'));
+      remainingHidden.slice(0, batchSize).forEach((review) => review.classList.remove('d-none'));
+
+      if (remainingHidden.length <= batchSize) {
+        loadMoreButton.classList.add('d-none');
+      }
+    });
+  });
+</script>
 
 <div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center">
   <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
