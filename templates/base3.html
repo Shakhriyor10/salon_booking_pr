@@ -172,20 +172,14 @@
           <p class="mt-2 small text-secondary">Сделано с ❤️ в BrightLab</p>
       </div>
   </footer>
-</body>
-
-</html>
-
-{% block extra_js %}
-{% endblock %}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/main.js' %}"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         const successModalEl = document.getElementById('bookingSuccessModal');
-        if (successModalEl) {
-          const modal = new bootstrap.Modal(successModalEl, {
+        if (successModalEl && window.bootstrap && typeof window.bootstrap.Modal === 'function') {
+          const modal = new window.bootstrap.Modal(successModalEl, {
             backdrop: 'static',
             keyboard: false
           });
@@ -193,17 +187,20 @@
         }
       });
     </script>
+    <script>
+      const cancelModal = document.getElementById('cancelModal');
+      if (cancelModal) {
+        cancelModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const appointmentId = button.getAttribute('data-appointment-id');
+          const form = document.getElementById('cancelForm');
+
+          if (form && appointmentId) {
+            form.action = `/appointment/${appointmentId}/action/`;
+          }
+        });
+      }
+    </script>
+    {% block extra_js %}{% endblock %}
 </body>
-<script>
-  const cancelModal = document.getElementById('cancelModal');
-  cancelModal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget;
-    const appointmentId = button.getAttribute('data-appointment-id');
-    const form = document.getElementById('cancelForm');
-
-    form.action = `/appointment/${appointmentId}/action/`;  // путь на твой view
-  });
-</script>
-
-
 </html>
