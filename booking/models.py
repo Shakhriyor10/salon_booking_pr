@@ -47,6 +47,10 @@ class Salon(models.Model):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     photo = models.ImageField(upload_to='photo_salon/', null=True, blank=True)
+    photo_2 = models.ImageField(upload_to='photo_salon/', null=True, blank=True)
+    photo_3 = models.ImageField(upload_to='photo_salon/', null=True, blank=True)
+    photo_4 = models.ImageField(upload_to='photo_salon/', null=True, blank=True)
+    photo_5 = models.ImageField(upload_to='photo_salon/', null=True, blank=True)
     phone = models.CharField(max_length=20, blank=True)
     status = models.BooleanField(default=True)
     position = models.PositiveIntegerField(default=0)
@@ -72,6 +76,14 @@ class Salon(models.Model):
 
     def average_rating(self):
         return self.reviews.aggregate(avg=Avg('rating'))['avg'] or 0
+
+    def get_photos(self):
+        photos = []
+        for field_name in ('photo', 'photo_2', 'photo_3', 'photo_4', 'photo_5'):
+            image = getattr(self, field_name)
+            if image:
+                photos.append(image)
+        return photos
 
     class Meta:
         ordering = ['-position', 'name']
