@@ -1,4 +1,6 @@
 {% load form_tags %}
+{% with show_stylist=show_stylist_column|default:True %}
+{% with total_columns=show_stylist|yesno:'7,6' %}
 {% for date, appointments_on_date in grouped_appointments.items %}
   <div class="appointments-day card" data-day-block data-date="{{ date|date:'Y-m-d' }}">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 py-3 px-4">
@@ -21,7 +23,9 @@
           <tr>
             <th scope="col">Клиент</th>
             <th scope="col">Услуга</th>
-            <th scope="col">Мастер</th>
+            {% if show_stylist %}
+              <th scope="col">Мастер</th>
+            {% endif %}
             <th scope="col">Время</th>
             <th scope="col">Статус</th>
             <th scope="col">Цена</th>
@@ -49,9 +53,11 @@
                   <span class="text-muted">—</span>
                 {% endfor %}
               </td>
-              <td data-label="Мастер">
-                <div class="fw-semibold">{{ a.stylist.user }}</div>
-              </td>
+              {% if show_stylist %}
+                <td data-label="Мастер">
+                  <div class="fw-semibold">{{ a.stylist.user }}</div>
+                </td>
+              {% endif %}
               <td data-label="Время">
                 <div class="fw-semibold">{{ a.start_time|date:"H:i" }}</div>
               </td>
@@ -87,7 +93,7 @@
             </tr>
           {% empty %}
             <tr class="no-appointments-row">
-              <td colspan="7" class="text-center text-muted py-4">Нет записей</td>
+              <td colspan="{{ total_columns }}" class="text-center text-muted py-4">Нет записей</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -101,8 +107,10 @@
     </div>
     <div class="fs-4 fw-semibold mb-2">Записей пока нет</div>
     <p class="text-muted mb-0">Создайте первую запись вручную или подождите, пока клиенты оставят заявки через сайт.</p>
-  </div>
+</div>
 {% endfor %}
+{% endwith %}
+{% endwith %}
 
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">

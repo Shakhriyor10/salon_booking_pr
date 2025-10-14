@@ -1149,10 +1149,13 @@ class AppointmentActionView(View):
 
         # 🔒 Проверка прав
         is_super = user.is_superuser
-        is_salon_admin = hasattr(user, "profile") and user.profile.is_salon_admin
-        owns_appointment = is_salon_admin and user.profile.salon == appointment.stylist.salon
+        profile = getattr(user, "profile", None)
+        is_salon_admin = bool(profile and profile.is_salon_admin and profile.salon)
+        owns_appointment = is_salon_admin and profile.salon == appointment.stylist.salon if profile else False
+        stylist_profile = getattr(user, "stylist_profile", None)
+        is_stylist_owner = bool(stylist_profile and stylist_profile == appointment.stylist)
 
-        if not is_super and not owns_appointment:
+        if not (is_super or owns_appointment or is_stylist_owner):
             return HttpResponseForbidden("Недостаточно прав для изменения этой записи.")
 
         # Действия
@@ -1161,22 +1164,21 @@ class AppointmentActionView(View):
         if action == "confirm":
             appointment.status = Appointment.Status.CONFIRMED
             appointment.save(update_fields=["status"])
-            messages.success(request, "Запись подтверждена ✅")
 
         elif action == "cancel":
             appointment.delete()
-            messages.warning(request, "Запись отменена и удалена ❌")
-            return redirect("dashboard")
+            return JsonResponse({"status": "ok", "action": action})
 
         elif action == "done":
             appointment.status = Appointment.Status.DONE
             appointment.save(update_fields=["status"])
-            messages.success(request, "Запись отмечена как выполненная ✂️")
 
         else:
-            messages.error(request, "Недопустимое действие.")
+            return JsonResponse(
+                {"status": "error", "message": "Недопустимое действие."}, status=400
+            )
 
-        return redirect("dashboard")
+        return JsonResponse({"status": "ok", "action": action})
 
 @method_decorator(login_required, name="dispatch")
 class ReportView(View):
@@ -1335,15 +1337,15 @@ def stylist_dashboard(request):
 
     today = now().date()
     yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
 
-    # Загружаем все записи этого мастера
-    appointments = (
+    appointments_qs = (
         Appointment.objects
         .filter(stylist=stylist, start_time__date__gte=yesterday)
         .select_related("customer")
         .prefetch_related(
             Prefetch(
-                "services",  # <-- правильное имя связи
+                "services",
                 queryset=AppointmentService.objects.select_related(
                     "stylist_service__salon_service__service"
                 )
@@ -1352,25 +1354,169 @@ def stylist_dashboard(request):
         .order_by("-start_time")
     )
 
+    appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
+    latest_created = max((a.created_at for a in appointments), default=None)
+    latest_created_iso = latest_created.isoformat() if latest_created else ""
 
-    today_appointments = appointments.filter(start_time__date=today, status='D')
-    total_cash = Decimal("0")
+    cash_total = sum(
+        a.get_total_price() for a in appointments if a.status == Appointment.Status.DONE
+    )
+    cash_today = sum(
+        a.get_total_price()
+        for a in appointments
+        if a.status == Appointment.Status.DONE and a.start_time.date() == today
+    )
 
-    for a in today_appointments:
-        for service in a.services.all():
-            try:
-                total_cash += service.stylist_service.price
-            except:
-                continue
+    default_visible_dates = [
+        yesterday.isoformat(),
+        today.isoformat(),
+        tomorrow.isoformat(),
+    ]
+
+    calendar_summary = build_calendar_summary(appointments)
 
     context = {
         "grouped_appointments": grouped_appointments,
+        "appointments": appointments,
+        "cash_total": cash_total,
+        "cash_today": cash_today,
         "today": today,
-        "total_cash": total_cash,
+        "default_visible_dates_json": json.dumps(default_visible_dates),
+        "calendar_summary_json": json.dumps(calendar_summary),
+        "latest_created_iso": latest_created_iso,
+        "total_cash": cash_today,
     }
 
     return render(request, "stylist_dashboard.html", context)
+
+
+@login_required
+@require_GET
+def stylist_dashboard_ajax(request):
+    try:
+        stylist = request.user.stylist_profile
+    except Stylist.DoesNotExist:
+        return JsonResponse({"html": ""})
+
+    today = now().date()
+    yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
+
+    appointments_qs = (
+        Appointment.objects
+        .filter(stylist=stylist, start_time__date__gte=yesterday)
+        .select_related("customer")
+        .prefetch_related(
+            Prefetch(
+                "services",
+                queryset=AppointmentService.objects.select_related(
+                    "stylist_service__salon_service__service"
+                )
+            )
+        )
+        .order_by("-start_time")
+    )
+
+    appointments = list(appointments_qs)
+    grouped_appointments = group_appointments_by_date(appointments)
+    latest_created = max((a.created_at for a in appointments), default=None)
+    default_visible_dates = [
+        yesterday.isoformat(),
+        today.isoformat(),
+        tomorrow.isoformat(),
+    ]
+    calendar_summary = build_calendar_summary(appointments)
+
+    context = {
+        "grouped_appointments": grouped_appointments,
+        "csrf_token": get_token(request),
+        "show_stylist_column": False,
+    }
+
+    html = render_to_string("partials/appointments_table_rows.html", context)
+    return JsonResponse({
+        "html": html,
+        "calendar": calendar_summary,
+        "default_visible_dates": default_visible_dates,
+        "today": today.isoformat(),
+        "latest_created": latest_created.isoformat() if latest_created else None,
+        "count": len(appointments),
+    })
+
+
+@login_required
+@require_GET
+def stylist_dashboard_updates(request):
+    try:
+        stylist = request.user.stylist_profile
+    except Stylist.DoesNotExist:
+        return JsonResponse({"has_updates": False, "latest_created": None, "count": 0})
+
+    today = now().date()
+    yesterday = today - timedelta(days=1)
+
+    appointments_qs = Appointment.objects.filter(
+        stylist=stylist,
+        start_time__date__gte=yesterday,
+    )
+
+    wait_for_updates = request.GET.get("wait") in {"1", "true", "True"}
+
+    timeout_seconds = 25
+    requested_timeout = request.GET.get("timeout")
+    if requested_timeout:
+        try:
+            timeout_seconds = max(5, min(60, int(requested_timeout)))
+        except (TypeError, ValueError):
+            timeout_seconds = 25
+
+    deadline = timezone.now() + timedelta(seconds=timeout_seconds) if wait_for_updates else None
+
+    since_raw = request.GET.get("since")
+    last_count_raw = request.GET.get("count")
+
+    def evaluate_changes():
+        totals_local = appointments_qs.aggregate(
+            latest_created=Max("created_at"), total_count=Count("id")
+        )
+        latest_created_local = totals_local.get("latest_created")
+        total_count_local = totals_local.get("total_count", 0) or 0
+
+        has_updates_local = False
+
+        if since_raw:
+            parsed_since = parse_datetime(since_raw)
+            if parsed_since is not None:
+                if timezone.is_naive(parsed_since):
+                    parsed_since = timezone.make_aware(parsed_since)
+                if latest_created_local and latest_created_local > parsed_since:
+                    has_updates_local = True
+
+        if not has_updates_local and last_count_raw is not None:
+            try:
+                last_count_value = int(last_count_raw)
+            except (TypeError, ValueError):
+                last_count_value = None
+
+            if last_count_value is not None and total_count_local != last_count_value:
+                has_updates_local = True
+
+        return has_updates_local, latest_created_local, total_count_local
+
+    while True:
+        has_updates, latest_created, total_count = evaluate_changes()
+
+        payload = {
+            "has_updates": has_updates,
+            "latest_created": latest_created.isoformat() if latest_created else None,
+            "count": total_count,
+        }
+
+        if not wait_for_updates or has_updates or timezone.now() >= deadline:
+            return JsonResponse(payload)
+
+        time.sleep(1)
 
 
 @require_POST

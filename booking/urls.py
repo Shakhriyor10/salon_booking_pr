@@ -23,6 +23,8 @@ urlpatterns = [
     path("cancel-appointment/<int:appointment_id>/", cancel_appointment, name="cancel_appointment"),
     # path('category/<int:category_id>/', views.services_by_category, name='services_by_category'),
     path("stylist/dashboard/", views.stylist_dashboard, name="stylist_dashboard"),
+    path("stylist/dashboard/ajax/", views.stylist_dashboard_ajax, name="stylist_dashboard_ajax"),
+    path("stylist/dashboard/updates/", views.stylist_dashboard_updates, name="stylist_dashboard_updates"),
     path("appointment/<int:appointment_id>/update-status/", views.appointment_update_status,
          name="appointment_update_status"),
     path('manual-appointment/', ManualAppointmentCreateView.as_view(), name='manual_appointment'),
