@@ -2,28 +2,50 @@
 {% load static humanize %}
 
 {% block content %}
+
 <style>
   :root {
     --stylist-primary: #6366f1;
+    --stylist-primary-dark: #4f46e5;
+    --stylist-secondary: #a855f7;
     --stylist-dark: #0f172a;
-    --stylist-soft: #eef2ff;
     --stylist-muted: #64748b;
+    --stylist-soft: #eef2ff;
+  }
+
+  .stylist-section {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .stylist-section::before,
+  .stylist-section::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.14), transparent 55%),
+      radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.12), transparent 60%);
+  }
+
+  .stylist-section::after {
+    mask-image: radial-gradient(circle at 85% 20%, black 0%, transparent 65%);
+    opacity: 0.7;
   }
 
   .stylist-shell {
     display: grid;
-    gap: 32px;
+    gap: clamp(24px, 5vw, 36px);
   }
 
   .stylist-hero {
     position: relative;
-    border-radius: 28px;
-    padding: 48px clamp(24px, 4vw, 48px);
+    border-radius: 32px;
+    padding: clamp(38px, 6vw, 62px);
     color: #fff;
-    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 50%),
-      linear-gradient(135deg, #0f172a 0%, #6366f1 45%, #8b5cf6 100%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(99, 102, 241, 0.9) 55%, rgba(168, 85, 247, 0.9));
     overflow: hidden;
-    box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 35px 60px -25px rgba(15, 23, 42, 0.6);
   }
 
   .stylist-hero::before,
@@ -31,24 +53,25 @@
     content: "";
     position: absolute;
     border-radius: 999px;
-    filter: blur(0.5px);
     opacity: 0.35;
   }
 
   .stylist-hero::before {
-    width: 240px;
-    height: 240px;
-    background: rgba(255, 255, 255, 0.18);
-    bottom: -90px;
-    left: -70px;
+    width: clamp(200px, 22vw, 280px);
+    height: clamp(200px, 22vw, 280px);
+    background: rgba(255, 255, 255, 0.22);
+    bottom: -100px;
+    left: -80px;
+    filter: blur(1px);
   }
 
   .stylist-hero::after {
-    width: 280px;
-    height: 280px;
-    background: rgba(15, 23, 42, 0.2);
-    top: -120px;
-    right: -60px;
+    width: clamp(240px, 28vw, 360px);
+    height: clamp(240px, 28vw, 360px);
+    background: rgba(79, 70, 229, 0.35);
+    top: -140px;
+    right: -80px;
+    filter: blur(1px);
   }
 
   .stylist-hero > * {
@@ -56,78 +79,105 @@
     z-index: 1;
   }
 
-  .stylist-hero h2 {
-    font-size: clamp(1.75rem, 3vw, 2.5rem);
-    font-weight: 700;
-    letter-spacing: 0.6px;
-  }
-
-  .stylist-hero p {
-    max-width: 640px;
-    margin-bottom: 0;
-    opacity: 0.9;
-  }
-
   .stylist-hero .eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
-    opacity: 0.85;
+    letter-spacing: 0.14em;
+    opacity: 0.8;
+  }
+
+  .stylist-hero h2 {
+    font-size: clamp(1.9rem, 3.6vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .stylist-hero p {
+    max-width: 660px;
+    margin-bottom: 0;
+    opacity: 0.9;
+  }
+
+  .hero-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+  }
+
+  .hero-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 0.55rem 1.3rem;
+    background: rgba(255, 255, 255, 0.14);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    backdrop-filter: blur(6px);
   }
 
   .filter-card {
-    margin-top: -70px;
-    padding: clamp(20px, 3vw, 28px);
-    border-radius: 22px;
-    border: none;
-    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
-    backdrop-filter: blur(6px);
+    margin-top: -78px;
+    padding: clamp(22px, 3.6vw, 34px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 242, 255, 0.9));
+    box-shadow: 0 32px 60px -28px rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(14px);
   }
 
   .filter-card label {
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    font-size: 0.74rem;
     color: var(--stylist-muted);
   }
 
   .filter-card .form-control {
     border-radius: 14px;
     border: 1px solid rgba(148, 163, 184, 0.35);
-    padding: 0.65rem 0.9rem;
+    padding: 0.7rem 0.95rem;
     font-weight: 500;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .filter-card .form-control:focus {
+    border-color: var(--stylist-primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
   }
 
   .filter-card .btn {
     border-radius: 14px;
-    padding: 0.75rem 1.75rem;
+    padding: 0.75rem 1.9rem;
     font-weight: 600;
     letter-spacing: 0.02em;
+    box-shadow: 0 20px 45px -22px rgba(79, 70, 229, 0.45);
   }
 
   .metric-grid {
     display: grid;
-    gap: 20px;
+    gap: clamp(18px, 3vw, 24px);
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 
   .metric-card {
-    border-radius: 20px;
-    border: 1px solid rgba(148, 163, 184, 0.2);
-    padding: 24px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(238, 242, 255, 0.85));
-    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
+    border-radius: 22px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    padding: clamp(20px, 3vw, 26px);
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.96), rgba(238, 242, 255, 0.92));
+    box-shadow: 0 22px 45px -28px rgba(15, 23, 42, 0.45);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
 
   .metric-card h6 {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--stylist-muted);
@@ -135,9 +185,14 @@
   }
 
   .metric-card .metric-value {
-    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-size: clamp(1.6rem, 3.5vw, 2.25rem);
     font-weight: 700;
     color: var(--stylist-dark);
+  }
+
+  .metric-card .metric-caption {
+    font-size: 0.85rem;
+    color: var(--stylist-muted);
   }
 
   .badge-chip {
@@ -147,36 +202,33 @@
     border-radius: 999px;
     font-weight: 600;
     font-size: 0.85rem;
-    padding: 0.45rem 1rem;
-    background: rgba(99, 102, 241, 0.16);
-    color: #fff;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    padding: 0.5rem 1rem;
+    background: rgba(99, 102, 241, 0.14);
+    color: var(--stylist-primary);
+    border: 1px solid rgba(99, 102, 241, 0.25);
   }
 
   .badge-chip.bg-light {
-    background: rgba(255, 255, 255, 0.9);
+    background: #fff;
     color: var(--stylist-primary);
-    box-shadow: none;
+    border: 1px solid rgba(99, 102, 241, 0.18);
   }
 
   .reports-card {
     border: none;
-    border-radius: 24px;
+    border-radius: 26px;
     overflow: hidden;
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 30px 60px -28px rgba(15, 23, 42, 0.45);
+    background: #fff;
   }
 
   .reports-card .card-header {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.02));
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.03));
     border: none;
   }
 
   .reports-card .card-header h5 {
     font-weight: 700;
-  }
-
-  .reports-table {
-    min-width: 100%;
   }
 
   .reports-table thead th {
@@ -185,21 +237,32 @@
     letter-spacing: 0.08em;
     color: var(--stylist-muted);
     border-bottom: 1px solid rgba(148, 163, 184, 0.35);
-    background-color: rgba(99, 102, 241, 0.08);
+    background-color: rgba(99, 102, 241, 0.05);
   }
 
   .reports-table tbody tr td {
-    padding-block: 0.95rem;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    padding-block: 1rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.05);
     font-weight: 500;
   }
 
+  .service-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    background: rgba(148, 163, 184, 0.18);
+    color: var(--stylist-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
   .empty-state {
-    border-radius: 22px;
-    padding: 48px clamp(24px, 4vw, 40px);
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(148, 163, 184, 0.12));
+    border-radius: 24px;
+    padding: clamp(40px, 6vw, 56px);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(148, 163, 184, 0.14));
     text-align: center;
-    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
   }
 
   .empty-state h5 {
@@ -221,34 +284,51 @@
     color: var(--stylist-muted);
   }
 
+  .metric-grid::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .metric-grid::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.3);
+    border-radius: 999px;
+  }
+
   @media (max-width: 991.98px) {
     .stylist-shell {
       gap: 24px;
     }
 
     .stylist-hero {
-      border-radius: 24px;
+      border-radius: 28px;
     }
 
     .filter-card {
-      margin-top: -50px;
+      margin-top: -56px;
     }
   }
 
   @media (max-width: 767.98px) {
     .stylist-hero {
-      padding: 36px 28px;
+      padding: 34px 28px 40px;
       text-align: left;
+    }
+
+    .stylist-hero h2 {
+      font-size: clamp(1.75rem, 6vw, 2.4rem);
     }
 
     .stylist-hero p {
       font-size: 0.95rem;
     }
 
+    .hero-pills {
+      margin-top: 20px;
+    }
+
     .filter-card {
-      margin-top: -42px;
+      margin-top: -44px;
       padding: 22px 20px;
-      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.18);
+      box-shadow: 0 24px 50px -26px rgba(15, 23, 42, 0.45);
     }
 
     .filter-card .row > div {
@@ -271,7 +351,7 @@
     .metric-card {
       min-width: 220px;
       scroll-snap-align: start;
-      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+      box-shadow: 0 16px 40px -24px rgba(15, 23, 42, 0.4);
     }
 
     .reports-table thead {
@@ -281,12 +361,12 @@
     .reports-table tbody tr {
       display: grid;
       gap: 16px;
-      padding: 18px 20px;
+      padding: 20px;
       border: 1px solid rgba(148, 163, 184, 0.22);
-      border-radius: 18px;
+      border-radius: 20px;
       margin-bottom: 16px;
       background: #fff;
-      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+      box-shadow: 0 20px 45px -25px rgba(15, 23, 42, 0.4);
     }
 
     .reports-table tbody tr td {
@@ -307,12 +387,12 @@
     }
 
     .stylist-hero {
-      border-radius: 22px;
-      padding: 32px 24px;
+      border-radius: 24px;
+      padding: 30px 24px;
     }
 
     .stylist-hero h2 {
-      font-size: 1.8rem;
+      font-size: 1.85rem;
     }
 
     .filter-card {
@@ -321,24 +401,42 @@
     }
 
     .reports-card {
-      border-radius: 20px;
+      border-radius: 22px;
     }
 
-    .badge-chip {
-      font-size: 0.78rem;
-      padding: 0.35rem 0.75rem;
+    .badge-chip,
+    .hero-pill {
+      width: 100%;
+      justify-content: center;
     }
   }
 </style>
 
-<section class="py-4">
+
+<section class="py-4 stylist-section">
   <div class="container stylist-shell">
     <header class="stylist-hero text-center text-md-start">
       <span class="eyebrow">📈 Личный прогресс</span>
       <h2 class="mb-3">{{ stylist_name }}, ваш отчёт готов</h2>
-      <p class="mb-4">Следите за динамикой клиентов и выручкой, анализируйте нагрузку по дням и вовремя отмечайте точки роста сервиса.</p>
-      {% if period_label %}
-        <div class="badge-chip">Период: {{ period_label }}</div>
+      <p class="mb-4">Следите за динамикой клиентов и выручки, анализируйте нагрузку по дням и вовремя отмечайте точки роста сервиса.</p>
+
+      {% if start_date and end_date or period_label %}
+        <div class="hero-pills">
+          {% if start_date and end_date %}
+            <div class="hero-pill">Период: <strong>{{ start_date|default:"—" }} — {{ end_date|default:"—" }}</strong></div>
+          {% elif period_label %}
+            <div class="hero-pill">Период: <strong>{{ period_label }}</strong></div>
+          {% endif %}
+          {% if start_date and end_date %}
+            <div class="hero-pill">Клиентов: <strong>{{ total_clients|default:0|intcomma }}</strong></div>
+          {% endif %}
+          {% if start_date and end_date %}
+            <div class="hero-pill">Выручка: <strong>{{ total_cash|floatformat:0|intcomma }} сум</strong></div>
+          {% endif %}
+          {% if worked_days %}
+            <div class="hero-pill">Рабочих дней: <strong>{{ worked_days }}</strong></div>
+          {% endif %}
+        </div>
       {% endif %}
     </header>
 
@@ -361,30 +459,30 @@
       </form>
     </div>
 
-    {% if start_date and end_date %}
-      <div class="metric-grid">
-        <article class="metric-card">
-          <h6>Клиентов</h6>
-          <p class="metric-value mb-0">{{ total_clients|intcomma }}</p>
-          <span class="text-muted small">Завершённых визитов за период</span>
-        </article>
-        <article class="metric-card">
-          <h6>Выручка</h6>
-          <p class="metric-value mb-0">{{ total_cash|floatformat:0|intcomma }} сум</p>
-          <span class="text-muted small">С учётом всех выполненных услуг</span>
-        </article>
-        <article class="metric-card">
-          <h6>Средний чек</h6>
-          <p class="metric-value mb-0">{{ average_ticket|floatformat:0|intcomma }} сум</p>
-          <span class="text-muted small">Доход с одной записи</span>
-        </article>
-        <article class="metric-card">
-          <h6>Средняя выручка в день</h6>
-          <p class="metric-value mb-0">{{ average_day_revenue|floatformat:0|intcomma }} сум</p>
-          <span class="text-muted small">За {{ worked_days|default:0 }} рабочих дн.</span>
-        </article>
-      </div>
-    {% endif %}
+      {% if start_date and end_date %}
+        <div class="metric-grid">
+          <article class="metric-card">
+            <h6>Клиентов</h6>
+            <p class="metric-value mb-0">{{ total_clients|intcomma }}</p>
+            <p class="metric-caption mb-0">Завершённых визитов за период</p>
+          </article>
+          <article class="metric-card">
+            <h6>Выручка</h6>
+            <p class="metric-value mb-0">{{ total_cash|floatformat:0|intcomma }} сум</p>
+            <p class="metric-caption mb-0">С учётом всех выполненных услуг</p>
+          </article>
+          <article class="metric-card">
+            <h6>Средний чек</h6>
+            <p class="metric-value mb-0">{{ average_ticket|floatformat:0|intcomma }} сум</p>
+            <p class="metric-caption mb-0">Доход с одной записи</p>
+          </article>
+          <article class="metric-card">
+            <h6>Средняя выручка в день</h6>
+            <p class="metric-value mb-0">{{ average_day_revenue|floatformat:0|intcomma }} сум</p>
+            <p class="metric-caption mb-0">За {{ worked_days|default:0 }} рабочих дн.</p>
+          </article>
+        </div>
+      {% endif %}
 
     {% if report_appointments %}
       <div class="card reports-card">
@@ -420,7 +518,7 @@
                     <span class="table-mobile-label">Услуги</span>
                     <div class="d-flex flex-wrap gap-2">
                       {% for service in appointment.services.all %}
-                        <span class="badge rounded-pill bg-light text-dark border">{{ service.stylist_service.salon_service.service.name }}</span>
+                        <span class="service-chip">{{ service.stylist_service.salon_service.service.name }}</span>
                       {% empty %}
                         <span class="text-muted">Нет услуг</span>
                       {% endfor %}
