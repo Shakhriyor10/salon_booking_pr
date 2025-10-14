@@ -754,13 +754,30 @@
     box-shadow: 0 12px 30px rgba(15, 34, 36, 0.18);
   }
 
+  .review-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .review-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .review-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
   .review-meta {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
     align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 0.45rem;
   }
 
   .review-meta strong {
@@ -777,13 +794,65 @@
     color: #f4b400;
     display: inline-flex;
     gap: 0.2rem;
-    margin-bottom: 0.7rem;
   }
 
   .review-comment {
     margin-bottom: 0;
     color: #2c3e50;
     line-height: 1.55;
+  }
+
+  .review-actions .btn-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    color: #6b8286;
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .review-actions .btn-icon:hover,
+  .review-actions .btn-icon:focus {
+    background-color: rgba(72, 107, 113, 0.12);
+    color: #2c3e50;
+  }
+
+  .review-actions .dropdown-menu {
+    min-width: 13rem;
+    padding: 0.35rem;
+    border-radius: 14px;
+    border: 1px solid rgba(72, 107, 113, 0.16);
+    box-shadow: 0 18px 32px rgba(15, 34, 36, 0.18);
+  }
+
+  .review-actions .dropdown-item {
+    border-radius: 10px;
+    padding: 0.55rem 0.9rem;
+    font-weight: 500;
+  }
+
+  .review-actions .dropdown-item i {
+    font-size: 1.05rem;
+  }
+
+  .review-manage-hint {
+    background: rgba(72, 107, 113, 0.06);
+    border: 1px dashed rgba(72, 107, 113, 0.3);
+    border-radius: 18px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .review-manage-hint p {
+    margin: 0;
+    color: #466064;
   }
 
   .reviews-empty {
@@ -826,6 +895,16 @@
       width: 48px;
       height: 48px;
       font-size: 1.1rem;
+    }
+
+    .review-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .review-actions {
+      align-self: flex-end;
     }
   }
 
@@ -1438,53 +1517,51 @@
               <div class="reviews-count">Пока нет отзывов</div>
             {% endif %}
           {% endwith %}
-          <a href="#review-form" class="btn btn-theme">Оставить отзыв</a>
+          {% if user_review %}
+            <button type="button" class="btn btn-theme review-action-edit" data-review-id="{{ user_review.id }}" data-rating="{{ user_review.rating }}" data-comment="{{ user_review.comment|default_if_none:''|escapejs }}">Обновить отзыв</button>
+          {% else %}
+            <a href="#review-form" class="btn btn-theme">Оставить отзыв</a>
+          {% endif %}
         </div>
       </div>
 
       <div class="review-form-card">
         <div class="review-form-card__header">
           <div>
-            <h5 class="mb-1">Поделитесь впечатлением</h5>
-            {% if user_review %}
-              <p class="mb-0">Вы уже оставили отзыв — вы можете обновить его или удалить.</p>
-            {% else %}
-              <p class="mb-0">Оцените сервис и расскажите о вашем визите.</p>
-            {% endif %}
+            <h4 class="mb-1">{% if user_review %}Ваш отзыв опубликован{% else %}Поделитесь впечатлением{% endif %}</h4>
+            <p class="mb-0">Ваша оценка помогает другим гостям выбрать лучший салон.</p>
           </div>
           <i class="bi bi-chat-heart"></i>
         </div>
-        <form method="post" id="review-form" class="review-form">
-          {% csrf_token %}
-          <input type="hidden" name="review_id" id="review-id-input" value="{% if user_review %}{{ user_review.id }}{% endif %}">
-          <div class="mb-3">
-            <label class="form-label d-block">Ваша оценка</label>
-            <div class="rating-select">
-              <span class="text-muted small text-uppercase">Выберите количество звезд</span>
-              <div id="star-rating" class="text-warning fs-4">
-                {% for i in "12345" %}
-                  <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
-                {% endfor %}
-              </div>
-            </div>
-            <input type="hidden" name="rating" id="rating-value" value="{{ review_form.rating.value|default_if_none:'' }}" required>
-          </div>
-          <div class="mb-3">
-            <label for="id_comment" class="form-label">Комментарий</label>
-            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{{ review_form.comment.value|default_if_none:'' }}</textarea>
-          </div>
-          {% if user_review %}
-            <button type="submit" class="btn btn-theme" id="review-submit-button" data-create-text="Отправить отзыв" data-update-text="Обновить отзыв">Обновить отзыв</button>
-          {% else %}
-            <button type="submit" class="btn btn-theme" id="review-submit-button" data-create-text="Отправить отзыв" data-update-text="Обновить отзыв">Отправить отзыв</button>
-          {% endif %}
-        </form>
         {% if user_review %}
-          <form method="post" class="mt-3">
+          <div class="review-manage-hint">
+            <p>Вы уже поделились впечатлениями. При необходимости обновите или удалите отзыв через меню в списке ниже.</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-theme review-action-edit" data-review-id="{{ user_review.id }}" data-rating="{{ user_review.rating }}" data-comment="{{ user_review.comment|default_if_none:''|escapejs }}">
+                <i class="bi bi-pencil"></i> Редактировать отзыв
+              </button>
+            </div>
+          </div>
+        {% else %}
+          <form method="post" id="review-form" class="review-form">
             {% csrf_token %}
-            <input type="hidden" name="review_id" value="{{ user_review.id }}">
-            <input type="hidden" name="action" value="delete">
-            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить ваш отзыв?');">Удалить отзыв</button>
+            <div class="mb-3">
+              <label class="form-label d-block">Ваша оценка</label>
+              <div class="rating-select">
+                <span class="text-muted small text-uppercase">Выберите количество звезд</span>
+                <div id="star-rating" class="text-warning fs-4">
+                  {% for i in "12345" %}
+                    <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
+                  {% endfor %}
+                </div>
+              </div>
+              <input type="hidden" name="rating" id="rating-value" value="{{ review_form.rating.value|default_if_none:'' }}" required>
+            </div>
+            <div class="mb-3">
+              <label for="id_comment" class="form-label">Комментарий</label>
+              <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{{ review_form.comment.value|default_if_none:'' }}</textarea>
+            </div>
+            <button type="submit" class="btn btn-theme" id="review-submit-button">Отправить отзыв</button>
           </form>
         {% endif %}
       </div>
@@ -1494,37 +1571,52 @@
           {% for review in reviews %}
             <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}" data-review-id="{{ review.id }}">
               <div class="review-avatar">{{ review.user.username|first|upper }}</div>
-              <div>
-                <div class="review-meta">
-                  <strong>{{ review.user.username }}</strong>
-                  <span class="review-date">{{ review.created_at|date:"d M Y, H:i" }}</span>
-                </div>
-                <div class="review-rating">
-                  {% for i in "12345"|make_list %}
-                    {% if forloop.counter <= review.rating %}
-                      <i class="bi bi-star-fill"></i>
-                    {% else %}
-                      <i class="bi bi-star"></i>
-                    {% endif %}
-                  {% endfor %}
+              <div class="review-content">
+                <div class="review-header">
+                  <div class="review-details">
+                    <div class="review-meta">
+                      <strong>{{ review.user.username }}</strong>
+                      <span class="review-date">{{ review.created_at|date:"d M Y, H:i" }}</span>
+                    </div>
+                    <div class="review-rating">
+                      {% for i in "12345"|make_list %}
+                        {% if forloop.counter <= review.rating %}
+                          <i class="bi bi-star-fill"></i>
+                        {% else %}
+                          <i class="bi bi-star"></i>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  </div>
+                  {% if request.user.is_authenticated and review.user_id == request.user.id %}
+                    <div class="review-actions dropdown">
+                      <button class="btn btn-icon btn-link review-actions-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-three-dots-vertical"></i>
+                      </button>
+                      <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li>
+                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 review-action-edit" data-review-id="{{ review.id }}" data-rating="{{ review.rating }}" data-comment="{{ review.comment|default_if_none:''|escapejs }}">
+                            <i class="bi bi-pencil"></i>
+                            <span>Изменить</span>
+                          </button>
+                        </li>
+                        <li>
+                          <form method="post" class="w-100">
+                            {% csrf_token %}
+                            <input type="hidden" name="review_id" value="{{ review.id }}">
+                            <input type="hidden" name="action" value="delete">
+                            <button type="submit" class="dropdown-item d-flex align-items-center gap-2 text-danger review-action-delete" data-confirm-text="Удалить ваш отзыв?">
+                              <i class="bi bi-trash"></i>
+                              <span>Удалить</span>
+                            </button>
+                          </form>
+                        </li>
+                      </ul>
+                    </div>
+                  {% endif %}
                 </div>
                 {% if review.comment %}
                   <p class="review-comment">{{ review.comment }}</p>
-                {% endif %}
-                {% if request.user.is_authenticated and review.user_id == request.user.id %}
-                  <div class="d-flex gap-2 mt-2 flex-wrap">
-                    <button type="button" class="btn btn-outline-primary btn-sm review-edit-btn" data-review-id="{{ review.id }}" data-rating="{{ review.rating }}">
-                      <i class="bi bi-pencil"></i> Изменить
-                    </button>
-                    <form method="post" class="d-inline">
-                      {% csrf_token %}
-                      <input type="hidden" name="review_id" value="{{ review.id }}">
-                      <input type="hidden" name="action" value="delete">
-                      <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить ваш отзыв?');">
-                        <i class="bi bi-trash"></i> Удалить
-                      </button>
-                    </form>
-                  </div>
                 {% endif %}
               </div>
             </article>
@@ -1537,6 +1629,44 @@
         {% endif %}
       {% else %}
         <p class="reviews-empty">Отзывов пока нет. Будьте первым!</p>
+      {% endif %}
+      {% if request.user.is_authenticated %}
+        <div class="modal fade" id="reviewEditModal" tabindex="-1" aria-labelledby="reviewEditModalLabel" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <form method="post" id="review-edit-form">
+                {% csrf_token %}
+                <div class="modal-header">
+                  <h5 class="modal-title" id="reviewEditModalLabel">Изменить отзыв</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                  <input type="hidden" name="review_id" id="edit-review-id" value="{% if user_review %}{{ user_review.id }}{% endif %}">
+                  <div class="mb-3">
+                    <label class="form-label d-block">Ваша оценка</label>
+                    <div class="rating-select">
+                      <span class="text-muted small text-uppercase">Выберите количество звезд</span>
+                      <div id="edit-star-rating" class="text-warning fs-4">
+                        {% for i in "12345" %}
+                          <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <input type="hidden" name="rating" id="edit-rating-value" value="{% if user_review %}{{ user_review.rating }}{% endif %}" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="edit-comment" class="form-label">Комментарий</label>
+                    <textarea name="comment" id="edit-comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{% if user_review %}{{ user_review.comment|default_if_none:'' }}{% endif %}</textarea>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                  <button type="submit" class="btn btn-theme">Сохранить изменения</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       {% endif %}
     </div>
   </section>
@@ -1581,106 +1711,126 @@
 {{ service_stylists_map|json_script:"service-stylists-map" }}
 
 <script>
-  const stars = document.querySelectorAll('#star-rating i');
-  const ratingInput = document.getElementById('rating-value');
-  const reviewForm = document.getElementById('review-form');
-  const commentInput = document.getElementById('id_comment');
-  const reviewIdInput = document.getElementById('review-id-input');
-  const submitButton = document.getElementById('review-submit-button');
+  document.addEventListener('DOMContentLoaded', () => {
+    const setupStarRating = (container, input) => {
+      if (!container || !input) {
+        return () => {};
+      }
 
-  if (reviewForm) {
-    const updateButtonVisual = (value) => {
-      const numericValue = parseInt(value, 10) || 0;
-      stars.forEach((star, index) => {
-        const shouldFill = index < numericValue;
-        star.classList.toggle('bi-star-fill', shouldFill);
-        star.classList.toggle('bi-star', !shouldFill);
-      });
-    };
+      const icons = Array.from(container.querySelectorAll('i'));
+      const applyState = (value) => {
+        const numericValue = parseInt(value, 10) || 0;
+        icons.forEach((icon, index) => {
+          const shouldFill = index < numericValue;
+          icon.classList.toggle('bi-star-fill', shouldFill);
+          icon.classList.toggle('bi-star', !shouldFill);
+        });
+      };
 
-    const createText = submitButton && submitButton.dataset && submitButton.dataset.createText
-      ? submitButton.dataset.createText
-      : 'Отправить отзыв';
-    const updateText = submitButton && submitButton.dataset && submitButton.dataset.updateText
-      ? submitButton.dataset.updateText
-      : 'Обновить отзыв';
-
-    if (ratingInput && ratingInput.value) {
-      updateButtonVisual(ratingInput.value);
-    }
-
-    if (stars.length) {
-      stars.forEach((star) => {
-        star.addEventListener('click', () => {
-          const value = star.dataset.value;
-          if (ratingInput) {
-            ratingInput.value = value;
-          }
-          updateButtonVisual(value);
-          if (submitButton) {
-            submitButton.textContent = updateText;
-          }
+      icons.forEach((icon) => {
+        icon.addEventListener('click', () => {
+          const value = parseInt(icon.dataset.value, 10) || 0;
+          input.value = value;
+          applyState(value);
         });
       });
+
+      return applyState;
+    };
+
+    const decodeDatasetValue = (value) => {
+      if (typeof value !== 'string') {
+        return '';
+      }
+      try {
+        return JSON.parse(`"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
+      } catch (err) {
+        return value;
+      }
+    };
+
+    const reviewForm = document.getElementById('review-form');
+    const ratingInput = document.getElementById('rating-value');
+    const updateCreateStars = setupStarRating(document.getElementById('star-rating'), ratingInput);
+
+    if (ratingInput && ratingInput.value) {
+      updateCreateStars(ratingInput.value);
     }
 
-    document.querySelectorAll('.review-edit-btn').forEach((button) => {
-      button.addEventListener('click', () => {
-        const { rating, reviewId } = button.dataset;
-        let comment = '';
-        const reviewItem = button.closest('.review-item');
-        if (reviewItem) {
-          const commentElement = reviewItem.querySelector('.review-comment');
-          if (commentElement) {
-            comment = commentElement.textContent.trim();
-          }
+    if (reviewForm) {
+      reviewForm.addEventListener('submit', (event) => {
+        if (!ratingInput || !ratingInput.value) {
+          event.preventDefault();
+          alert('Пожалуйста, выберите количество звёзд.');
         }
-        if (ratingInput) {
-          ratingInput.value = rating || '';
-          updateButtonVisual(rating);
-        }
-        if (commentInput) {
-          commentInput.value = comment || '';
-        }
-        if (reviewIdInput) {
-          reviewIdInput.value = reviewId || '';
-        }
-        if (submitButton) {
-          submitButton.textContent = updateText;
-        }
-        if (typeof reviewForm.scrollIntoView === 'function') {
-          reviewForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        if (commentInput && typeof commentInput.focus === 'function') {
-          try {
-            commentInput.focus({ preventScroll: true });
-          } catch (err) {
-            commentInput.focus();
-          }
+      });
+    }
+
+    const editModalElement = document.getElementById('reviewEditModal');
+    const editForm = document.getElementById('review-edit-form');
+    const editRatingInput = document.getElementById('edit-rating-value');
+    const editCommentInput = document.getElementById('edit-comment');
+    const editReviewIdInput = document.getElementById('edit-review-id');
+    const updateEditStars = setupStarRating(document.getElementById('edit-star-rating'), editRatingInput);
+
+    if (editRatingInput && editRatingInput.value) {
+      updateEditStars(editRatingInput.value);
+    }
+
+    const editModalInstance = (editModalElement && typeof bootstrap !== 'undefined')
+      ? bootstrap.Modal.getOrCreateInstance(editModalElement)
+      : null;
+
+    const openEditModal = (button) => {
+      if (!button) {
+        return;
+      }
+      const { reviewId, rating, comment } = button.dataset;
+      if (editReviewIdInput) {
+        editReviewIdInput.value = reviewId || '';
+      }
+      if (editRatingInput) {
+        editRatingInput.value = rating || '';
+        updateEditStars(rating);
+      }
+      if (editCommentInput) {
+        editCommentInput.value = decodeDatasetValue(comment);
+      }
+      if (editModalInstance) {
+        editModalInstance.show();
+      }
+    };
+
+    document.querySelectorAll('.review-action-edit').forEach((button) => {
+      button.addEventListener('click', () => openEditModal(button));
+    });
+
+    document.querySelectorAll('.review-action-delete').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        const confirmText = button.dataset.confirmText || 'Удалить ваш отзыв?';
+        if (!confirm(confirmText)) {
+          event.preventDefault();
+          event.stopPropagation();
         }
       });
     });
 
-    reviewForm.addEventListener('submit', (e) => {
-      if (ratingInput && !ratingInput.value) {
-        e.preventDefault();
-        alert('Пожалуйста, выберите количество звёзд.');
-      }
-    });
+    if (editForm) {
+      editForm.addEventListener('submit', (event) => {
+        if (!editRatingInput || !editRatingInput.value) {
+          event.preventDefault();
+          alert('Пожалуйста, выберите количество звёзд.');
+        }
+      });
 
-    reviewForm.addEventListener('reset', () => {
-      if (ratingInput) {
-        ratingInput.value = '';
+      if (editModalElement) {
+        editModalElement.addEventListener('hidden.bs.modal', () => {
+          editForm.reset();
+          updateEditStars(0);
+        });
       }
-      updateButtonVisual(0);
-      if (submitButton) {
-        submitButton.textContent = createText;
-      }
-      if (reviewIdInput) {
-        reviewIdInput.value = '';
-      }
-    });
-  }
+    }
+  });
 </script>
 <script src="{% static 'js/cart.js' %}"></script>
 <script>
