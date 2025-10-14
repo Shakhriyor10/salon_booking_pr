@@ -1,123 +1,544 @@
 {% extends 'base3.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">📊 Отчёты по записям</h2>
+<style>
+  :root {
+    --reports-primary: #4f46e5;
+    --reports-dark: #111827;
+    --reports-soft: #eef2ff;
+    --reports-muted: #6b7280;
+  }
 
-  <!-- 🔍 Форма выбора интервала -->
-<form method="get" class="mb-4">
-  <div class="row">
-    <div class="col-xs-6 col-sm-3">
-      <input type="date" name="start" class="form-control" value="{{ request.GET.start }}">
-    </div>
-    <div class="col-xs-6 col-sm-3">
-      <input type="date" name="end" class="form-control" value="{{ request.GET.end }}">
-    </div>
-    <div class="col-xs-12 col-sm-2">
-      <button type="submit" class="btn btn-block" style="background-color: #212529; color: #fff">Показать</button>
-    </div>
-  </div>
-</form>
+  .reports-shell {
+    display: grid;
+    gap: 32px;
+  }
 
-  {% if daily_stats %}
-    <!-- 💰 Общая касса -->
-    <div class="card mb-4 shadow-sm">
-  <div class="card-header text-white" style="background-color: #212529">
-    <h5 class="mb-0">📊 Общая статистика по мастерам</h5>
-  </div>
-  <div class="card-body">
-    <table class="table table-bordered">
-  <thead class="table-light">
-    <tr>
-      <th>Мастер</th>
-      <th>Клиентов</th>
-      <th>Выручка</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for name, data in overall_stats.items %}
-      <tr>
-        <td>{{ name }}</td>
-        <td>{{ data.clients }}</td>
-        <td>{{ data.revenue|floatformat:0 }} сум</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-<tfoot>
-  <tr class="bg-light">
-    <td><strong>Итого:</strong></td>
-    <td><strong>{{ total_clients }}</strong></td>
-    <td><strong>{{ total_revenue|floatformat:0 }} сум</strong></td>
-  </tr>
-</tfoot>
-</table>
-  </div>
-</div>
+  .reports-hero {
+    position: relative;
+    border-radius: 28px;
+    padding: 48px clamp(24px, 4vw, 48px);
+    color: #fff;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 50%),
+      linear-gradient(135deg, #111827 0%, #4f46e5 45%, #8b5cf6 100%);
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.35);
+  }
 
-    <!-- 📅 Отчёт по дням -->
-    {% for row in page_obj  %}
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light">
-          <h5 class="mb-0">
-            🗓 {{ row.day|date:"d.m.Y" }}
-          </h5>
+  .reports-hero::after,
+  .reports-hero::before {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(0.5px);
+    opacity: 0.35;
+  }
+
+  .reports-hero::before {
+    width: 220px;
+    height: 220px;
+    background: rgba(255, 255, 255, 0.18);
+    bottom: -90px;
+    left: -70px;
+  }
+
+  .reports-hero::after {
+    width: 260px;
+    height: 260px;
+    background: rgba(15, 23, 42, 0.18);
+    top: -120px;
+    right: -60px;
+  }
+
+  .reports-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .reports-hero h2 {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: 0.6px;
+  }
+
+  .reports-hero p {
+    max-width: 620px;
+    margin: 0;
+    opacity: 0.9;
+  }
+
+  .filter-card {
+    margin-top: -70px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(6px);
+  }
+
+  .filter-card label {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+  }
+
+  .filter-card .form-control {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 0.65rem 0.9rem;
+    font-weight: 500;
+  }
+
+  .filter-card .btn {
+    border-radius: 14px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .metric-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .metric-card {
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(238, 242, 255, 0.8));
+    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .metric-card h6 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--reports-muted);
+    margin-bottom: 0;
+  }
+
+  .metric-card .metric-value {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 700;
+    color: var(--reports-dark);
+  }
+
+  .reports-card {
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+  }
+
+  .reports-card .card-header {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(79, 70, 229, 0.02));
+    border: none;
+  }
+
+  .reports-card .card-header h5 {
+    font-weight: 700;
+  }
+
+  .reports-table {
+    min-width: 100%;
+  }
+
+  .reports-table thead th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--reports-muted);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    background-color: rgba(79, 70, 229, 0.04);
+  }
+
+  .reports-table tbody tr td {
+    padding-block: 0.95rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+  }
+
+  .badge-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.95rem;
+    background: rgba(79, 70, 229, 0.12);
+    color: var(--reports-primary);
+  }
+
+  .badge-chip svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .badge-chip.bg-white {
+    border: 1px solid rgba(79, 70, 229, 0.18);
+  }
+
+  .badge-revenue {
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    font-weight: 600;
+  }
+
+  .accordion {
+    display: grid;
+    gap: 16px;
+  }
+
+  .accordion-item {
+    border: none;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  }
+
+  .accordion-button {
+    border-radius: 0 !important;
+    background-color: rgba(79, 70, 229, 0.04);
+    font-weight: 600;
+    gap: 12px;
+  }
+
+  .accordion-button:focus {
+    box-shadow: none;
+  }
+
+  .accordion-button:not(.collapsed) {
+    color: var(--reports-primary);
+    background-color: rgba(79, 70, 229, 0.1);
+  }
+
+  .accordion-body {
+    background: #fff;
+    padding: clamp(20px, 3vw, 32px);
+  }
+
+  .stylists-table th {
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--reports-muted);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  }
+
+  .stylists-table td {
+    border: none;
+    padding: 0.75rem 0.5rem;
+    font-weight: 500;
+  }
+
+  .pagination {
+    gap: 12px;
+  }
+
+  .pagination .page-link {
+    border-radius: 12px;
+    color: var(--reports-primary);
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    padding: 0.55rem 0.95rem;
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .pagination .page-link:hover {
+    transform: translateY(-2px);
+    background: var(--reports-primary);
+    color: #fff;
+  }
+
+  .pagination .page-item.active .page-link {
+    background: var(--reports-primary);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  @media (max-width: 991.98px) {
+    .reports-shell {
+      gap: 24px;
+    }
+
+    .reports-hero {
+      border-radius: 24px;
+    }
+
+    .filter-card {
+      margin-top: -50px;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .reports-hero {
+      padding: 36px 28px;
+      text-align: left;
+    }
+
+    .reports-hero p {
+      font-size: 0.95rem;
+    }
+
+    .filter-card {
+      margin-top: -42px;
+      padding: 22px 20px;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.18);
+    }
+
+    .filter-card .row > div {
+      margin-bottom: 12px;
+    }
+
+    .filter-card .btn {
+      width: 100%;
+    }
+
+    .metric-grid {
+      display: flex;
+      overflow-x: auto;
+      gap: 16px;
+      padding: 4px 4px 12px;
+      margin-inline: -12px;
+      scroll-snap-type: x mandatory;
+    }
+
+    .metric-card {
+      min-width: 220px;
+      scroll-snap-align: start;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+    }
+
+    .accordion-button {
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+    }
+
+    .accordion-button span {
+      margin-bottom: 4px;
+    }
+
+    .accordion-body .row {
+      gap: 18px;
+    }
+
+    .accordion-body .metric-card {
+      min-width: unset;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .reports-shell {
+      gap: 20px;
+    }
+
+    .reports-hero {
+      border-radius: 22px;
+      padding: 32px 24px;
+    }
+
+    .reports-hero h2 {
+      font-size: 1.8rem;
+    }
+
+    .filter-card {
+      margin-top: -36px;
+      padding: 20px 18px;
+    }
+
+    .reports-card,
+    .accordion-item {
+      border-radius: 20px;
+    }
+  }
+</style>
+
+<section class="py-4">
+  <div class="container reports-shell">
+    <div class="reports-hero text-center text-md-start">
+      <h2 class="mb-3">📊 Аналитика по записям</h2>
+      <p class="mb-0">Следите за динамикой клиентов и выручки, управляйте загрузкой мастеров и находите точки роста салона в один клик.</p>
+    </div>
+
+    <div class="card filter-card border-0 bg-white position-relative">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold text-muted small">Начало периода</label>
+          <input type="date" name="start" class="form-control" value="{{ request.GET.start }}">
         </div>
-        <div class="card-body">
-          <p>👥 Клиентов: <strong>{{ row.clients }}</strong></p>
-          <p>💵 Выручка: <strong>{{ row.revenue|floatformat:0 }} сум</strong></p>
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold text-muted small">Конец периода</label>
+          <input type="date" name="end" class="form-control" value="{{ request.GET.end }}">
+        </div>
+        <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
+          <button type="submit" class="btn btn-dark btn-lg px-4">Показать отчёт</button>
+        </div>
+      </form>
+    </div>
 
-          <!-- 👨‍🔧 Выручка по мастерам -->
-          <table class="table table-sm table-bordered mt-3 w-auto">
-            <thead class="table-light">
-              <tr>
-                <th>Мастер</th>
-                <th>Выручка</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for name, revenue in row.stylists.items %}
+    {% if daily_stats %}
+      <div class="metric-grid">
+        <article class="metric-card">
+          <h6>Всего клиентов</h6>
+          <p class="metric-value mb-0">{{ total_clients|intcomma }}</p>
+          <span class="text-muted small">Количество завершённых визитов за выбранный период</span>
+        </article>
+        <article class="metric-card">
+          <h6>Совокупная выручка</h6>
+          <p class="metric-value mb-0">{{ total_revenue|floatformat:0|intcomma }} сум</p>
+          <span class="text-muted small">Доход салона с подтверждённых записей</span>
+        </article>
+        <article class="metric-card">
+          <h6>Средний чек</h6>
+          <p class="metric-value mb-0">
+            {% if total_clients %}
+              {% widthratio total_revenue total_clients 1 %} сум
+            {% else %}
+              —
+            {% endif %}
+          </p>
+          <span class="text-muted small">Соотношение выручки и количества клиентов</span>
+        </article>
+      </div>
+
+      <div class="card reports-card">
+        <div class="card-header px-4 pt-4 pb-3">
+          <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
+            <div>
+              <h5 class="mb-1">🔝 Эффективность мастеров</h5>
+              <p class="text-muted mb-0">Сравните загрузку команды и выручку за период</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <span class="badge-chip">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10.5l6.428 6.428a2.25 2.25 0 003.181 0L21 8.536M8.25 9.75h.008v.008H8.25V9.75zm3 3h.008v.008H11.25V12.75z" />
+                </svg>
+                Выручка за период: {{ total_revenue|floatformat:0|intcomma }} сум
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-0 px-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0 reports-table">
+              <thead>
                 <tr>
-                  <td>{{ name }}</td>
-                  <td>{{ revenue|floatformat:0 }} сум</td>
+                  <th class="ps-4">Мастер</th>
+                  <th class="text-center">Клиенты</th>
+                  <th class="text-end pe-4">Выручка</th>
                 </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {% for name, data in overall_stats.items %}
+                  <tr>
+                    <td class="ps-4 fw-semibold text-nowrap">{{ name }}</td>
+                    <td class="text-center">
+                      <span class="badge-chip bg-white text-dark">{{ data.clients|intcomma }}</span>
+                    </td>
+                    <td class="text-end pe-4">
+                      <span class="badge-revenue">{{ data.revenue|floatformat:0|intcomma }} сум</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+                <tr class="bg-light fw-semibold">
+                  <td class="ps-4">Итого</td>
+                  <td class="text-center">{{ total_clients|intcomma }}</td>
+                  <td class="text-end pe-4">{{ total_revenue|floatformat:0|intcomma }} сум</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-    {% endfor %}
-  <nav>
-  <ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" style="color: #212529; border-color: #212529;">« Назад</a>
-      </li>
+      <div class="mt-5">
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+          <h4 class="mb-0">📅 Динамика по дням</h4>
+          <span class="text-muted small">Нажмите на дату, чтобы раскрыть подробности</span>
+        </div>
+        <div class="accordion" id="accordionReports">
+          {% for row in page_obj %}
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                  <span class="fw-semibold">🗓 {{ row.day|date:"d.m.Y" }}</span>
+                  <span class="badge-chip bg-white text-primary">👥 {{ row.clients|intcomma }}</span>
+                  <span class="badge-chip bg-white text-success">💵 {{ row.revenue|floatformat:0|intcomma }} сум</span>
+                </button>
+              </h2>
+              <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionReports">
+                <div class="accordion-body">
+                  <div class="row align-items-center g-4">
+                    <div class="col-12 col-lg-4">
+                      <article class="metric-card mb-0">
+                        <h6>Итоги дня</h6>
+                        <p class="mb-2"><strong>{{ row.clients|intcomma }}</strong> клиентов</p>
+                        <p class="mb-0"><strong>{{ row.revenue|floatformat:0|intcomma }} сум</strong> выручки</p>
+                      </article>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                      <div class="table-responsive">
+                        <table class="table stylists-table align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th>Мастер</th>
+                              <th class="text-end">Выручка</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for name, revenue in row.stylists.items %}
+                              <tr class="border-bottom">
+                                <td class="fw-semibold text-nowrap">{{ name }}</td>
+                                <td class="text-end">{{ revenue|floatformat:0|intcomma }} сум</td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <nav class="mt-4" aria-label="Навигация по отчётам">
+        <ul class="pagination justify-content-center flex-wrap">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">« Назад</a>
+            </li>
+          {% endif %}
+
+          {% for i in page_obj.paginator.page_range %}
+            <li class="page-item {% if i == page_obj.number %}active{% endif %}">
+              <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+            </li>
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд »</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% else %}
+      <div class="card reports-card mt-4">
+        <div class="card-body text-center py-5">
+          <h5 class="fw-semibold">Данные пока не собраны</h5>
+          <p class="text-muted mb-0">Выберите другой период или дождитесь завершённых записей, чтобы сформировать отчёт.</p>
+        </div>
+      </div>
     {% endif %}
-
-    {% for i in page_obj.paginator.page_range %}
-<li class="page-item {% if i == page_obj.number %}active{% endif %}">
-  <a class="page-link" href="?page={{ i }}"
-     {% if i == page_obj.number %} style="background-color: #212529; color: white; border-color: #212529;"
-     {% else %}
-     style="color: #212529; border-color: #212529;"
-     {% endif %}>
-    {{ i }}
-  </a>
-</li>
-    {% endfor %}
-
-    {% if page_obj.has_next %}
-      <li class="page-item" >
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}" style="color: #212529; border-color: #212529;">Вперёд »</a>
-      </li>
-    {% endif %}
-  </ul>
-</nav>
-  {% else %}
-
-    <div class="alert alert-warning">Нет выполненных записей за выбранный период.</div>
-  {% endif %}
-</div>
+  </div>
+</section>
 {% endblock %}
