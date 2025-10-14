@@ -3,22 +3,52 @@
 
 {% block content %}
 <style>
+  :root {
+    --reports-primary: #4f46e5;
+    --reports-dark: #111827;
+    --reports-soft: #eef2ff;
+    --reports-muted: #6b7280;
+  }
+
+  .reports-shell {
+    display: grid;
+    gap: 32px;
+  }
+
   .reports-hero {
-    background: linear-gradient(135deg, #1f2933 0%, #4f46e5 100%);
-    color: #fff;
-    border-radius: 24px;
-    padding: 48px 32px;
     position: relative;
+    border-radius: 28px;
+    padding: 48px clamp(24px, 4vw, 48px);
+    color: #fff;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 50%),
+      linear-gradient(135deg, #111827 0%, #4f46e5 45%, #8b5cf6 100%);
     overflow: hidden;
-    box-shadow: 0 20px 45px rgba(79, 70, 229, 0.25);
+    box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.35);
+  }
+
+  .reports-hero::after,
+  .reports-hero::before {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(0.5px);
+    opacity: 0.35;
+  }
+
+  .reports-hero::before {
+    width: 220px;
+    height: 220px;
+    background: rgba(255, 255, 255, 0.18);
+    bottom: -90px;
+    left: -70px;
   }
 
   .reports-hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.25), transparent 55%);
-    z-index: 0;
+    width: 260px;
+    height: 260px;
+    background: rgba(15, 23, 42, 0.18);
+    top: -120px;
+    right: -60px;
   }
 
   .reports-hero > * {
@@ -27,153 +57,310 @@
   }
 
   .reports-hero h2 {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
     font-weight: 700;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.6px;
   }
 
   .reports-hero p {
-    max-width: 600px;
-    margin: 0 auto;
-    opacity: 0.85;
-  }
-
-  .reports-card {
-    border: none;
-    border-radius: 20px;
-    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
-  }
-
-  .reports-card .card-header {
-    border: none;
-    background-color: transparent;
-    font-weight: 600;
-    font-size: 1.1rem;
+    max-width: 620px;
+    margin: 0;
+    opacity: 0.9;
   }
 
   .filter-card {
-    margin-top: -60px;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
+    margin-top: -70px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(6px);
   }
 
-  .filter-card .form-control,
+  .filter-card label {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+  }
+
+  .filter-card .form-control {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 0.65rem 0.9rem;
+    font-weight: 500;
+  }
+
   .filter-card .btn {
-    border-radius: 12px;
-    height: 48px;
+    border-radius: 14px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .metric-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 
   .metric-card {
-    border-radius: 18px;
-    border: none;
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
     padding: 24px;
-    color: #0f172a;
-    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
-    background-color: #fff;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(238, 242, 255, 0.8));
+    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .metric-card h6 {
     font-size: 0.85rem;
-    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #64748b;
-  }
-
-  .metric-card .metric-value {
-    font-size: 1.75rem;
-    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--reports-muted);
     margin-bottom: 0;
   }
 
-  .accordion-button {
-    border-radius: 12px !important;
-    background-color: #f8fafc;
+  .metric-card .metric-value {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 700;
+    color: var(--reports-dark);
+  }
+
+  .reports-card {
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+  }
+
+  .reports-card .card-header {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.12), rgba(79, 70, 229, 0.02));
+    border: none;
+  }
+
+  .reports-card .card-header h5 {
+    font-weight: 700;
+  }
+
+  .reports-table {
+    min-width: 100%;
+  }
+
+  .reports-table thead th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--reports-muted);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    background-color: rgba(79, 70, 229, 0.04);
+  }
+
+  .reports-table tbody tr td {
+    padding-block: 0.95rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+  }
+
+  .badge-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.45rem 0.95rem;
+    background: rgba(79, 70, 229, 0.12);
+    color: var(--reports-primary);
+  }
+
+  .badge-chip svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .badge-chip.bg-white {
+    border: 1px solid rgba(79, 70, 229, 0.18);
+  }
+
+  .badge-revenue {
+    background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+    color: #fff;
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
     font-weight: 600;
   }
 
-  .accordion-button:not(.collapsed) {
-    color: #312e81;
-    background-color: #e0e7ff;
-    box-shadow: none;
+  .accordion {
+    display: grid;
+    gap: 16px;
   }
 
   .accordion-item {
     border: none;
-    border-radius: 16px;
-    box-shadow: 0 15px 28px rgba(15, 23, 42, 0.08);
-    margin-bottom: 18px;
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+  }
+
+  .accordion-button {
+    border-radius: 0 !important;
+    background-color: rgba(79, 70, 229, 0.04);
+    font-weight: 600;
+    gap: 12px;
+  }
+
+  .accordion-button:focus {
+    box-shadow: none;
+  }
+
+  .accordion-button:not(.collapsed) {
+    color: var(--reports-primary);
+    background-color: rgba(79, 70, 229, 0.1);
   }
 
   .accordion-body {
-    padding: 1.5rem;
-    background-color: #fff;
-    border-radius: 0 0 16px 16px;
+    background: #fff;
+    padding: clamp(20px, 3vw, 32px);
   }
 
   .stylists-table th {
     font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: #475569;
+    letter-spacing: 0.04em;
+    color: var(--reports-muted);
     border-bottom: 1px solid rgba(148, 163, 184, 0.35);
   }
 
   .stylists-table td {
     border: none;
     padding: 0.75rem 0.5rem;
+    font-weight: 500;
   }
 
-  .badge-revenue {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    border-radius: 999px;
-    padding: 6px 14px;
-    font-size: 0.85rem;
+  .pagination {
+    gap: 12px;
   }
 
   .pagination .page-link {
     border-radius: 12px;
-    color: #312e81;
-    border: none;
-    padding: 0.6rem 1rem;
-    margin: 0 4px;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+    color: var(--reports-primary);
+    border: 1px solid rgba(79, 70, 229, 0.15);
+    padding: 0.55rem 0.95rem;
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .pagination .page-item.active .page-link,
   .pagination .page-link:hover {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    transform: translateY(-2px);
+    background: var(--reports-primary);
     color: #fff;
+  }
+
+  .pagination .page-item.active .page-link {
+    background: var(--reports-primary);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  @media (max-width: 991.98px) {
+    .reports-shell {
+      gap: 24px;
+    }
+
+    .reports-hero {
+      border-radius: 24px;
+    }
+
+    .filter-card {
+      margin-top: -50px;
+    }
   }
 
   @media (max-width: 767.98px) {
     .reports-hero {
-      border-radius: 18px;
-      padding: 36px 24px;
+      padding: 36px 28px;
       text-align: left;
     }
 
+    .reports-hero p {
+      font-size: 0.95rem;
+    }
+
     .filter-card {
-      margin-top: -40px;
-      padding: 20px;
+      margin-top: -42px;
+      padding: 22px 20px;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.18);
     }
 
     .filter-card .row > div {
       margin-bottom: 12px;
     }
 
+    .filter-card .btn {
+      width: 100%;
+    }
+
+    .metric-grid {
+      display: flex;
+      overflow-x: auto;
+      gap: 16px;
+      padding: 4px 4px 12px;
+      margin-inline: -12px;
+      scroll-snap-type: x mandatory;
+    }
+
     .metric-card {
-      text-align: center;
+      min-width: 220px;
+      scroll-snap-align: start;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
     }
 
     .accordion-button {
       font-size: 0.95rem;
+      flex-wrap: wrap;
+    }
+
+    .accordion-button span {
+      margin-bottom: 4px;
+    }
+
+    .accordion-body .row {
+      gap: 18px;
+    }
+
+    .accordion-body .metric-card {
+      min-width: unset;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .reports-shell {
+      gap: 20px;
+    }
+
+    .reports-hero {
+      border-radius: 22px;
+      padding: 32px 24px;
+    }
+
+    .reports-hero h2 {
+      font-size: 1.8rem;
+    }
+
+    .filter-card {
+      margin-top: -36px;
+      padding: 20px 18px;
+    }
+
+    .reports-card,
+    .accordion-item {
+      border-radius: 20px;
     }
   }
 </style>
 
 <section class="py-4">
-  <div class="container">
+  <div class="container reports-shell">
     <div class="reports-hero text-center text-md-start">
       <h2 class="mb-3">📊 Аналитика по записям</h2>
       <p class="mb-0">Следите за динамикой клиентов и выручки, управляйте загрузкой мастеров и находите точки роста салона в один клик.</p>
@@ -196,46 +383,52 @@
     </div>
 
     {% if daily_stats %}
-      <div class="row g-3 mt-0 mt-md-2">
-        <div class="col-12 col-md-4">
-          <div class="metric-card h-100">
-            <h6>Всего клиентов</h6>
-            <p class="metric-value">{{ total_clients|intcomma }}</p>
-            <span class="text-muted small">Количество завершённых визитов за выбранный период</span>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="metric-card h-100">
-            <h6>Совокупная выручка</h6>
-            <p class="metric-value">{{ total_revenue|floatformat:0|intcomma }} сум</p>
-            <span class="text-muted small">Доход салона с подтверждённых записей</span>
-          </div>
-        </div>
-        <div class="col-12 col-md-4">
-          <div class="metric-card h-100">
-            <h6>Средний чек</h6>
-            <p class="metric-value">
-              {% if total_clients %}
-                {% widthratio total_revenue total_clients 1 %} сум
-              {% else %}
-                —
-              {% endif %}
-            </p>
-            <span class="text-muted small">Соотношение выручки и количества клиентов</span>
-          </div>
-        </div>
+      <div class="metric-grid">
+        <article class="metric-card">
+          <h6>Всего клиентов</h6>
+          <p class="metric-value mb-0">{{ total_clients|intcomma }}</p>
+          <span class="text-muted small">Количество завершённых визитов за выбранный период</span>
+        </article>
+        <article class="metric-card">
+          <h6>Совокупная выручка</h6>
+          <p class="metric-value mb-0">{{ total_revenue|floatformat:0|intcomma }} сум</p>
+          <span class="text-muted small">Доход салона с подтверждённых записей</span>
+        </article>
+        <article class="metric-card">
+          <h6>Средний чек</h6>
+          <p class="metric-value mb-0">
+            {% if total_clients %}
+              {% widthratio total_revenue total_clients 1 %} сум
+            {% else %}
+              —
+            {% endif %}
+          </p>
+          <span class="text-muted small">Соотношение выручки и количества клиентов</span>
+        </article>
       </div>
 
-      <div class="card reports-card mt-4">
-        <div class="card-header px-4 pt-4">
-          <h5 class="mb-1">🔝 Эффективность мастеров</h5>
-          <p class="text-muted mb-0">Сравните загрузку команды и выручку за период</p>
+      <div class="card reports-card">
+        <div class="card-header px-4 pt-4 pb-3">
+          <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center">
+            <div>
+              <h5 class="mb-1">🔝 Эффективность мастеров</h5>
+              <p class="text-muted mb-0">Сравните загрузку команды и выручку за период</p>
+            </div>
+            <div class="mt-3 mt-md-0">
+              <span class="badge-chip">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10.5l6.428 6.428a2.25 2.25 0 003.181 0L21 8.536M8.25 9.75h.008v.008H8.25V9.75zm3 3h.008v.008H11.25V12.75z" />
+                </svg>
+                Выручка за период: {{ total_revenue|floatformat:0|intcomma }} сум
+              </span>
+            </div>
+          </div>
         </div>
         <div class="card-body pt-0 px-0">
           <div class="table-responsive">
-            <table class="table align-middle mb-0">
-              <thead class="bg-light">
-                <tr class="text-muted text-uppercase small">
+            <table class="table align-middle mb-0 reports-table">
+              <thead>
+                <tr>
                   <th class="ps-4">Мастер</th>
                   <th class="text-center">Клиенты</th>
                   <th class="text-end pe-4">Выручка</th>
@@ -243,10 +436,10 @@
               </thead>
               <tbody>
                 {% for name, data in overall_stats.items %}
-                  <tr class="border-top">
-                    <td class="ps-4 fw-semibold">{{ name }}</td>
+                  <tr>
+                    <td class="ps-4 fw-semibold text-nowrap">{{ name }}</td>
                     <td class="text-center">
-                      <span class="badge bg-light text-dark rounded-pill px-3 py-2">{{ data.clients|intcomma }}</span>
+                      <span class="badge-chip bg-white text-dark">{{ data.clients|intcomma }}</span>
                     </td>
                     <td class="text-end pe-4">
                       <span class="badge-revenue">{{ data.revenue|floatformat:0|intcomma }} сум</span>
@@ -265,8 +458,8 @@
       </div>
 
       <div class="mt-5">
-        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-          <h4 class="mb-2 mb-md-0">📅 Динамика по дням</h4>
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 gap-2">
+          <h4 class="mb-0">📅 Динамика по дням</h4>
           <span class="text-muted small">Нажмите на дату, чтобы раскрыть подробности</span>
         </div>
         <div class="accordion" id="accordionReports">
@@ -274,20 +467,20 @@
             <div class="accordion-item">
               <h2 class="accordion-header" id="heading{{ forloop.counter }}">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
-                  <span class="me-3">🗓 {{ row.day|date:"d.m.Y" }}</span>
-                  <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill me-2">👥 {{ row.clients|intcomma }}</span>
-                  <span class="badge bg-success bg-opacity-10 text-success rounded-pill">💵 {{ row.revenue|floatformat:0|intcomma }} сум</span>
+                  <span class="fw-semibold">🗓 {{ row.day|date:"d.m.Y" }}</span>
+                  <span class="badge-chip bg-white text-primary">👥 {{ row.clients|intcomma }}</span>
+                  <span class="badge-chip bg-white text-success">💵 {{ row.revenue|floatformat:0|intcomma }} сум</span>
                 </button>
               </h2>
               <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionReports">
                 <div class="accordion-body">
-                  <div class="row g-4 align-items-center">
+                  <div class="row align-items-center g-4">
                     <div class="col-12 col-lg-4">
-                      <div class="metric-card">
+                      <article class="metric-card mb-0">
                         <h6>Итоги дня</h6>
                         <p class="mb-2"><strong>{{ row.clients|intcomma }}</strong> клиентов</p>
                         <p class="mb-0"><strong>{{ row.revenue|floatformat:0|intcomma }} сум</strong> выручки</p>
-                      </div>
+                      </article>
                     </div>
                     <div class="col-12 col-lg-8">
                       <div class="table-responsive">
@@ -301,7 +494,7 @@
                           <tbody>
                             {% for name, revenue in row.stylists.items %}
                               <tr class="border-bottom">
-                                <td class="fw-semibold">{{ name }}</td>
+                                <td class="fw-semibold text-nowrap">{{ name }}</td>
                                 <td class="text-end">{{ revenue|floatformat:0|intcomma }} сум</td>
                               </tr>
                             {% endfor %}
