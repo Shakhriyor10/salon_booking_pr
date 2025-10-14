@@ -15,7 +15,7 @@ from .form import (
     StylistUpdateForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
-    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS
+    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -317,9 +317,17 @@ class SalonDetailView(DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('login')}?next={request.path}")  # Перенаправление на логин
+            login_url = f"{reverse('login')}?next={request.path}"
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'requires_auth': True,
+                    'login_url': login_url,
+                }, status=401)
+            return redirect(login_url)
 
         form = ReviewForm(request.POST)
         if form.is_valid():
@@ -327,9 +335,80 @@ class SalonDetailView(DetailView):
             review.salon = self.object
             review.user = request.user
             review.save()
+
+            if is_ajax:
+                salon = self.object
+                average_rating = salon.average_rating() or 0
+                rounded_rating = round(average_rating * 2) / 2
+                full_stars = int(rounded_rating)
+                has_half_star = (rounded_rating - full_stars) == 0.5
+                empty_stars = 5 - full_stars - (1 if has_half_star else 0)
+                review_html = render_to_string(
+                    'partials/review_item.html',
+                    {
+                        'review': review,
+                        'is_hidden': False,
+                        'can_delete': True,
+                        'request': request,
+                    },
+                )
+
+                return JsonResponse({
+                    'success': True,
+                    'review_html': review_html,
+                    'average_rating': float(average_rating),
+                    'average_rating_display': f"{average_rating:.1f}",
+                    'review_count': salon.reviews.count(),
+                    'stars': {
+                        'full': full_stars,
+                        'half': has_half_star,
+                        'empty': empty_stars,
+                    },
+                })
+
             return redirect('salon_detail', pk=self.object.pk, slug=self.object.slug)
 
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors,
+            }, status=400)
+
         return self.get(request, *args, **kwargs)
+
+@login_required
+@require_POST
+def delete_review(request, pk):
+    review = get_object_or_404(Review, pk=pk)
+
+    if review.user_id != request.user.id:
+        return JsonResponse({
+            'success': False,
+            'error': 'Вы не можете удалить этот отзыв.'
+        }, status=403)
+
+    salon = review.salon
+    review.delete()
+
+    average_rating = salon.average_rating() or 0
+    rounded_rating = round(average_rating * 2) / 2
+    full_stars = int(rounded_rating)
+    has_half_star = (rounded_rating - full_stars) == 0.5
+    empty_stars = 5 - full_stars - (1 if has_half_star else 0)
+    review_count = salon.reviews.count()
+
+    return JsonResponse({
+        'success': True,
+        'average_rating': float(average_rating),
+        'average_rating_display': f'{average_rating:.1f}',
+        'review_count': review_count,
+        'stars': {
+            'full': full_stars,
+            'half': has_half_star,
+            'empty': empty_stars,
+        },
+    })
+
 
 class CategoryServicesView(View):
     def get(self, request, pk):
@@ -1934,6 +2013,16 @@ def stylist_reports(request):
     report_appointments = []
     total_cash = 0
     total_clients = 0
+    average_ticket = 0
+    average_day_revenue = 0
+    worked_days = 0
+    period_label = None
+
+    stylist_name = (
+        stylist.user.get_full_name()
+        if hasattr(stylist, "user") and stylist.user.get_full_name()
+        else getattr(stylist, "user", request.user).get_username()
+    )
 
     if start_date and end_date:
         try:
@@ -1956,9 +2045,18 @@ def stylist_reports(request):
             )
 
             total_clients = report_appointments.count()
+            period_label = f"{start.strftime('%d.%m.%Y')} — {end.strftime('%d.%m.%Y')}"
 
             for a in report_appointments:
                 total_cash += a.get_total_price()
+
+            worked_days = len({a.start_time.date() for a in report_appointments})
+
+            if total_clients:
+                average_ticket = total_cash / total_clients
+
+            if worked_days:
+                average_day_revenue = total_cash / worked_days
 
         except ValueError:
             pass
@@ -1967,8 +2065,13 @@ def stylist_reports(request):
         "report_appointments": report_appointments,
         "total_cash": total_cash,
         "total_clients": total_clients,
+        "average_ticket": average_ticket,
+        "average_day_revenue": average_day_revenue,
+        "worked_days": worked_days,
         "start_date": start_date,
         "end_date": end_date,
+        "period_label": period_label,
+        "stylist_name": stylist_name,
     }
 
     return render(request, "stylist_reports.html", context)
