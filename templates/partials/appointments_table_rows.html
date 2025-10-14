@@ -1,79 +1,134 @@
 {% load form_tags %}
+{% with show_stylist=show_stylist_column|default:True %}
+{% with total_columns=show_stylist|yesno:'7,6' %}
 {% for date, appointments_on_date in grouped_appointments.items %}
-  <h5 class="mt-4">{{ date }}</h5>
-
-  <div class="table-responsive">
-    <table class="table table-striped table-bordered align-middle">
-      <thead class="table-dark">
-        <tr>
-          <th scope="col">Клиент</th>
-          <th scope="col">Услуга</th>
-          <th scope="col">Мастер</th>
-          <th scope="col">Время</th>
-          <th scope="col">Статус</th>
-          <th scope="col">Цена</th>
-          <th scope="col">Действия</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in appointments_on_date %}
+  <div class="appointments-day card" data-day-block data-date="{{ date|date:'Y-m-d' }}">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 py-3 px-4">
+      <div class="d-flex align-items-center gap-3">
+        <div class="date-icon d-flex align-items-center justify-content-center">
+          <i class="bi bi-calendar-event"></i>
+        </div>
+        <div>
+          <div class="text-muted text-uppercase small fw-semibold">Дата</div>
+          <div class="fs-5 fw-bold">{{ date }}</div>
+        </div>
+      </div>
+      <span class="badge rounded-pill bg-dark-subtle text-dark fw-semibold px-3 py-2">
+        <span data-day-count>{{ appointments_on_date|length }}</span> записей
+      </span>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-modern align-middle mb-0">
+        <thead>
           <tr>
-            <td>
-              {% if a.customer %}
-              {{ a.customer.first_name|default:a.customer.username }}
-              {% if a.customer.profile.phone %}
-              ({{ a.customer.profile.phone }})
-              {% endif %}
-              {% else %}
-              {{ a.guest_name }} ({{ a.guest_phone }})
-              {% endif %}
-            </td>
-            <td>
-              {% for ap_service in a.services.all %}
-              {{ ap_service.stylist_service.salon_service.service.name }}{% if not forloop.last %}, {% endif %}
-              {% endfor %}
-            </td>
-            <td>{{ a.stylist.user }}</td>
-            <td>{{ a.start_time|date:"H:i" }}</td>
-            <td>{{ a.get_status_display }}</td>
-            <td>
-  {{ a.services.all|sum_prices }} сум
-</td>
-            <td>
-              {% if a.status == 'P' %}
-              <button onclick="submitAction({{ a.id }}, 'confirm')" class="btn btn-success btn-sm">✅ Принять</button>
-              <button onclick="submitAction({{ a.id }}, 'cancel')" class="btn btn-danger btn-sm">❌ Отменить</button>
-              {% elif a.status == 'C' %}
-              <button onclick="submitAction({{ a.id }}, 'done')" class="btn btn-primary btn-sm">✂️ Выполнено</button>
-              <button onclick="submitAction({{ a.id }}, 'cancel')" class="btn btn-danger btn-sm">❌ Отменить</button>
-              {% endif %}
-            </td>
+            <th scope="col">Клиент</th>
+            <th scope="col">Услуга</th>
+            {% if show_stylist %}
+              <th scope="col">Мастер</th>
+            {% endif %}
+            <th scope="col">Время</th>
+            <th scope="col">Статус</th>
+            <th scope="col">Цена</th>
+            <th scope="col">Действия</th>
           </tr>
-        {% empty %}
-          <tr><td colspan="6">Нет записей</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {% for a in appointments_on_date %}
+            <tr class="appointment-row" data-appointment-row="true" data-status="{{ a.status }}" data-appointment-id="{{ a.id }}" data-date="{{ a.start_time|date:'Y-m-d' }}">
+              <td data-label="Клиент">
+                {% if a.customer %}
+                  <div class="client-name">{{ a.customer.first_name|default:a.customer.username }}</div>
+                  {% if a.customer.profile.phone %}
+                    <div class="client-contact"><i class="bi bi-telephone"></i> {{ a.customer.profile.phone }}</div>
+                  {% endif %}
+                {% else %}
+                  <div class="client-name">{{ a.guest_name }}</div>
+                  <div class="client-contact"><i class="bi bi-telephone"></i> {{ a.guest_phone }}</div>
+                {% endif %}
+              </td>
+              <td data-label="Услуга">
+                {% for ap_service in a.services.all %}
+                  <span class="service-pill">{{ ap_service.stylist_service.salon_service.service.name }}</span>
+                {% empty %}
+                  <span class="text-muted">—</span>
+                {% endfor %}
+              </td>
+              {% if show_stylist %}
+                <td data-label="Мастер">
+                  <div class="fw-semibold">{{ a.stylist.user }}</div>
+                </td>
+              {% endif %}
+              <td data-label="Время">
+                <div class="fw-semibold">{{ a.start_time|date:"H:i" }}</div>
+              </td>
+              <td data-label="Статус">
+                <span class="badge status-badge {{ a.status|status_badge_class }}">{{ a.get_status_display }}</span>
+              </td>
+              <td data-label="Цена">
+                <div class="price-value">{{ a.services.all|sum_prices }} сум</div>
+              </td>
+              <td data-label="Действия">
+                <div class="d-flex flex-wrap gap-2">
+                  {% if a.status == 'P' %}
+                    <button type="button" class="btn btn-success btn-sm btn-action" data-appointment-action="confirm" data-appointment-id="{{ a.id }}">
+                      <i class="bi bi-check2-circle"></i>
+                      <span>Принять</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-action" data-appointment-action="cancel" data-appointment-id="{{ a.id }}">
+                      <i class="bi bi-x-circle"></i>
+                      <span>Отменить</span>
+                    </button>
+                  {% elif a.status == 'C' %}
+                    <button type="button" class="btn btn-primary btn-sm btn-action" data-appointment-action="done" data-appointment-id="{{ a.id }}">
+                      <i class="bi bi-scissors"></i>
+                      <span>Выполнено</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-action" data-appointment-action="cancel" data-appointment-id="{{ a.id }}">
+                      <i class="bi bi-x-circle"></i>
+                      <span>Отменить</span>
+                    </button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr class="no-appointments-row">
+              <td colspan="{{ total_columns }}" class="text-center text-muted py-4">Нет записей</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-
+{% empty %}
+  <div class="empty-dashboard-state text-center" data-empty-dashboard-state>
+    <div class="icon-wrap mb-3">
+      <i class="bi bi-stars"></i>
+    </div>
+    <div class="fs-4 fw-semibold mb-2">Записей пока нет</div>
+    <p class="text-muted mb-0">Создайте первую запись вручную или подождите, пока клиенты оставят заявки через сайт.</p>
+</div>
 {% endfor %}
+{% endwith %}
+{% endwith %}
 
 <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="cancelModalLabel">Подтверждение</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <div>
+          <div class="text-muted text-uppercase small fw-semibold">Подтверждение действия</div>
+          <h5 class="modal-title fw-bold mt-1" id="cancelModalLabel">Отменить запись?</h5>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
       </div>
-      <div class="modal-body">
-        Вы действительно хотите отменить запись?
+      <div class="modal-body pt-3">
+        <p class="mb-0">Мы уведомим клиента и мастера о том, что запись отменена. Вы уверены, что хотите продолжить?</p>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Нет</button>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Оставить как есть</button>
         <button type="button" class="btn btn-danger" id="confirmCancelBtn">Да, отменить</button>
       </div>
     </div>
   </div>
 </div>
-
-
