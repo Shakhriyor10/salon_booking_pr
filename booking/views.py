@@ -317,9 +317,17 @@ class SalonDetailView(DetailView):
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('login')}?next={request.path}")  # Перенаправление на логин
+            login_url = f"{reverse('login')}?next={request.path}"
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'requires_auth': True,
+                    'login_url': login_url,
+                }, status=401)
+            return redirect(login_url)
 
         form = ReviewForm(request.POST)
         if form.is_valid():
@@ -327,7 +335,44 @@ class SalonDetailView(DetailView):
             review.salon = self.object
             review.user = request.user
             review.save()
+
+            if is_ajax:
+                salon = self.object
+                average_rating = salon.average_rating() or 0
+                rounded_rating = round(average_rating * 2) / 2
+                full_stars = int(rounded_rating)
+                has_half_star = (rounded_rating - full_stars) == 0.5
+                empty_stars = 5 - full_stars - (1 if has_half_star else 0)
+                review_html = render_to_string(
+                    'partials/review_item.html',
+                    {
+                        'review': review,
+                        'is_hidden': False,
+                        'can_delete': True,
+                        'request': request,
+                    },
+                )
+
+                return JsonResponse({
+                    'success': True,
+                    'review_html': review_html,
+                    'average_rating': float(average_rating),
+                    'average_rating_display': f"{average_rating:.1f}",
+                    'review_count': salon.reviews.count(),
+                    'stars': {
+                        'full': full_stars,
+                        'half': has_half_star,
+                        'empty': empty_stars,
+                    },
+                })
+
             return redirect('salon_detail', pk=self.object.pk, slug=self.object.slug)
+
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors,
+            }, status=400)
 
         return self.get(request, *args, **kwargs)
 

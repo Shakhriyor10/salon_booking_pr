@@ -1455,7 +1455,7 @@
     </div>
   </div>
 
-  <section class="card reviews-card border-0 mt-5">
+  <section class="card reviews-card border-0 mt-5" id="reviews-card" data-user-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}">
     <div class="card-body">
       <div class="reviews-header">
         <div class="reviews-header__info">
@@ -1486,7 +1486,7 @@
               {% endif %}
             </div>
           {% endwith %}
-          <a href="#review-form" class="btn btn-theme">Оставить отзыв</a>
+          <button type="button" class="btn btn-theme" id="write-review-btn">Оставить отзыв</button>
         </div>
       </div>
 
@@ -1498,7 +1498,7 @@
           </div>
           <i class="bi bi-chat-heart"></i>
         </div>
-        <form method="post" id="review-form" class="review-form">
+        <form method="post" id="review-form" class="review-form" novalidate>
           {% csrf_token %}
           <div class="mb-3">
             <label class="form-label d-block">Ваша оценка</label>
@@ -1516,54 +1516,21 @@
             <label for="id_comment" class="form-label">Комментарий</label>
             <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
           </div>
-          <button type="submit" class="btn btn-theme">Отправить отзыв</button>
+          <div class="alert alert-danger d-none" id="review-form-errors" role="alert"></div>
+          <button type="submit" class="btn btn-theme" data-review-submit>Отправить отзыв</button>
         </form>
       </div>
 
       {% if reviews %}
         <div class="review-list" id="review-list">
           {% for review in reviews %}
-            <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}" id="review-{{ review.id }}" data-review-id="{{ review.id }}">
-              <div class="review-avatar">{{ review.user.username|first|upper }}</div>
-              <div>
-                <div class="review-meta">
-                  <div class="review-meta__info">
-                    <strong>{{ review.user.username }}</strong>
-                    <span class="review-date">{{ review.created_at|date:"d M Y, H:i" }}</span>
-                  </div>
-                  {% if request.user.is_authenticated and review.user_id == request.user.id %}
-                    <div class="review-actions">
-                      <button type="button"
-                              class="review-delete-btn"
-                              data-review-delete
-                              data-review-id="{{ review.id }}"
-                              aria-label="Удалить отзыв"
-                              title="Удалить отзыв">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  {% endif %}
-                </div>
-                <div class="review-rating">
-                  {% for i in "12345"|make_list %}
-                    {% if forloop.counter <= review.rating %}
-                      <i class="bi bi-star-fill"></i>
-                    {% else %}
-                      <i class="bi bi-star"></i>
-                    {% endif %}
-                  {% endfor %}
-                </div>
-                {% if review.comment %}
-                  <p class="review-comment">{{ review.comment }}</p>
-                {% endif %}
-              </div>
-            </article>
+            {% include 'partials/review_item.html' with review=review is_hidden=forloop.counter > 5 can_delete=request.user.is_authenticated and review.user_id == request.user.id %}
           {% endfor %}
         </div>
         <p class="reviews-empty d-none" id="no-reviews-message">Отзывов пока нет. Будьте первым!</p>
         {% if reviews|length > 5 %}
-          <div class="text-center mt-4">
-            <button class="btn btn-outline-theme" id="load-more-reviews" data-batch="5">Показать ещё</button>
+          <div class="text-center mt-4" id="load-more-container">
+            <button type="button" class="btn btn-outline-theme" id="load-more-reviews" data-batch="5">Показать ещё</button>
           </div>
         {% endif %}
       {% else %}
@@ -1592,225 +1559,471 @@
   </div>
 </div>
 
+<div class="modal fade" id="loginPromptModal" tabindex="-1" aria-labelledby="loginPromptModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title" id="loginPromptModalLabel">Войдите, чтобы оставить отзыв</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body pt-1">
+        <p class="mb-3">Отзывы доступны только авторизованным пользователям. Пожалуйста, выполните вход или зарегистрируйтесь.</p>
+        <div class="d-grid gap-2">
+          <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-theme">Войти</a>
+          <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-outline-theme">Создать аккаунт</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const loadMoreButton = document.getElementById('load-more-reviews');
-    const reviewList = document.getElementById('review-list');
-    const noReviewsMessage = document.getElementById('no-reviews-message');
+    const reviewsCard = document.getElementById('reviews-card');
+    const reviewsCardBody = reviewsCard ? reviewsCard.querySelector('.card-body') : null;
+    const loginModalEl = document.getElementById('loginPromptModal');
+    const deleteModalEl = document.getElementById('deleteReviewModal');
+    const writeReviewBtn = document.getElementById('write-review-btn');
+    const reviewForm = document.getElementById('review-form');
+    const ratingInput = document.getElementById('rating-value');
+    const stars = Array.from(document.querySelectorAll('#star-rating i'));
+    const reviewErrors = document.getElementById('review-form-errors');
+    const isAuthenticated = reviewsCard && reviewsCard.dataset.userAuthenticated === 'true';
 
-    const getHiddenReviews = () => Array.from(document.querySelectorAll('.review-item.extra-review.d-none'));
-    const showHiddenBatch = (count = 1) => {
-      getHiddenReviews()
-        .slice(0, count)
-        .forEach((item) => item.classList.remove('d-none'));
+    let reviewList = document.getElementById('review-list');
+    let loadMoreButton = document.getElementById('load-more-reviews');
+    let loadMoreContainer = document.getElementById('load-more-container');
+    let reviewsExpanded = !loadMoreButton;
+
+    const loginModal = loginModalEl && window.bootstrap ? new window.bootstrap.Modal(loginModalEl) : null;
+    const deleteModal = deleteModalEl && window.bootstrap ? new window.bootstrap.Modal(deleteModalEl) : null;
+    const deleteConfirmBtn = deleteModalEl ? deleteModalEl.querySelector('[data-confirm-delete]') : null;
+    const deleteErrorAlert = deleteModalEl ? deleteModalEl.querySelector('[data-delete-error]') : null;
+    const confirmDefaultInner = deleteConfirmBtn ? deleteConfirmBtn.innerHTML : '';
+    const getNoReviewsMessage = () => document.getElementById('no-reviews-message');
+
+    let targetReviewId = null;
+
+    const showLoginPrompt = () => {
+      if (loginModal) {
+        loginModal.show();
+      } else {
+        const loginLink = loginModalEl ? loginModalEl.querySelector('.btn-theme') : null;
+        if (loginLink) {
+          window.location.href = loginLink.href;
+        }
+      }
     };
 
-    if (loadMoreButton) {
-      const batchSize = parseInt(loadMoreButton.dataset.batch, 10) || 5;
-      if (!getHiddenReviews().length) {
-        loadMoreButton.classList.add('d-none');
+    const toggleError = (message = '') => {
+      if (!reviewErrors) {
+        return;
       }
+      if (message) {
+        reviewErrors.textContent = message;
+        reviewErrors.classList.remove('d-none');
+      } else {
+        reviewErrors.textContent = '';
+        reviewErrors.classList.add('d-none');
+      }
+    };
 
-      loadMoreButton.addEventListener('click', () => {
-        showHiddenBatch(batchSize);
+    const resetStars = () => {
+      if (!stars.length) {
+        return;
+      }
+      stars.forEach((star) => {
+        star.classList.add('bi-star');
+        star.classList.remove('bi-star-fill');
+      });
+      if (ratingInput) {
+        ratingInput.value = '';
+      }
+    };
 
-        if (!getHiddenReviews().length) {
-          loadMoreButton.classList.add('d-none');
+    const updateReviewSummary = (payload) => {
+      if (!payload) {
+        return;
+      }
+      const scoreNode = document.getElementById('reviews-score');
+      if (scoreNode && payload.average_rating_display !== undefined) {
+        scoreNode.textContent = payload.average_rating_display;
+      }
+      const starsContainer = document.getElementById('reviews-stars');
+      if (starsContainer && payload.stars) {
+        const parts = [];
+        for (let i = 0; i < (payload.stars.full || 0); i += 1) {
+          parts.push('<i class="bi bi-star-fill"></i>');
+        }
+        if (payload.stars.half) {
+          parts.push('<i class="bi bi-star-half"></i>');
+        }
+        for (let i = 0; i < (payload.stars.empty || 0); i += 1) {
+          parts.push('<i class="bi bi-star"></i>');
+        }
+        const value = payload.average_rating_display !== undefined ? payload.average_rating_display : '0.0';
+        parts.push(`<span id="reviews-stars-value">${value} / 5</span>`);
+        starsContainer.innerHTML = parts.join('');
+      }
+      const countNode = document.getElementById('reviews-count');
+      if (countNode && payload.review_count !== undefined) {
+        countNode.textContent = payload.review_count > 0
+          ? `Всего отзывов: ${payload.review_count}`
+          : 'Пока нет отзывов';
+      }
+    };
+
+    const updateEmptyState = () => {
+      const list = reviewList;
+      const message = getNoReviewsMessage();
+      const total = list ? list.querySelectorAll('.review-item').length : 0;
+      if (total > 0) {
+        if (list) {
+          list.classList.remove('d-none');
+        }
+        if (message) {
+          message.classList.add('d-none');
+        }
+      } else {
+        if (list) {
+          list.classList.add('d-none');
+        }
+        if (message) {
+          message.classList.remove('d-none');
+        }
+      }
+    };
+
+    const handleLoadMore = () => {
+      reviewsExpanded = true;
+      if (!reviewList) {
+        return;
+      }
+      reviewList.querySelectorAll('.review-item.extra-review').forEach((item) => {
+        item.classList.remove('d-none');
+      });
+      if (loadMoreContainer) {
+        loadMoreContainer.classList.add('d-none');
+      }
+    };
+
+    const ensureLoadMoreButton = () => {
+      if (!reviewsCardBody) {
+        return null;
+      }
+      if (!loadMoreContainer) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'text-center mt-4';
+        wrapper.id = 'load-more-container';
+        const reference = getNoReviewsMessage();
+        if (reference) {
+          reviewsCardBody.insertBefore(wrapper, reference);
+        } else {
+          reviewsCardBody.appendChild(wrapper);
+        }
+        loadMoreContainer = wrapper;
+      }
+      if (!loadMoreButton) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-outline-theme';
+        button.id = 'load-more-reviews';
+        button.dataset.batch = '5';
+        button.textContent = 'Показать ещё';
+        loadMoreContainer.innerHTML = '';
+        loadMoreContainer.appendChild(button);
+        loadMoreButton = button;
+        button.addEventListener('click', handleLoadMore);
+      }
+      return loadMoreButton;
+    };
+
+    const reconcilePagination = () => {
+      if (!reviewList) {
+        if (loadMoreContainer) {
+          loadMoreContainer.classList.add('d-none');
+        }
+        return;
+      }
+      const items = Array.from(reviewList.querySelectorAll('.review-item'));
+      if (items.length <= 5) {
+        reviewsExpanded = true;
+      } else if (!loadMoreButton) {
+        reviewsExpanded = false;
+      }
+      items.forEach((item, index) => {
+        if (index < 5) {
+          item.classList.remove('extra-review');
+          item.classList.remove('d-none');
+        } else {
+          item.classList.add('extra-review');
+          if (reviewsExpanded) {
+            item.classList.remove('d-none');
+          } else {
+            item.classList.add('d-none');
+          }
+        }
+      });
+      if (items.length > 5 && !reviewsExpanded) {
+        ensureLoadMoreButton();
+        if (loadMoreContainer) {
+          loadMoreContainer.classList.remove('d-none');
+        }
+      } else if (loadMoreContainer) {
+        loadMoreContainer.classList.add('d-none');
+      }
+    };
+
+    const getCookie = (name) => {
+      const cookies = document.cookie ? document.cookie.split(';') : [];
+      for (let i = 0; i < cookies.length; i += 1) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === `${name}=`) {
+          return decodeURIComponent(cookie.substring(name.length + 1));
+        }
+      }
+      return null;
+    };
+
+    const hideDeleteError = () => {
+      if (deleteErrorAlert) {
+        deleteErrorAlert.classList.add('d-none');
+        deleteErrorAlert.textContent = '';
+      }
+    };
+
+    const showDeleteError = (message) => {
+      if (deleteErrorAlert) {
+        deleteErrorAlert.textContent = message;
+        deleteErrorAlert.classList.remove('d-none');
+      }
+    };
+
+    const restoreDeleteButton = () => {
+      if (deleteConfirmBtn) {
+        deleteConfirmBtn.disabled = false;
+        deleteConfirmBtn.innerHTML = confirmDefaultInner;
+      }
+    };
+
+    const removeReviewElement = (reviewId) => {
+      if (!reviewList) {
+        return;
+      }
+      const element = document.getElementById(`review-${reviewId}`);
+      if (element) {
+        element.remove();
+      }
+    };
+
+    const performDeletion = () => {
+      if (!targetReviewId) {
+        return;
+      }
+      hideDeleteError();
+      if (deleteConfirmBtn) {
+        deleteConfirmBtn.disabled = true;
+        deleteConfirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Удаляем...';
+      }
+      fetch(`/reviews/${targetReviewId}/delete/`, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken') || '',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      })
+        .then((response) => response.json()
+          .catch(() => ({ success: false, error: 'Не удалось обработать ответ сервера.' }))
+          .then((data) => ({ ok: response.ok, data, status: response.status })))
+        .then(({ ok, data }) => {
+          if (!ok || !data.success) {
+            const message = data && data.error ? data.error : 'Не удалось удалить отзыв. Попробуйте позже.';
+            showDeleteError(message);
+            throw new Error(message);
+          }
+          removeReviewElement(targetReviewId);
+          updateReviewSummary(data);
+          reconcilePagination();
+          updateEmptyState();
+          if (deleteModal) {
+            deleteModal.hide();
+          }
+          targetReviewId = null;
+        })
+        .catch((error) => {
+          console.error(error);
+          if (deleteErrorAlert && deleteErrorAlert.classList.contains('d-none')) {
+            showDeleteError(error.message || 'Произошла ошибка. Попробуйте снова.');
+          }
+        })
+        .finally(() => {
+          restoreDeleteButton();
+        });
+    };
+
+    const onReviewListClick = (event) => {
+      const deleteButton = event.target.closest('[data-review-delete]');
+      if (!deleteButton) {
+        return;
+      }
+      event.preventDefault();
+      targetReviewId = deleteButton.dataset.reviewId;
+      hideDeleteError();
+      restoreDeleteButton();
+      if (deleteModal) {
+        deleteModal.show();
+      } else if (window.confirm('Вы уверены, что хотите удалить отзыв?')) {
+        performDeletion();
+      } else {
+        targetReviewId = null;
+      }
+    };
+
+    if (deleteModalEl) {
+      deleteModalEl.addEventListener('hidden.bs.modal', () => {
+        targetReviewId = null;
+        hideDeleteError();
+        restoreDeleteButton();
+      });
+    }
+    if (deleteConfirmBtn) {
+      deleteConfirmBtn.addEventListener('click', () => {
+        performDeletion();
+      });
+    }
+
+    const prependReview = (html) => {
+      if (!reviewList) {
+        if (!reviewsCardBody) {
+          return;
+        }
+        const newList = document.createElement('div');
+        newList.className = 'review-list';
+        newList.id = 'review-list';
+        const reference = loadMoreContainer || getNoReviewsMessage();
+        if (reference) {
+          reviewsCardBody.insertBefore(newList, reference);
+        } else {
+          reviewsCardBody.appendChild(newList);
+        }
+        reviewList = newList;
+        ensureReviewListListener();
+      }
+      reviewList.insertAdjacentHTML('afterbegin', html);
+    };
+
+    const ensureReviewListListener = () => {
+      if (!reviewList || reviewList.dataset.listenerAttached === 'true') {
+        return;
+      }
+      reviewList.addEventListener('click', onReviewListClick);
+      reviewList.dataset.listenerAttached = 'true';
+    };
+
+    ensureReviewListListener();
+
+    if (loadMoreButton) {
+      loadMoreButton.addEventListener('click', handleLoadMore);
+      if (!reviewList || !reviewList.querySelector('.extra-review')) {
+        if (loadMoreContainer) {
+          loadMoreContainer.classList.add('d-none');
+        }
+      }
+    }
+
+    if (writeReviewBtn) {
+      writeReviewBtn.addEventListener('click', (event) => {
+        if (!isAuthenticated) {
+          event.preventDefault();
+          showLoginPrompt();
+          return;
+        }
+        if (reviewForm) {
+          reviewForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
     }
 
-    const deleteModalEl = document.getElementById('deleteReviewModal');
-    const deleteButtons = document.querySelectorAll('[data-review-delete]');
-
-    if (deleteModalEl && deleteButtons.length) {
-      const modal = window.bootstrap ? new window.bootstrap.Modal(deleteModalEl) : null;
-      const confirmBtn = deleteModalEl.querySelector('[data-confirm-delete]');
-      const errorAlert = deleteModalEl.querySelector('[data-delete-error]');
-      const confirmDefaultInner = confirmBtn ? confirmBtn.innerHTML : '';
-      let targetReviewId = null;
-
-      const restoreConfirmButton = () => {
-        if (!confirmBtn) {
+    stars.forEach((star, idx) => {
+      star.addEventListener('click', () => {
+        if (!isAuthenticated) {
+          showLoginPrompt();
           return;
         }
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = confirmDefaultInner;
-      };
-
-      const hideError = () => {
-        if (!errorAlert) {
-          return;
+        if (ratingInput) {
+          ratingInput.value = idx + 1;
         }
-        errorAlert.classList.add('d-none');
-        errorAlert.textContent = '';
-      };
-
-      const showError = (message) => {
-        if (!errorAlert) {
-          return;
-        }
-        errorAlert.textContent = message;
-        errorAlert.classList.remove('d-none');
-      };
-
-      const updateEmptyState = () => {
-        if (!reviewList) {
-          return;
-        }
-        const totalReviews = reviewList.querySelectorAll('.review-item').length;
-        if (totalReviews === 0) {
-          reviewList.classList.add('d-none');
-          if (noReviewsMessage) {
-            noReviewsMessage.classList.remove('d-none');
-          }
-          if (loadMoreButton) {
-            loadMoreButton.classList.add('d-none');
-          }
-        } else {
-          reviewList.classList.remove('d-none');
-          if (noReviewsMessage) {
-            noReviewsMessage.classList.add('d-none');
-          }
-        }
-      };
-
-      const updateReviewSummary = (payload) => {
-        if (!payload) {
-          return;
-        }
-
-        const scoreNode = document.getElementById('reviews-score');
-        if (scoreNode && payload.average_rating_display !== undefined) {
-          scoreNode.textContent = payload.average_rating_display;
-        }
-
-        const starsContainer = document.getElementById('reviews-stars');
-        if (starsContainer && payload.stars) {
-          const parts = [];
-          for (let i = 0; i < (payload.stars.full || 0); i += 1) {
-            parts.push('<i class="bi bi-star-fill"></i>');
-          }
-          if (payload.stars.half) {
-            parts.push('<i class="bi bi-star-half"></i>');
-          }
-          for (let i = 0; i < (payload.stars.empty || 0); i += 1) {
-            parts.push('<i class="bi bi-star"></i>');
-          }
-          const value = payload.average_rating_display !== undefined ? payload.average_rating_display : '0.0';
-          parts.push(`<span id="reviews-stars-value">${value} / 5</span>`);
-          starsContainer.innerHTML = parts.join('');
-        }
-
-        const countNode = document.getElementById('reviews-count');
-        if (countNode && payload.review_count !== undefined) {
-          countNode.textContent = payload.review_count > 0
-            ? `Всего отзывов: ${payload.review_count}`
-            : 'Пока нет отзывов';
-        }
-      };
-
-      const getCookie = (name) => {
-        const cookies = document.cookie ? document.cookie.split(';') : [];
-        for (let i = 0; i < cookies.length; i += 1) {
-          const cookie = cookies[i].trim();
-          if (cookie.substring(0, name.length + 1) === `${name}=`) {
-            return decodeURIComponent(cookie.substring(name.length + 1));
-          }
-        }
-        return null;
-      };
-
-      if (deleteModalEl.addEventListener) {
-        deleteModalEl.addEventListener('hidden.bs.modal', () => {
-          targetReviewId = null;
-          hideError();
-          restoreConfirmButton();
-        });
-      }
-
-      const performDeletion = () => {
-        if (!targetReviewId) {
-          return;
-        }
-
-        hideError();
-
-        if (confirmBtn) {
-          confirmBtn.disabled = true;
-          confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Удаляем...';
-        }
-
-        fetch(`/reviews/${targetReviewId}/delete/`, {
-            method: 'POST',
-            headers: {
-              'X-CSRFToken': getCookie('csrftoken') || '',
-              'X-Requested-With': 'XMLHttpRequest',
-            },
-          })
-            .then((response) => response.json()
-              .catch(() => ({ success: false, error: 'Не удалось обработать ответ сервера.' }))
-              .then((data) => ({ ok: response.ok, data })))
-            .then(({ ok, data }) => {
-              if (!ok || !data.success) {
-                const message = data && data.error ? data.error : 'Не удалось удалить отзыв. Попробуйте позже.';
-                showError(message);
-                throw new Error(message);
-              }
-
-              const reviewElement = document.getElementById(`review-${targetReviewId}`);
-              const wasHidden = reviewElement ? reviewElement.classList.contains('d-none') : false;
-              if (reviewElement) {
-                reviewElement.remove();
-              }
-
-              if (!wasHidden) {
-                showHiddenBatch(1);
-              }
-
-              if (loadMoreButton && !getHiddenReviews().length) {
-                loadMoreButton.classList.add('d-none');
-              }
-
-              updateReviewSummary(data);
-              updateEmptyState();
-
-              if (modal) {
-                modal.hide();
-              }
-              targetReviewId = null;
-            })
-            .catch((error) => {
-              console.error(error);
-              if (errorAlert && errorAlert.classList.contains('d-none')) {
-                showError(error.message || 'Произошла ошибка. Попробуйте снова.');
-              }
-            })
-            .finally(() => {
-              restoreConfirmButton();
-            });
-      };
-
-      deleteButtons.forEach((button) => {
-        button.addEventListener('click', () => {
-          targetReviewId = button.dataset.reviewId;
-          hideError();
-          restoreConfirmButton();
-          if (modal) {
-            modal.show();
-          } else if (window.confirm('Вы уверены, что хотите удалить отзыв?')) {
-            performDeletion();
-          } else {
-            targetReviewId = null;
-          }
+        stars.forEach((s, index) => {
+          s.classList.toggle('bi-star-fill', index <= idx);
+          s.classList.toggle('bi-star', index > idx);
         });
       });
+    });
 
-      if (confirmBtn) {
-        confirmBtn.addEventListener('click', () => {
-          performDeletion();
-        });
-      }
+    if (reviewForm) {
+      reviewForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        toggleError();
+        if (!isAuthenticated) {
+          showLoginPrompt();
+          return;
+        }
+        if (!ratingInput || !ratingInput.value) {
+          toggleError('Пожалуйста, выберите количество звёзд.');
+          return;
+        }
+        const formData = new FormData(reviewForm);
+        const submitBtn = reviewForm.querySelector('[data-review-submit]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Отправляем...';
+        }
+        fetch(reviewForm.getAttribute('action') || window.location.pathname, {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken') || '',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: formData,
+        })
+          .then((response) => response.json()
+            .catch(() => ({}))
+            .then((data) => ({ ok: response.ok, status: response.status, data })))
+          .then(({ ok, status, data }) => {
+            if (!ok || !data.success) {
+              if (status === 401 || (data && data.requires_auth)) {
+                showLoginPrompt();
+                return;
+              }
+              if (data && data.errors) {
+                const messages = Object.values(data.errors)
+                  .flat()
+                  .join(' ');
+                toggleError(messages || 'Не удалось отправить отзыв. Попробуйте позже.');
+                return;
+              }
+              toggleError((data && data.error) || 'Не удалось отправить отзыв. Попробуйте позже.');
+              return;
+            }
+            prependReview(data.review_html);
+            updateReviewSummary(data);
+            reconcilePagination();
+            updateEmptyState();
+            reviewForm.reset();
+            resetStars();
+            toggleError();
+          })
+          .catch((error) => {
+            console.error(error);
+            toggleError('Произошла ошибка. Попробуйте позже.');
+          })
+          .finally(() => {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = 'Отправить отзыв';
+            }
+          });
+      });
     }
   });
 </script>
@@ -1827,28 +2040,7 @@
 
 {{ service_stylists_map|json_script:"service-stylists-map" }}
 
-<script>
-  const stars = document.querySelectorAll('#star-rating i');
-  const ratingInput = document.getElementById('rating-value');
-  const reviewForm = document.getElementById('review-form');
-
-  stars.forEach((star, idx) => {
-    star.addEventListener('click', () => {
-      ratingInput.value = idx + 1;
-      stars.forEach((s, i) => {
-        s.classList.toggle('bi-star-fill', i <= idx);
-        s.classList.toggle('bi-star', i > idx);
-      });
-    });
-  });
-
-  reviewForm.addEventListener('submit', (e) => {
-    if (!ratingInput.value) {
-      e.preventDefault();
-      alert('Пожалуйста, выберите количество звёзд.');
-    }
-  });
-</script>
+ 
 <script src="{% static 'js/cart.js' %}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
