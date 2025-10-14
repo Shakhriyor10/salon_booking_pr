@@ -34,6 +34,7 @@ from collections import defaultdict
 import json
 from decimal import Decimal, InvalidOperation
 import datetime as dt
+import time
 from django.views import View
 from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
@@ -1082,36 +1083,62 @@ def dashboard_updates(request):
         else:
             return JsonResponse({"has_updates": False, "latest_created": None, "count": 0})
 
-    totals = appointments_qs.aggregate(latest_created=Max("created_at"), total_count=Count("id"))
-    latest_created = totals.get("latest_created")
-    total_count = totals.get("total_count", 0) or 0
+    wait_for_updates = request.GET.get("wait") in {"1", "true", "True"}
+
+    timeout_seconds = 25
+    requested_timeout = request.GET.get("timeout")
+    if requested_timeout:
+        try:
+            timeout_seconds = max(5, min(60, int(requested_timeout)))
+        except (TypeError, ValueError):
+            timeout_seconds = 25
+
+    deadline = timezone.now() + timedelta(seconds=timeout_seconds) if wait_for_updates else None
 
     since_raw = request.GET.get("since")
-    has_updates = False
-
-    if since_raw:
-        parsed_since = parse_datetime(since_raw)
-        if parsed_since is not None:
-            if timezone.is_naive(parsed_since):
-                parsed_since = timezone.make_aware(parsed_since)
-            if latest_created and latest_created > parsed_since:
-                has_updates = True
-
     last_count_raw = request.GET.get("count")
-    if not has_updates and last_count_raw is not None:
-        try:
-            last_count_value = int(last_count_raw)
-        except (TypeError, ValueError):
-            last_count_value = None
 
-        if last_count_value is not None and total_count != last_count_value:
-            has_updates = True
+    def evaluate_changes():
+        totals_local = appointments_qs.aggregate(
+            latest_created=Max("created_at"), total_count=Count("id")
+        )
+        latest_created_local = totals_local.get("latest_created")
+        total_count_local = totals_local.get("total_count", 0) or 0
 
-    return JsonResponse({
-        "has_updates": has_updates,
-        "latest_created": latest_created.isoformat() if latest_created else None,
-        "count": total_count,
-    })
+        has_updates_local = False
+
+        if since_raw:
+            parsed_since = parse_datetime(since_raw)
+            if parsed_since is not None:
+                if timezone.is_naive(parsed_since):
+                    parsed_since = timezone.make_aware(parsed_since)
+                if latest_created_local and latest_created_local > parsed_since:
+                    has_updates_local = True
+
+        if not has_updates_local and last_count_raw is not None:
+            try:
+                last_count_value = int(last_count_raw)
+            except (TypeError, ValueError):
+                last_count_value = None
+
+            if last_count_value is not None and total_count_local != last_count_value:
+                has_updates_local = True
+
+        return has_updates_local, latest_created_local, total_count_local
+
+    while True:
+        has_updates, latest_created, total_count = evaluate_changes()
+
+        payload = {
+            "has_updates": has_updates,
+            "latest_created": latest_created.isoformat() if latest_created else None,
+            "count": total_count,
+        }
+
+        if not wait_for_updates or has_updates or timezone.now() >= deadline:
+            return JsonResponse(payload)
+
+        time.sleep(1)
 
 
 @method_decorator(login_required, name="dispatch")

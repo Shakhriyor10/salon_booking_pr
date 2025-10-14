@@ -737,7 +737,8 @@
 {% block extra_js %}
 <script>
   let lastCount = {{ appointments|length }};
-  let updatePoll = null;
+  let shouldPollUpdates = false;
+  let pollAbortController = null;
   let isFetchingAppointments = false;
   let currentAppointmentId = null;
   let pendingActionButton = null;
@@ -784,32 +785,56 @@
     applyFilters();
     updateCalendarResetVisibility();
     startUpdatePolling();
-    checkForUpdates();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      stopUpdatePolling();
+    } else {
+      startUpdatePolling();
+    }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    stopUpdatePolling();
   });
 
   function startUpdatePolling() {
-    if (!updatePoll) {
-      updatePoll = setInterval(checkForUpdates, 10000);
+    if (shouldPollUpdates) {
+      return;
     }
+
+    shouldPollUpdates = true;
+    pollForUpdatesLoop().catch((error) => {
+      console.error("Ошибка фонового опроса", error);
+    });
   }
 
   function stopUpdatePolling() {
-    if (updatePoll) {
-      clearInterval(updatePoll);
-      updatePoll = null;
+    shouldPollUpdates = false;
+    if (pollAbortController) {
+      pollAbortController.abort();
+      pollAbortController = null;
     }
   }
 
-  async function checkForUpdates() {
-    if (!updatesCheckUrl || isFetchingAppointments) {
-      return;
-    }
+  async function pollForUpdatesLoop() {
+    while (shouldPollUpdates) {
+      if (!updatesCheckUrl || isFetchingAppointments) {
+        await delay(1000);
+        continue;
+      }
 
-    if (document.querySelector('.modal.show')) {
-      return;
-    }
+      if (document.querySelector('.modal.show')) {
+        await delay(1500);
+        continue;
+      }
 
-    try {
+      if (document.hidden) {
+        await delay(1500);
+        continue;
+      }
+
       const url = new URL(updatesCheckUrl, window.location.origin);
       if (latestCreatedAt) {
         url.searchParams.set('since', latestCreatedAt);
@@ -817,32 +842,64 @@
       if (typeof lastCount === 'number' && Number.isFinite(lastCount)) {
         url.searchParams.set('count', String(lastCount));
       }
+      url.searchParams.set('wait', '1');
+      url.searchParams.set('timeout', '25');
 
-      const response = await fetch(url.toString());
-      if (!response.ok) {
-        return;
-      }
+      const controller = new AbortController();
+      pollAbortController = controller;
 
-      const data = await response.json();
+      try {
+        const response = await fetch(url.toString(), { signal: controller.signal });
 
-      if (typeof data.latest_created === 'string') {
-        latestCreatedAt = data.latest_created;
-      }
-
-      if (typeof data.count === 'number' && Number.isFinite(data.count)) {
-        if (data.count !== lastCount) {
-          await fetchAppointments();
+        if (!shouldPollUpdates) {
           return;
         }
-        lastCount = data.count;
-      }
 
-      if (data.has_updates) {
-        await fetchAppointments();
+        if (!response.ok) {
+          await delay(3000);
+          continue;
+        }
+
+        const data = await response.json();
+
+        if (pollAbortController === controller) {
+          pollAbortController = null;
+        }
+
+        if (typeof data.latest_created === 'string') {
+          latestCreatedAt = data.latest_created;
+        } else if (data.latest_created === null) {
+          latestCreatedAt = '';
+        }
+
+        let countChanged = false;
+        if (typeof data.count === 'number' && Number.isFinite(data.count)) {
+          countChanged = data.count !== lastCount;
+          lastCount = data.count;
+        }
+
+        if (countChanged || data.has_updates) {
+          await fetchAppointments();
+        }
+      } catch (error) {
+        if (error.name === 'AbortError') {
+          if (!shouldPollUpdates) {
+            return;
+          }
+        } else {
+          console.error('Не удалось проверить обновления', error);
+        }
+        await delay(3000);
+      } finally {
+        if (pollAbortController === controller) {
+          pollAbortController = null;
+        }
       }
-    } catch (error) {
-      console.error('Не удалось проверить обновления', error);
     }
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   function initializeCalendar() {
@@ -1144,6 +1201,8 @@
 
       if (typeof data.latest_created === 'string') {
         latestCreatedAt = data.latest_created;
+      } else if (data.latest_created === null) {
+        latestCreatedAt = '';
       }
 
       renderCalendar();
