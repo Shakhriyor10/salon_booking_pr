@@ -1,123 +1,351 @@
 {% extends 'base3.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-4">📊 Отчёты по записям</h2>
+<style>
+  .reports-hero {
+    background: linear-gradient(135deg, #1f2933 0%, #4f46e5 100%);
+    color: #fff;
+    border-radius: 24px;
+    padding: 48px 32px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 45px rgba(79, 70, 229, 0.25);
+  }
 
-  <!-- 🔍 Форма выбора интервала -->
-<form method="get" class="mb-4">
-  <div class="row">
-    <div class="col-xs-6 col-sm-3">
-      <input type="date" name="start" class="form-control" value="{{ request.GET.start }}">
-    </div>
-    <div class="col-xs-6 col-sm-3">
-      <input type="date" name="end" class="form-control" value="{{ request.GET.end }}">
-    </div>
-    <div class="col-xs-12 col-sm-2">
-      <button type="submit" class="btn btn-block" style="background-color: #212529; color: #fff">Показать</button>
-    </div>
-  </div>
-</form>
+  .reports-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.25), transparent 55%);
+    z-index: 0;
+  }
 
-  {% if daily_stats %}
-    <!-- 💰 Общая касса -->
-    <div class="card mb-4 shadow-sm">
-  <div class="card-header text-white" style="background-color: #212529">
-    <h5 class="mb-0">📊 Общая статистика по мастерам</h5>
-  </div>
-  <div class="card-body">
-    <table class="table table-bordered">
-  <thead class="table-light">
-    <tr>
-      <th>Мастер</th>
-      <th>Клиентов</th>
-      <th>Выручка</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for name, data in overall_stats.items %}
-      <tr>
-        <td>{{ name }}</td>
-        <td>{{ data.clients }}</td>
-        <td>{{ data.revenue|floatformat:0 }} сум</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-<tfoot>
-  <tr class="bg-light">
-    <td><strong>Итого:</strong></td>
-    <td><strong>{{ total_clients }}</strong></td>
-    <td><strong>{{ total_revenue|floatformat:0 }} сум</strong></td>
-  </tr>
-</tfoot>
-</table>
-  </div>
-</div>
+  .reports-hero > * {
+    position: relative;
+    z-index: 1;
+  }
 
-    <!-- 📅 Отчёт по дням -->
-    {% for row in page_obj  %}
-      <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-light">
-          <h5 class="mb-0">
-            🗓 {{ row.day|date:"d.m.Y" }}
-          </h5>
+  .reports-hero h2 {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .reports-hero p {
+    max-width: 600px;
+    margin: 0 auto;
+    opacity: 0.85;
+  }
+
+  .reports-card {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
+  }
+
+  .reports-card .card-header {
+    border: none;
+    background-color: transparent;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .filter-card {
+    margin-top: -60px;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
+  }
+
+  .filter-card .form-control,
+  .filter-card .btn {
+    border-radius: 12px;
+    height: 48px;
+  }
+
+  .metric-card {
+    border-radius: 18px;
+    border: none;
+    padding: 24px;
+    color: #0f172a;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+    background-color: #fff;
+  }
+
+  .metric-card h6 {
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  .metric-card .metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0;
+  }
+
+  .accordion-button {
+    border-radius: 12px !important;
+    background-color: #f8fafc;
+    font-weight: 600;
+  }
+
+  .accordion-button:not(.collapsed) {
+    color: #312e81;
+    background-color: #e0e7ff;
+    box-shadow: none;
+  }
+
+  .accordion-item {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 15px 28px rgba(15, 23, 42, 0.08);
+    margin-bottom: 18px;
+  }
+
+  .accordion-body {
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .stylists-table th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #475569;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  }
+
+  .stylists-table td {
+    border: none;
+    padding: 0.75rem 0.5rem;
+  }
+
+  .badge-revenue {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+  }
+
+  .pagination .page-link {
+    border-radius: 12px;
+    color: #312e81;
+    border: none;
+    padding: 0.6rem 1rem;
+    margin: 0 4px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  }
+
+  .pagination .page-item.active .page-link,
+  .pagination .page-link:hover {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+  }
+
+  @media (max-width: 767.98px) {
+    .reports-hero {
+      border-radius: 18px;
+      padding: 36px 24px;
+      text-align: left;
+    }
+
+    .filter-card {
+      margin-top: -40px;
+      padding: 20px;
+    }
+
+    .filter-card .row > div {
+      margin-bottom: 12px;
+    }
+
+    .metric-card {
+      text-align: center;
+    }
+
+    .accordion-button {
+      font-size: 0.95rem;
+    }
+  }
+</style>
+
+<section class="py-4">
+  <div class="container">
+    <div class="reports-hero text-center text-md-start">
+      <h2 class="mb-3">📊 Аналитика по записям</h2>
+      <p class="mb-0">Следите за динамикой клиентов и выручки, управляйте загрузкой мастеров и находите точки роста салона в один клик.</p>
+    </div>
+
+    <div class="card filter-card border-0 bg-white position-relative">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold text-muted small">Начало периода</label>
+          <input type="date" name="start" class="form-control" value="{{ request.GET.start }}">
         </div>
-        <div class="card-body">
-          <p>👥 Клиентов: <strong>{{ row.clients }}</strong></p>
-          <p>💵 Выручка: <strong>{{ row.revenue|floatformat:0 }} сум</strong></p>
+        <div class="col-12 col-md-4">
+          <label class="form-label fw-semibold text-muted small">Конец периода</label>
+          <input type="date" name="end" class="form-control" value="{{ request.GET.end }}">
+        </div>
+        <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
+          <button type="submit" class="btn btn-dark btn-lg px-4">Показать отчёт</button>
+        </div>
+      </form>
+    </div>
 
-          <!-- 👨‍🔧 Выручка по мастерам -->
-          <table class="table table-sm table-bordered mt-3 w-auto">
-            <thead class="table-light">
-              <tr>
-                <th>Мастер</th>
-                <th>Выручка</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for name, revenue in row.stylists.items %}
-                <tr>
-                  <td>{{ name }}</td>
-                  <td>{{ revenue|floatformat:0 }} сум</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+    {% if daily_stats %}
+      <div class="row g-3 mt-0 mt-md-2">
+        <div class="col-12 col-md-4">
+          <div class="metric-card h-100">
+            <h6>Всего клиентов</h6>
+            <p class="metric-value">{{ total_clients|intcomma }}</p>
+            <span class="text-muted small">Количество завершённых визитов за выбранный период</span>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="metric-card h-100">
+            <h6>Совокупная выручка</h6>
+            <p class="metric-value">{{ total_revenue|floatformat:0|intcomma }} сум</p>
+            <span class="text-muted small">Доход салона с подтверждённых записей</span>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="metric-card h-100">
+            <h6>Средний чек</h6>
+            <p class="metric-value">
+              {% if total_clients %}
+                {% widthratio total_revenue total_clients 1 %} сум
+              {% else %}
+                —
+              {% endif %}
+            </p>
+            <span class="text-muted small">Соотношение выручки и количества клиентов</span>
+          </div>
         </div>
       </div>
 
-    {% endfor %}
-  <nav>
-  <ul class="pagination justify-content-center">
-    {% if page_obj.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ page_obj.previous_page_number }}" style="color: #212529; border-color: #212529;">« Назад</a>
-      </li>
+      <div class="card reports-card mt-4">
+        <div class="card-header px-4 pt-4">
+          <h5 class="mb-1">🔝 Эффективность мастеров</h5>
+          <p class="text-muted mb-0">Сравните загрузку команды и выручку за период</p>
+        </div>
+        <div class="card-body pt-0 px-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="bg-light">
+                <tr class="text-muted text-uppercase small">
+                  <th class="ps-4">Мастер</th>
+                  <th class="text-center">Клиенты</th>
+                  <th class="text-end pe-4">Выручка</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for name, data in overall_stats.items %}
+                  <tr class="border-top">
+                    <td class="ps-4 fw-semibold">{{ name }}</td>
+                    <td class="text-center">
+                      <span class="badge bg-light text-dark rounded-pill px-3 py-2">{{ data.clients|intcomma }}</span>
+                    </td>
+                    <td class="text-end pe-4">
+                      <span class="badge-revenue">{{ data.revenue|floatformat:0|intcomma }} сум</span>
+                    </td>
+                  </tr>
+                {% endfor %}
+                <tr class="bg-light fw-semibold">
+                  <td class="ps-4">Итого</td>
+                  <td class="text-center">{{ total_clients|intcomma }}</td>
+                  <td class="text-end pe-4">{{ total_revenue|floatformat:0|intcomma }} сум</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+          <h4 class="mb-2 mb-md-0">📅 Динамика по дням</h4>
+          <span class="text-muted small">Нажмите на дату, чтобы раскрыть подробности</span>
+        </div>
+        <div class="accordion" id="accordionReports">
+          {% for row in page_obj %}
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                  <span class="me-3">🗓 {{ row.day|date:"d.m.Y" }}</span>
+                  <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill me-2">👥 {{ row.clients|intcomma }}</span>
+                  <span class="badge bg-success bg-opacity-10 text-success rounded-pill">💵 {{ row.revenue|floatformat:0|intcomma }} сум</span>
+                </button>
+              </h2>
+              <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionReports">
+                <div class="accordion-body">
+                  <div class="row g-4 align-items-center">
+                    <div class="col-12 col-lg-4">
+                      <div class="metric-card">
+                        <h6>Итоги дня</h6>
+                        <p class="mb-2"><strong>{{ row.clients|intcomma }}</strong> клиентов</p>
+                        <p class="mb-0"><strong>{{ row.revenue|floatformat:0|intcomma }} сум</strong> выручки</p>
+                      </div>
+                    </div>
+                    <div class="col-12 col-lg-8">
+                      <div class="table-responsive">
+                        <table class="table stylists-table align-middle mb-0">
+                          <thead>
+                            <tr>
+                              <th>Мастер</th>
+                              <th class="text-end">Выручка</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for name, revenue in row.stylists.items %}
+                              <tr class="border-bottom">
+                                <td class="fw-semibold">{{ name }}</td>
+                                <td class="text-end">{{ revenue|floatformat:0|intcomma }} сум</td>
+                              </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <nav class="mt-4" aria-label="Навигация по отчётам">
+        <ul class="pagination justify-content-center flex-wrap">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">« Назад</a>
+            </li>
+          {% endif %}
+
+          {% for i in page_obj.paginator.page_range %}
+            <li class="page-item {% if i == page_obj.number %}active{% endif %}">
+              <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+            </li>
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд »</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% else %}
+      <div class="card reports-card mt-4">
+        <div class="card-body text-center py-5">
+          <h5 class="fw-semibold">Данные пока не собраны</h5>
+          <p class="text-muted mb-0">Выберите другой период или дождитесь завершённых записей, чтобы сформировать отчёт.</p>
+        </div>
+      </div>
     {% endif %}
-
-    {% for i in page_obj.paginator.page_range %}
-<li class="page-item {% if i == page_obj.number %}active{% endif %}">
-  <a class="page-link" href="?page={{ i }}"
-     {% if i == page_obj.number %} style="background-color: #212529; color: white; border-color: #212529;"
-     {% else %}
-     style="color: #212529; border-color: #212529;"
-     {% endif %}>
-    {{ i }}
-  </a>
-</li>
-    {% endfor %}
-
-    {% if page_obj.has_next %}
-      <li class="page-item" >
-        <a class="page-link" href="?page={{ page_obj.next_page_number }}" style="color: #212529; border-color: #212529;">Вперёд »</a>
-      </li>
-    {% endif %}
-  </ul>
-</nav>
-  {% else %}
-
-    <div class="alert alert-warning">Нет выполненных записей за выбранный период.</div>
-  {% endif %}
-</div>
+  </div>
+</section>
 {% endblock %}
