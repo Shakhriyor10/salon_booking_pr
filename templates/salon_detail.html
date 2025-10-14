@@ -1467,11 +1467,11 @@
                 {% endfor %}
               </div>
             </div>
-            <input type="hidden" name="rating" id="rating-value" value="{{ review_form['rating'].value|default_if_none:'' }}" required>
+            <input type="hidden" name="rating" id="rating-value" value="{{ review_form.rating.value|default_if_none:'' }}" required>
           </div>
           <div class="mb-3">
             <label for="id_comment" class="form-label">Комментарий</label>
-            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{{ review_form['comment'].value|default_if_none:'' }}</textarea>
+            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{{ review_form.comment.value|default_if_none:'' }}</textarea>
           </div>
           {% if user_review %}
             <button type="submit" class="btn btn-theme" id="review-submit-button" data-create-text="Отправить отзыв" data-update-text="Обновить отзыв">Обновить отзыв</button>
