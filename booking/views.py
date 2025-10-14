@@ -30,6 +30,7 @@ from django.template.context_processors import csrf
 from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
+from calendar import monthrange
 from collections import defaultdict
 import json
 from decimal import Decimal, InvalidOperation
@@ -50,6 +51,15 @@ from django.db.models.deletion import ProtectedError
 from users.forms import ProfileUpdateForm
 
 PHONE_INPUT_RE = re.compile(r'^\d{2}-\d{3}-\d{2}-\d{2}$')
+
+
+def add_months(source_date, months):
+    """Return a date shifted forward by the given number of months."""
+    month = source_date.month - 1 + months
+    year = source_date.year + month // 12
+    month = month % 12 + 1
+    day = min(source_date.day, monthrange(year, month)[1])
+    return date(year, month, day)
 
 
 def normalize_uzbek_phone(phone_value: str) -> str:
@@ -592,7 +602,7 @@ def service_booking(request):
     salon = get_object_or_404(Salon, id=salon_id)
 
     today = now().date()
-    max_date = today + timedelta(days=14)
+    max_date = add_months(today, 2)
     date_str = request.GET.get('date')
     find_next_requested = request.GET.get('find_next') == '1'
     next_slot_not_found = False
