@@ -1,62 +1,456 @@
 {% extends 'base3.html' %}
-{% load static %}
+{% load static humanize %}
+
 {% block content %}
+<style>
+  :root {
+    --stylist-primary: #6366f1;
+    --stylist-dark: #0f172a;
+    --stylist-soft: #eef2ff;
+    --stylist-muted: #64748b;
+  }
 
-<div class="container py-4">
-    <h2 class="mb-4">📊 Отчёт мастера</h2>
+  .stylist-shell {
+    display: grid;
+    gap: 32px;
+  }
 
-    <form method="get" class="row g-3 mb-4">
-        <div class="col-md-4">
-            <label for="start" class="form-label">С даты:</label>
-            <input type="date" id="start" name="start_date" value="{{ start_date }}" class="form-control">
+  .stylist-hero {
+    position: relative;
+    border-radius: 28px;
+    padding: 48px clamp(24px, 4vw, 48px);
+    color: #fff;
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 50%),
+      linear-gradient(135deg, #0f172a 0%, #6366f1 45%, #8b5cf6 100%);
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.35);
+  }
+
+  .stylist-hero::before,
+  .stylist-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(0.5px);
+    opacity: 0.35;
+  }
+
+  .stylist-hero::before {
+    width: 240px;
+    height: 240px;
+    background: rgba(255, 255, 255, 0.18);
+    bottom: -90px;
+    left: -70px;
+  }
+
+  .stylist-hero::after {
+    width: 280px;
+    height: 280px;
+    background: rgba(15, 23, 42, 0.2);
+    top: -120px;
+    right: -60px;
+  }
+
+  .stylist-hero > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .stylist-hero h2 {
+    font-size: clamp(1.75rem, 3vw, 2.5rem);
+    font-weight: 700;
+    letter-spacing: 0.6px;
+  }
+
+  .stylist-hero p {
+    max-width: 640px;
+    margin-bottom: 0;
+    opacity: 0.9;
+  }
+
+  .stylist-hero .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.85;
+  }
+
+  .filter-card {
+    margin-top: -70px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 22px;
+    border: none;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+    backdrop-filter: blur(6px);
+  }
+
+  .filter-card label {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: 0.75rem;
+    color: var(--stylist-muted);
+  }
+
+  .filter-card .form-control {
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 0.65rem 0.9rem;
+    font-weight: 500;
+  }
+
+  .filter-card .btn {
+    border-radius: 14px;
+    padding: 0.75rem 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .metric-grid {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .metric-card {
+    border-radius: 20px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(238, 242, 255, 0.85));
+    box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .metric-card h6 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--stylist-muted);
+    margin-bottom: 0;
+  }
+
+  .metric-card .metric-value {
+    font-size: clamp(1.6rem, 3vw, 2.1rem);
+    font-weight: 700;
+    color: var(--stylist-dark);
+  }
+
+  .badge-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem;
+    background: rgba(99, 102, 241, 0.16);
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+
+  .badge-chip.bg-light {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--stylist-primary);
+    box-shadow: none;
+  }
+
+  .reports-card {
+    border: none;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  }
+
+  .reports-card .card-header {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.02));
+    border: none;
+  }
+
+  .reports-card .card-header h5 {
+    font-weight: 700;
+  }
+
+  .reports-table {
+    min-width: 100%;
+  }
+
+  .reports-table thead th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--stylist-muted);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    background-color: rgba(99, 102, 241, 0.08);
+  }
+
+  .reports-table tbody tr td {
+    padding-block: 0.95rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    font-weight: 500;
+  }
+
+  .empty-state {
+    border-radius: 22px;
+    padding: 48px clamp(24px, 4vw, 40px);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(148, 163, 184, 0.12));
+    text-align: center;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+  }
+
+  .empty-state h5 {
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .empty-state p {
+    margin-bottom: 0;
+    color: var(--stylist-muted);
+  }
+
+  .table-mobile-label {
+    display: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--stylist-muted);
+  }
+
+  @media (max-width: 991.98px) {
+    .stylist-shell {
+      gap: 24px;
+    }
+
+    .stylist-hero {
+      border-radius: 24px;
+    }
+
+    .filter-card {
+      margin-top: -50px;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .stylist-hero {
+      padding: 36px 28px;
+      text-align: left;
+    }
+
+    .stylist-hero p {
+      font-size: 0.95rem;
+    }
+
+    .filter-card {
+      margin-top: -42px;
+      padding: 22px 20px;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.18);
+    }
+
+    .filter-card .row > div {
+      margin-bottom: 12px;
+    }
+
+    .filter-card .btn {
+      width: 100%;
+    }
+
+    .metric-grid {
+      display: flex;
+      overflow-x: auto;
+      gap: 16px;
+      padding: 4px 4px 12px;
+      margin-inline: -12px;
+      scroll-snap-type: x mandatory;
+    }
+
+    .metric-card {
+      min-width: 220px;
+      scroll-snap-align: start;
+      box-shadow: 0 16px 35px rgba(15, 23, 42, 0.12);
+    }
+
+    .reports-table thead {
+      display: none;
+    }
+
+    .reports-table tbody tr {
+      display: grid;
+      gap: 16px;
+      padding: 18px 20px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      border-radius: 18px;
+      margin-bottom: 16px;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+    }
+
+    .reports-table tbody tr td {
+      border: none;
+      padding: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .table-mobile-label {
+      display: block;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .stylist-shell {
+      gap: 20px;
+    }
+
+    .stylist-hero {
+      border-radius: 22px;
+      padding: 32px 24px;
+    }
+
+    .stylist-hero h2 {
+      font-size: 1.8rem;
+    }
+
+    .filter-card {
+      margin-top: -36px;
+      padding: 20px 18px;
+    }
+
+    .reports-card {
+      border-radius: 20px;
+    }
+
+    .badge-chip {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.75rem;
+    }
+  }
+</style>
+
+<section class="py-4">
+  <div class="container stylist-shell">
+    <header class="stylist-hero text-center text-md-start">
+      <span class="eyebrow">📈 Личный прогресс</span>
+      <h2 class="mb-3">{{ stylist_name }}, ваш отчёт готов</h2>
+      <p class="mb-4">Следите за динамикой клиентов и выручкой, анализируйте нагрузку по дням и вовремя отмечайте точки роста сервиса.</p>
+      {% if period_label %}
+        <div class="badge-chip">Период: {{ period_label }}</div>
+      {% endif %}
+    </header>
+
+    <div class="card filter-card border-0 bg-white position-relative">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          <label for="start" class="form-label fw-semibold small">Начало периода</label>
+          <input type="date" id="start" name="start_date" class="form-control" value="{{ start_date }}">
         </div>
-        <div class="col-md-4">
-            <label for="end" class="form-label">По дату:</label>
-            <input type="date" id="end" name="end_date" value="{{ end_date }}" class="form-control">
+        <div class="col-12 col-md-4">
+          <label for="end" class="form-label fw-semibold small">Конец периода</label>
+          <input type="date" id="end" name="end_date" class="form-control" value="{{ end_date }}">
         </div>
-        <div class="col-md-4 d-flex align-items-end">
-            <button type="submit" class="btn btn-dark w-100">Показать</button>
+        <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end gap-2">
+          <button type="submit" class="btn btn-dark btn-lg px-4">Показать отчёт</button>
+          {% if start_date or end_date %}
+            <a href="{% url 'stylist_reports' %}" class="btn btn-outline-secondary btn-lg px-4">Сбросить</a>
+          {% endif %}
         </div>
-    </form>
+      </form>
+    </div>
+
+    {% if start_date and end_date %}
+      <div class="metric-grid">
+        <article class="metric-card">
+          <h6>Клиентов</h6>
+          <p class="metric-value mb-0">{{ total_clients|intcomma }}</p>
+          <span class="text-muted small">Завершённых визитов за период</span>
+        </article>
+        <article class="metric-card">
+          <h6>Выручка</h6>
+          <p class="metric-value mb-0">{{ total_cash|floatformat:0|intcomma }} сум</p>
+          <span class="text-muted small">С учётом всех выполненных услуг</span>
+        </article>
+        <article class="metric-card">
+          <h6>Средний чек</h6>
+          <p class="metric-value mb-0">{{ average_ticket|floatformat:0|intcomma }} сум</p>
+          <span class="text-muted small">Доход с одной записи</span>
+        </article>
+        <article class="metric-card">
+          <h6>Средняя выручка в день</h6>
+          <p class="metric-value mb-0">{{ average_day_revenue|floatformat:0|intcomma }} сум</p>
+          <span class="text-muted small">За {{ worked_days|default:0 }} рабочих дн.</span>
+        </article>
+      </div>
+    {% endif %}
 
     {% if report_appointments %}
-        <div class="alert alert-success">
-            👤 Клиентов за период: <strong>{{ total_clients }}</strong><br>
-            💰 Общая сумма: <strong>{{ total_cash }} сум</strong>
+      <div class="card reports-card">
+        <div class="card-header px-4 py-4">
+          <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+              <h5 class="mb-1">Выполненные записи</h5>
+              <p class="mb-0 text-muted">Подробности по каждой услуге и клиенту за выбранный период.</p>
+            </div>
+            <div class="badge-chip bg-light text-primary">
+              {{ report_appointments|length }} визита
+            </div>
+          </div>
         </div>
-
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Дата и время</th>
-                        <th>Услуга</th>
-                        <th>Клиент</th>
-                        <th>Цена</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for a in report_appointments %}
-                    <tr>
-                        <td>{{ a.start_time|date:"Y-m-d H:i" }}</td>
-                        <td>
-                            {% for s in a.services.all %}
-                            {{ s.stylist_service.salon_service.service.name }}{% if not forloop.last %}, {% endif %}
-                            {% empty %}
-                            Нет услуг
-                            {% endfor %}
-                        </td>
-                        <td>{{ a.guest_name }}</td>
-                        <td>{{ a.get_total_price }} сум</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="table-responsive px-2 px-md-4 py-3">
+          <table class="table reports-table align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">Дата и время</th>
+                <th scope="col">Услуги</th>
+                <th scope="col">Клиент</th>
+                <th scope="col" class="text-end">Итого</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appointment in report_appointments %}
+                <tr>
+                  <td data-label="Дата и время">
+                    <span class="table-mobile-label">Дата и время</span>
+                    {{ appointment.start_time|date:"d MMMM, HH:mm" }}
+                  </td>
+                  <td data-label="Услуги">
+                    <span class="table-mobile-label">Услуги</span>
+                    <div class="d-flex flex-wrap gap-2">
+                      {% for service in appointment.services.all %}
+                        <span class="badge rounded-pill bg-light text-dark border">{{ service.stylist_service.salon_service.service.name }}</span>
+                      {% empty %}
+                        <span class="text-muted">Нет услуг</span>
+                      {% endfor %}
+                    </div>
+                  </td>
+                  <td data-label="Клиент">
+                    <span class="table-mobile-label">Клиент</span>
+                    {{ appointment.guest_name|default:"—" }}
+                  </td>
+                  <td class="text-end" data-label="Итого">
+                    <span class="table-mobile-label">Итого</span>
+                    <strong>{{ appointment.get_total_price|floatformat:0|intcomma }} сум</strong>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </div>
     {% elif start_date and end_date %}
-        <div class="alert alert-warning">Нет выполненных записей за выбранный период.</div>
+      <div class="empty-state">
+        <h5>Записей за период не найдено</h5>
+        <p>Попробуйте выбрать другие даты или пригласите клиентов с помощью акций и спецпредложений.</p>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <h5>Выберите период для отчёта</h5>
+        <p>Укажите даты в фильтре выше, чтобы увидеть статистику по вашим клиентам и услугам.</p>
+      </div>
     {% endif %}
-</div>
-
-
+  </div>
+</section>
 {% endblock %}

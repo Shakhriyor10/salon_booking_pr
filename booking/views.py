@@ -1934,6 +1934,16 @@ def stylist_reports(request):
     report_appointments = []
     total_cash = 0
     total_clients = 0
+    average_ticket = 0
+    average_day_revenue = 0
+    worked_days = 0
+    period_label = None
+
+    stylist_name = (
+        stylist.user.get_full_name()
+        if hasattr(stylist, "user") and stylist.user.get_full_name()
+        else getattr(stylist, "user", request.user).get_username()
+    )
 
     if start_date and end_date:
         try:
@@ -1956,9 +1966,18 @@ def stylist_reports(request):
             )
 
             total_clients = report_appointments.count()
+            period_label = f"{start.strftime('%d.%m.%Y')} — {end.strftime('%d.%m.%Y')}"
 
             for a in report_appointments:
                 total_cash += a.get_total_price()
+
+            worked_days = len({a.start_time.date() for a in report_appointments})
+
+            if total_clients:
+                average_ticket = total_cash / total_clients
+
+            if worked_days:
+                average_day_revenue = total_cash / worked_days
 
         except ValueError:
             pass
@@ -1967,8 +1986,13 @@ def stylist_reports(request):
         "report_appointments": report_appointments,
         "total_cash": total_cash,
         "total_clients": total_clients,
+        "average_ticket": average_ticket,
+        "average_day_revenue": average_day_revenue,
+        "worked_days": worked_days,
         "start_date": start_date,
         "end_date": end_date,
+        "period_label": period_label,
+        "stylist_name": stylist_name,
     }
 
     return render(request, "stylist_reports.html", context)
