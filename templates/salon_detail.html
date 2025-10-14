@@ -1524,7 +1524,13 @@
       {% if reviews %}
         <div class="review-list" id="review-list">
           {% for review in reviews %}
-            {% include 'partials/review_item.html' with review=review is_hidden=forloop.counter > 5 can_delete=request.user.is_authenticated and review.user_id == request.user.id %}
+            {% with can_delete=request.user.is_authenticated and review.user_id == request.user.id %}
+              {% if forloop.counter > 5 %}
+                {% include 'partials/review_item.html' with review=review is_hidden=1 can_delete=can_delete %}
+              {% else %}
+                {% include 'partials/review_item.html' with review=review is_hidden=0 can_delete=can_delete %}
+              {% endif %}
+            {% endwith %}
           {% endfor %}
         </div>
         <p class="reviews-empty d-none" id="no-reviews-message">Отзывов пока нет. Будьте первым!</p>
