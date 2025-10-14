@@ -1446,12 +1446,17 @@
         <div class="review-form-card__header">
           <div>
             <h5 class="mb-1">Поделитесь впечатлением</h5>
-            <p class="mb-0">Оцените сервис и расскажите о вашем визите.</p>
+            {% if user_review %}
+              <p class="mb-0">Вы уже оставили отзыв — вы можете обновить его или удалить.</p>
+            {% else %}
+              <p class="mb-0">Оцените сервис и расскажите о вашем визите.</p>
+            {% endif %}
           </div>
           <i class="bi bi-chat-heart"></i>
         </div>
         <form method="post" id="review-form" class="review-form">
           {% csrf_token %}
+          <input type="hidden" name="review_id" id="review-id-input" value="{% if user_review %}{{ user_review.id }}{% endif %}">
           <div class="mb-3">
             <label class="form-label d-block">Ваша оценка</label>
             <div class="rating-select">
@@ -1462,20 +1467,32 @@
                 {% endfor %}
               </div>
             </div>
-            <input type="hidden" name="rating" id="rating-value" required>
+            <input type="hidden" name="rating" id="rating-value" value="{{ review_form['rating'].value|default_if_none:'' }}" required>
           </div>
           <div class="mb-3">
             <label for="id_comment" class="form-label">Комментарий</label>
-            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
+            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{{ review_form['comment'].value|default_if_none:'' }}</textarea>
           </div>
-          <button type="submit" class="btn btn-theme">Отправить отзыв</button>
+          {% if user_review %}
+            <button type="submit" class="btn btn-theme" id="review-submit-button" data-create-text="Отправить отзыв" data-update-text="Обновить отзыв">Обновить отзыв</button>
+          {% else %}
+            <button type="submit" class="btn btn-theme" id="review-submit-button" data-create-text="Отправить отзыв" data-update-text="Обновить отзыв">Отправить отзыв</button>
+          {% endif %}
         </form>
+        {% if user_review %}
+          <form method="post" class="mt-3">
+            {% csrf_token %}
+            <input type="hidden" name="review_id" value="{{ user_review.id }}">
+            <input type="hidden" name="action" value="delete">
+            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить ваш отзыв?');">Удалить отзыв</button>
+          </form>
+        {% endif %}
       </div>
 
       {% if reviews %}
         <div class="review-list" id="review-list">
           {% for review in reviews %}
-            <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}">
+            <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}" data-review-id="{{ review.id }}">
               <div class="review-avatar">{{ review.user.username|first|upper }}</div>
               <div>
                 <div class="review-meta">
@@ -1493,6 +1510,21 @@
                 </div>
                 {% if review.comment %}
                   <p class="review-comment">{{ review.comment }}</p>
+                {% endif %}
+                {% if request.user.is_authenticated and review.user_id == request.user.id %}
+                  <div class="d-flex gap-2 mt-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary btn-sm review-edit-btn" data-review-id="{{ review.id }}" data-rating="{{ review.rating }}">
+                      <i class="bi bi-pencil"></i> Изменить
+                    </button>
+                    <form method="post" class="d-inline">
+                      {% csrf_token %}
+                      <input type="hidden" name="review_id" value="{{ review.id }}">
+                      <input type="hidden" name="action" value="delete">
+                      <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить ваш отзыв?');">
+                        <i class="bi bi-trash"></i> Удалить
+                      </button>
+                    </form>
+                  </div>
                 {% endif %}
               </div>
             </article>
@@ -1552,23 +1584,103 @@
   const stars = document.querySelectorAll('#star-rating i');
   const ratingInput = document.getElementById('rating-value');
   const reviewForm = document.getElementById('review-form');
+  const commentInput = document.getElementById('id_comment');
+  const reviewIdInput = document.getElementById('review-id-input');
+  const submitButton = document.getElementById('review-submit-button');
 
-  stars.forEach((star, idx) => {
-    star.addEventListener('click', () => {
-      ratingInput.value = idx + 1;
-      stars.forEach((s, i) => {
-        s.classList.toggle('bi-star-fill', i <= idx);
-        s.classList.toggle('bi-star', i > idx);
+  if (reviewForm) {
+    const updateButtonVisual = (value) => {
+      const numericValue = parseInt(value, 10) || 0;
+      stars.forEach((star, index) => {
+        const shouldFill = index < numericValue;
+        star.classList.toggle('bi-star-fill', shouldFill);
+        star.classList.toggle('bi-star', !shouldFill);
+      });
+    };
+
+    const createText = submitButton && submitButton.dataset && submitButton.dataset.createText
+      ? submitButton.dataset.createText
+      : 'Отправить отзыв';
+    const updateText = submitButton && submitButton.dataset && submitButton.dataset.updateText
+      ? submitButton.dataset.updateText
+      : 'Обновить отзыв';
+
+    if (ratingInput && ratingInput.value) {
+      updateButtonVisual(ratingInput.value);
+    }
+
+    if (stars.length) {
+      stars.forEach((star) => {
+        star.addEventListener('click', () => {
+          const value = star.dataset.value;
+          if (ratingInput) {
+            ratingInput.value = value;
+          }
+          updateButtonVisual(value);
+          if (submitButton) {
+            submitButton.textContent = updateText;
+          }
+        });
+      });
+    }
+
+    document.querySelectorAll('.review-edit-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const { rating, reviewId } = button.dataset;
+        let comment = '';
+        const reviewItem = button.closest('.review-item');
+        if (reviewItem) {
+          const commentElement = reviewItem.querySelector('.review-comment');
+          if (commentElement) {
+            comment = commentElement.textContent.trim();
+          }
+        }
+        if (ratingInput) {
+          ratingInput.value = rating || '';
+          updateButtonVisual(rating);
+        }
+        if (commentInput) {
+          commentInput.value = comment || '';
+        }
+        if (reviewIdInput) {
+          reviewIdInput.value = reviewId || '';
+        }
+        if (submitButton) {
+          submitButton.textContent = updateText;
+        }
+        if (typeof reviewForm.scrollIntoView === 'function') {
+          reviewForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        if (commentInput && typeof commentInput.focus === 'function') {
+          try {
+            commentInput.focus({ preventScroll: true });
+          } catch (err) {
+            commentInput.focus();
+          }
+        }
       });
     });
-  });
 
-  reviewForm.addEventListener('submit', (e) => {
-    if (!ratingInput.value) {
-      e.preventDefault();
-      alert('Пожалуйста, выберите количество звёзд.');
-    }
-  });
+    reviewForm.addEventListener('submit', (e) => {
+      if (ratingInput && !ratingInput.value) {
+        e.preventDefault();
+        alert('Пожалуйста, выберите количество звёзд.');
+      }
+    });
+
+    reviewForm.addEventListener('reset', () => {
+      if (ratingInput) {
+        ratingInput.value = '';
+      }
+      updateButtonVisual(0);
+      if (submitButton) {
+        submitButton.textContent = createText;
+      }
+      if (reviewIdInput) {
+        reviewIdInput.value = '';
+      }
+    });
+  }
 </script>
 <script src="{% static 'js/cart.js' %}"></script>
 <script>

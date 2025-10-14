@@ -245,7 +245,16 @@ class SalonDetailView(DetailView):
             'empty': range(empty_stars)
         }
         context['reviews'] = salon.reviews.order_by('-created_at')
-        context['review_form'] = ReviewForm()
+        user_review = None
+        if self.request.user.is_authenticated:
+            user_review = salon.reviews.filter(user=self.request.user).first()
+
+        if user_review:
+            context['review_form'] = ReviewForm(instance=user_review)
+        else:
+            context['review_form'] = ReviewForm()
+
+        context['user_review'] = user_review
         context['average_rating'] = rating
         context['categories'] = categories
         context['uncategorized_services'] = uncategorized_services
@@ -308,7 +317,31 @@ class SalonDetailView(DetailView):
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")  # Перенаправление на логин
 
-        form = ReviewForm(request.POST)
+        action = request.POST.get('action')
+        review_id = request.POST.get('review_id')
+
+        if action == 'delete' and review_id:
+            review = get_object_or_404(
+                self.object.reviews,
+                pk=review_id,
+                user=request.user,
+            )
+            review.delete()
+            return redirect('salon_detail', pk=self.object.pk, slug=self.object.slug)
+
+        form_instance = None
+        if review_id:
+            form_instance = get_object_or_404(
+                self.object.reviews,
+                pk=review_id,
+                user=request.user,
+            )
+        else:
+            existing_review = self.object.reviews.filter(user=request.user).first()
+            if existing_review:
+                form_instance = existing_review
+
+        form = ReviewForm(request.POST, instance=form_instance)
         if form.is_valid():
             review = form.save(commit=False)
             review.salon = self.object
