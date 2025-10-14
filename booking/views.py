@@ -31,6 +31,7 @@ from django.db.models import Count, Sum, DecimalField, Prefetch, F
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
 from collections import defaultdict
+import json
 from decimal import Decimal, InvalidOperation
 import datetime as dt
 from django.views import View
@@ -924,10 +925,37 @@ def group_appointments_by_date(appointments):
         grouped[date_key].append(a)
     return dict(sorted(grouped.items(), reverse=True))  # свежие даты сверху
 
+
+def build_calendar_summary(appointments):
+    summary = defaultdict(lambda: {
+        Appointment.Status.PENDING: 0,
+        Appointment.Status.CONFIRMED: 0,
+        Appointment.Status.DONE: 0,
+    })
+
+    for appointment in appointments:
+        date_key = appointment.start_time.date().isoformat()
+        if appointment.status in {
+            Appointment.Status.PENDING,
+            Appointment.Status.CONFIRMED,
+            Appointment.Status.DONE,
+        }:
+            summary[date_key][appointment.status] += 1
+
+    formatted = {}
+    for date_key, counts in summary.items():
+        # убираем статусы без записей, чтобы не загромождать JSON
+        formatted[date_key] = {
+            status: count for status, count in counts.items() if count
+        }
+
+    return formatted
+
 @login_required
 def dashboard_view(request):
     today = now().date()
     yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
     user = request.user
     profile = getattr(user, 'profile', None)
 
@@ -936,7 +964,7 @@ def dashboard_view(request):
         return HttpResponseForbidden("Недостаточно прав для доступа к дашборду.")
 
     # 🔽 Базовый queryset
-    appointments = (
+    appointments_qs = (
         Appointment.objects
         .select_related("customer", "stylist")  # оставляем только существующие связи
         .filter(start_time__date__gte=yesterday)
@@ -945,11 +973,18 @@ def dashboard_view(request):
 
     # 🔽 Фильтрация по салону
     if not user.is_superuser:
-        appointments = appointments.filter(stylist__salon=profile.salon)
+        appointments_qs = appointments_qs.filter(stylist__salon=profile.salon)
+
+    appointments = list(appointments_qs)
+    grouped_appointments = group_appointments_by_date(appointments)
 
     # 📊 Группировка и расчёты
-    grouped_appointments = group_appointments_by_date(appointments)
-    cash_total = sum(a.get_total_price() for a in appointments if a.status == Appointment.Status.DONE)
+    visible_start = yesterday
+    visible_end = tomorrow
+
+    cash_total = sum(
+        a.get_total_price() for a in appointments if a.status == Appointment.Status.DONE
+    )
 
     cash_today = sum(
         a.get_total_price()
@@ -957,11 +992,22 @@ def dashboard_view(request):
         if a.status == Appointment.Status.DONE and a.start_time.date() == today
     )
 
+    default_visible_dates = [
+        visible_start.isoformat(),
+        today.isoformat(),
+        visible_end.isoformat(),
+    ]
+
+    calendar_summary = build_calendar_summary(appointments)
+
     context = {
         "grouped_appointments": grouped_appointments,
+        "appointments": appointments,
         "cash_total": cash_total,
         "cash_today": cash_today,
         "today": today,
+        "default_visible_dates_json": json.dumps(default_visible_dates),
+        "calendar_summary_json": json.dumps(calendar_summary),
     }
 
     return render(request, "dashboard.html", context)
@@ -972,11 +1018,12 @@ def dashboard_view(request):
 def dashboard_ajax(request):
     today = now().date()
     yesterday = today - timedelta(days=1)
+    tomorrow = today + timedelta(days=1)
     user = request.user
     profile = getattr(user, 'profile', None)
 
     # 🔒 Фильтрация по салону, как в основном dashboard_view
-    appointments = (
+    appointments_qs = (
         Appointment.objects
         .select_related("customer", "stylist")  # оставляем только существующие связи
         .filter(start_time__date__gte=yesterday)
@@ -985,11 +1032,18 @@ def dashboard_ajax(request):
 
     if not user.is_superuser:
         if profile and profile.is_salon_admin and profile.salon:
-            appointments = appointments.filter(stylist__salon=profile.salon)
+            appointments_qs = appointments_qs.filter(stylist__salon=profile.salon)
         else:
             return JsonResponse({"html": ""})  # не показываем ничего
 
+    appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
+    default_visible_dates = [
+        yesterday.isoformat(),
+        today.isoformat(),
+        tomorrow.isoformat(),
+    ]
+    calendar_summary = build_calendar_summary(appointments)
 
     context = {
         "grouped_appointments": grouped_appointments,
@@ -997,7 +1051,12 @@ def dashboard_ajax(request):
     }
 
     html = render_to_string("partials/appointments_table_rows.html", context)
-    return JsonResponse({"html": html})
+    return JsonResponse({
+        "html": html,
+        "calendar": calendar_summary,
+        "default_visible_dates": default_visible_dates,
+        "today": today.isoformat(),
+    })
 
 
 @method_decorator(login_required, name="dispatch")

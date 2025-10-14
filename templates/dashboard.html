@@ -137,6 +137,204 @@
     margin-top: 2rem;
   }
 
+  .calendar-card {
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 1.5rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .calendar-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .calendar-nav-btn {
+    border: none;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .calendar-nav-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(99, 102, 241, 0.22);
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.35rem;
+  }
+
+  .calendar-placeholder {
+    visibility: hidden;
+  }
+
+  .calendar-weekdays {
+    margin-bottom: 0.75rem;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #6b7280;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+  }
+
+  .calendar-weekday {
+    text-align: center;
+  }
+
+  .calendar-grid {
+    min-height: 220px;
+  }
+
+  .calendar-day {
+    position: relative;
+    border: none;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 0.65rem 0.45rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    color: #111827;
+    font-weight: 600;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .calendar-day:hover {
+    transform: translateY(-2px);
+    background: #eef2ff;
+    box-shadow: 0 12px 22px rgba(99, 102, 241, 0.18);
+  }
+
+  .calendar-day.is-today {
+    border: 1px solid rgba(79, 70, 229, 0.5);
+  }
+
+  .calendar-day.is-selected {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #ffffff;
+    box-shadow: 0 16px 35px rgba(99, 102, 241, 0.35);
+  }
+
+  .calendar-day.is-default:not(.is-selected) {
+    background: rgba(129, 140, 248, 0.14);
+    color: #3730a3;
+  }
+
+  .calendar-day:disabled {
+    background: transparent;
+    color: rgba(148, 163, 184, 0.6);
+    cursor: default;
+    box-shadow: none;
+  }
+
+  .calendar-day .day-number {
+    font-size: 1rem;
+  }
+
+  .calendar-day .status-dots {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .status-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.18);
+  }
+
+  .status-dot--pending {
+    background: #ef4444;
+  }
+
+  .status-dot--confirmed {
+    background: #f97316;
+  }
+
+  .status-dot--done {
+    background: #22c55e;
+  }
+
+  .calendar-day--has-new .status-dot--pending {
+    animation: pulse 1.8s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+    }
+    70% {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+
+  .calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.5rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #4b5563;
+  }
+
+  .calendar-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .calendar-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .calendar-legend-dot.pending {
+    background: #ef4444;
+  }
+
+  .calendar-legend-dot.confirmed {
+    background: #f97316;
+  }
+
+  .calendar-legend-dot.done {
+    background: #22c55e;
+  }
+
   .appointments-day {
     border-radius: 22px;
     border: none;
@@ -314,6 +512,10 @@
     .status-filter .btn {
       flex: 1 1 calc(50% - 0.5rem);
     }
+
+    .calendar-grid {
+      min-height: 200px;
+    }
   }
 
   @media (max-width: 767.98px) {
@@ -328,6 +530,19 @@
 
     .summary-card {
       padding: 1.25rem;
+    }
+
+    .calendar-card {
+      padding: 1.25rem;
+    }
+
+    .calendar-day {
+      padding: 0.55rem 0.35rem;
+      border-radius: 14px;
+    }
+
+    .calendar-day .day-number {
+      font-size: 0.95rem;
     }
 
     .appointments-table {
@@ -388,6 +603,16 @@
     .summary-card .summary-value {
       font-size: 1.6rem;
     }
+
+    .calendar-card {
+      padding: 1rem 1.1rem;
+    }
+
+    .status-dot {
+      width: 18px;
+      height: 18px;
+      font-size: 0.7rem;
+    }
   }
 </style>
 
@@ -437,6 +662,46 @@
 
   <div class="card shadow-sm border-0 dashboard-card mt-4">
     <div class="card-body p-4 p-lg-5">
+      <div class="calendar-card mb-4" id="dashboardCalendar">
+        <div class="calendar-header">
+          <button class="calendar-nav-btn" type="button" data-calendar-prev>
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <div>
+            <div class="calendar-title" data-calendar-title></div>
+            <div class="text-muted small">Выберите день, чтобы увидеть записи именно за эту дату.</div>
+          </div>
+          <button class="calendar-nav-btn" type="button" data-calendar-next>
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+        <div class="calendar-weekdays">
+          <div class="calendar-weekday">Пн</div>
+          <div class="calendar-weekday">Вт</div>
+          <div class="calendar-weekday">Ср</div>
+          <div class="calendar-weekday">Чт</div>
+          <div class="calendar-weekday">Пт</div>
+          <div class="calendar-weekday">Сб</div>
+          <div class="calendar-weekday">Вс</div>
+        </div>
+        <div class="calendar-grid" data-calendar-grid></div>
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mt-4">
+          <div class="calendar-legend">
+            <span class="calendar-legend-item"><span class="calendar-legend-dot pending"></span> Новые заявки</span>
+            <span class="calendar-legend-item"><span class="calendar-legend-dot confirmed"></span> Подтвержденные</span>
+            <span class="calendar-legend-item"><span class="calendar-legend-dot done"></span> Выполненные</span>
+          </div>
+          <button type="button" class="btn btn-outline-secondary btn-sm d-none" id="calendarResetBtn">
+            Показать 3 ближайших дня
+          </button>
+        </div>
+      </div>
+
+      <div id="dateFilterEmpty" class="alert alert-light border rounded-4 shadow-sm mt-3 d-none">
+        <div class="fw-semibold mb-1">В выбранные дни записей нет</div>
+        <div class="text-muted">Попробуйте выбрать другую дату или вернитесь к ближайшим дням.</div>
+      </div>
+
       <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3 gap-lg-4">
         <div class="search-field flex-grow-1 w-100">
           <i class="bi bi-search search-icon"></i>
@@ -476,9 +741,45 @@
   let currentAppointmentId = null;
   let pendingActionButton = null;
   let activeStatusFilter = "all";
+  let defaultVisibleDatesArray = JSON.parse('{{ default_visible_dates_json|escapejs }}');
+  if (!Array.isArray(defaultVisibleDatesArray)) {
+    defaultVisibleDatesArray = [];
+  }
+
+  let calendarData = JSON.parse('{{ calendar_summary_json|escapejs }}');
+  if (!calendarData || typeof calendarData !== "object") {
+    calendarData = {};
+  }
+
+  let visibleDates = new Set(defaultVisibleDatesArray);
+  let activeCalendarDate = null;
+  let todayDate = "{{ today|date:'Y-m-d' }}";
+  const monthNames = [
+    "Январь",
+    "Февраль",
+    "Март",
+    "Апрель",
+    "Май",
+    "Июнь",
+    "Июль",
+    "Август",
+    "Сентябрь",
+    "Октябрь",
+    "Ноябрь",
+    "Декабрь",
+  ];
+
+  let baseToday = createDateFromString(todayDate);
+  const calendarState = {
+    currentMonth: createMonthStart(todayDate),
+  };
 
   document.addEventListener("DOMContentLoaded", () => {
+    initializeCalendar();
     attachDashboardControls();
+    updateDateVisibility();
+    applyFilters();
+    updateCalendarResetVisibility();
     startAutoRefresh();
   });
 
@@ -493,6 +794,239 @@
       clearInterval(autoRefresh);
       autoRefresh = null;
     }
+  }
+
+  function initializeCalendar() {
+    const prevButton = document.querySelector('[data-calendar-prev]');
+    const nextButton = document.querySelector('[data-calendar-next]');
+
+    if (prevButton && !prevButton.dataset.bound) {
+      prevButton.addEventListener('click', () => {
+        changeCalendarMonth(-1);
+      });
+      prevButton.dataset.bound = 'true';
+    }
+
+    if (nextButton && !nextButton.dataset.bound) {
+      nextButton.addEventListener('click', () => {
+        changeCalendarMonth(1);
+      });
+      nextButton.dataset.bound = 'true';
+    }
+
+    const resetButton = document.getElementById('calendarResetBtn');
+    if (resetButton && !resetButton.dataset.bound) {
+      resetButton.addEventListener('click', () => {
+        resetCalendarSelection();
+        renderCalendar();
+        updateDateVisibility();
+        applyFilters();
+        updateCalendarResetVisibility();
+      });
+      resetButton.dataset.bound = 'true';
+    }
+
+    renderCalendar();
+  }
+
+  function changeCalendarMonth(delta) {
+    const current = calendarState.currentMonth;
+    calendarState.currentMonth = new Date(current.getFullYear(), current.getMonth() + delta, 1);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const grid = document.querySelector('[data-calendar-grid]');
+    if (!grid) {
+      return;
+    }
+
+    const title = document.querySelector('[data-calendar-title]');
+    const current = calendarState.currentMonth;
+    if (title) {
+      title.textContent = `${monthNames[current.getMonth()]} ${current.getFullYear()}`;
+    }
+
+    grid.innerHTML = '';
+
+    const firstDay = new Date(current.getFullYear(), current.getMonth(), 1);
+    const offset = (firstDay.getDay() + 6) % 7; // переводим к началу недели (понедельник)
+    for (let i = 0; i < offset; i += 1) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'calendar-placeholder';
+      grid.appendChild(placeholder);
+    }
+
+    const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
+
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const dateObj = new Date(current.getFullYear(), current.getMonth(), day);
+      const dateKey = formatDateKey(dateObj);
+      const dayButton = document.createElement('button');
+      dayButton.type = 'button';
+      dayButton.className = 'calendar-day';
+      dayButton.dataset.date = dateKey;
+
+      if (dateKey === todayDate) {
+        dayButton.classList.add('is-today');
+      }
+
+      if (activeCalendarDate === dateKey) {
+        dayButton.classList.add('is-selected');
+      } else if (!activeCalendarDate && defaultVisibleDatesArray.includes(dateKey)) {
+        dayButton.classList.add('is-default');
+      }
+
+      const number = document.createElement('span');
+      number.className = 'day-number';
+      number.textContent = String(day);
+      dayButton.appendChild(number);
+
+      const dayInfo = calendarData[dateKey];
+      if (dayInfo && Object.keys(dayInfo).length > 0) {
+        const dots = document.createElement('div');
+        dots.className = 'status-dots';
+        let hasDots = false;
+
+        [
+          { key: 'P', className: 'pending' },
+          { key: 'C', className: 'confirmed' },
+          { key: 'D', className: 'done' },
+        ].forEach(({ key, className }) => {
+          const count = dayInfo[key];
+          if (!count) {
+            return;
+          }
+          hasDots = true;
+          const dot = document.createElement('span');
+          dot.className = `status-dot status-dot--${className}`;
+          dot.textContent = count > 99 ? '99+' : String(count);
+          dot.title = getStatusTitle(key, count);
+          dots.appendChild(dot);
+        });
+
+        if (hasDots) {
+          dayButton.appendChild(dots);
+        }
+
+        if (dayInfo.P && dayInfo.P > 0 && dateObj >= baseToday) {
+          dayButton.classList.add('calendar-day--has-new');
+        }
+      }
+
+      dayButton.addEventListener('click', () => {
+        handleCalendarDaySelection(dateKey);
+      });
+
+      grid.appendChild(dayButton);
+    }
+  }
+
+  function handleCalendarDaySelection(dateKey) {
+    if (activeCalendarDate === dateKey) {
+      resetCalendarSelection();
+    } else {
+      activeCalendarDate = dateKey;
+      visibleDates = new Set([dateKey]);
+    }
+
+    renderCalendar();
+    updateDateVisibility();
+    applyFilters();
+    updateCalendarResetVisibility();
+  }
+
+  function resetCalendarSelection() {
+    activeCalendarDate = null;
+    visibleDates = new Set(defaultVisibleDatesArray);
+    if (todayDate) {
+      calendarState.currentMonth = createMonthStart(todayDate);
+    }
+  }
+
+  function updateCalendarResetVisibility() {
+    const resetButton = document.getElementById('calendarResetBtn');
+    if (!resetButton) {
+      return;
+    }
+
+    resetButton.classList.toggle('d-none', !activeCalendarDate);
+  }
+
+  function updateDateVisibility() {
+    const dayCards = document.querySelectorAll('[data-day-block]');
+    const showAll = visibleDates.size === 0;
+
+    dayCards.forEach((card) => {
+      const cardDate = card.dataset.date;
+      const shouldShow = showAll || visibleDates.has(cardDate);
+      card.dataset.dateVisible = shouldShow ? 'true' : 'false';
+
+      if (shouldShow) {
+        card.classList.remove('date-hidden');
+      } else {
+        card.classList.add('date-hidden');
+        card.classList.add('d-none');
+      }
+    });
+  }
+
+  function adjustCalendarCounts(dateKey, status, delta) {
+    if (!dateKey || !status || !delta) {
+      return;
+    }
+
+    if (!calendarData[dateKey]) {
+      if (delta < 0) {
+        return;
+      }
+      calendarData[dateKey] = {};
+    }
+
+    const currentCount = calendarData[dateKey][status] || 0;
+    const nextCount = Math.max(0, currentCount + delta);
+
+    if (nextCount === 0) {
+      delete calendarData[dateKey][status];
+    } else {
+      calendarData[dateKey][status] = nextCount;
+    }
+
+    if (calendarData[dateKey] && Object.keys(calendarData[dateKey]).length === 0) {
+      delete calendarData[dateKey];
+    }
+  }
+
+  function getStatusTitle(status, count) {
+    const labelMap = {
+      P: 'новых заявок',
+      C: 'подтвержденных',
+      D: 'выполненных',
+    };
+    const label = labelMap[status] || 'записей';
+    return `${count} ${label}`;
+  }
+
+  function createDateFromString(dateString) {
+    if (!dateString) {
+      return new Date();
+    }
+
+    const parts = dateString.split('-').map((part) => parseInt(part, 10));
+    const [year, month, day] = [parts[0], parts[1] || 1, parts[2] || 1];
+    return new Date(year, month - 1, day);
+  }
+
+  function createMonthStart(dateString) {
+    const date = createDateFromString(dateString);
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  function formatDateKey(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   async function fetchAppointments() {
@@ -525,9 +1059,36 @@
       }
 
       wrap.innerHTML = data.html;
+
+      if (data.calendar && typeof data.calendar === "object") {
+        calendarData = data.calendar;
+      } else {
+        calendarData = {};
+      }
+
+      if (Array.isArray(data.default_visible_dates)) {
+        defaultVisibleDatesArray = data.default_visible_dates;
+        if (!activeCalendarDate) {
+          visibleDates = new Set(defaultVisibleDatesArray);
+        }
+      }
+
+      if (data.today) {
+        todayDate = data.today;
+        baseToday = createDateFromString(todayDate);
+        if (!activeCalendarDate) {
+          calendarState.currentMonth = createMonthStart(todayDate);
+        }
+      }
+
+      renderCalendar();
+      updateDateVisibility();
+
       lastCount = newCount;
 
       attachDashboardControls(true);
+      applyFilters();
+      updateCalendarResetVisibility();
     } catch (error) {
       console.error("Не удалось обновить записи", error);
     }
@@ -627,14 +1188,18 @@
 
     const rows = Array.from(document.querySelectorAll('#appointments-container tbody tr[data-appointment-row="true"]'));
     let visibleCount = 0;
+    const hasSearchQuery = Boolean(query);
+    const hasStatusFilter = activeStatusFilter !== "all";
 
     rows.forEach((row) => {
       const rowStatus = row.dataset.status || "";
+      const dayCard = row.closest('[data-day-block]');
+      const isDateHidden = dayCard && dayCard.dataset.dateVisible === 'false';
       const matchesStatus = activeStatusFilter === "all" || rowStatus === activeStatusFilter;
       const text = (row.dataset.search || row.textContent || "").toLowerCase();
       const matchesSearch = !query || text.includes(query);
 
-      if (matchesStatus && matchesSearch) {
+      if (!isDateHidden && matchesStatus && matchesSearch) {
         row.classList.remove("d-none");
         visibleCount += 1;
       } else {
@@ -642,7 +1207,10 @@
       }
     });
 
+    let visibleDayCards = 0;
+
     document.querySelectorAll("[data-day-block]").forEach((dayCard) => {
+      const isDateHidden = dayCard.dataset.dateVisible === 'false';
       const dayRows = Array.from(dayCard.querySelectorAll('tbody tr[data-appointment-row="true"]'));
       const visibleRows = dayRows.filter((row) => !row.classList.contains("d-none"));
       const countBadge = dayCard.querySelector("[data-day-count]");
@@ -650,12 +1218,30 @@
         countBadge.textContent = visibleRows.length;
       }
       const hasVisible = visibleRows.length > 0;
+
+      if (isDateHidden) {
+        dayCard.classList.add('d-none');
+        return;
+      }
+
       dayCard.classList.toggle("d-none", dayRows.length > 0 && !hasVisible);
+
+      if (hasVisible) {
+        visibleDayCards += 1;
+      }
     });
 
     const emptyState = document.getElementById("emptySearchState");
     if (emptyState) {
-      emptyState.classList.toggle("d-none", visibleCount > 0 || rows.length === 0);
+      const shouldShow = visibleCount === 0 && rows.length > 0 && (hasSearchQuery || hasStatusFilter);
+      emptyState.classList.toggle("d-none", !shouldShow);
+    }
+
+    const dateEmptyState = document.getElementById("dateFilterEmpty");
+    if (dateEmptyState) {
+      const hasDateSelection = visibleDates.size > 0;
+      const shouldShowDateEmpty = hasDateSelection && visibleDayCards === 0;
+      dateEmptyState.classList.toggle("d-none", !shouldShowDateEmpty);
     }
 
     refreshAppointmentsEmptyState();
@@ -689,6 +1275,7 @@
     }
 
     const previousStatus = row.dataset.status || "";
+    const appointmentDate = row.dataset.date || null;
     const dayCard = row.closest("[data-day-block]");
     row.remove();
 
@@ -706,8 +1293,13 @@
       }
     }
 
+    adjustCalendarCounts(appointmentDate, previousStatus, -1);
+    renderCalendar();
+    updateCalendarResetVisibility();
+
     updateSummaryCounts(previousStatus);
     lastCount = Math.max(0, lastCount - 1);
+    updateDateVisibility();
     refreshAppointmentsEmptyState();
     applyFilters();
   }
