@@ -16,6 +16,7 @@ urlpatterns = [
     path('booking/', service_booking, name='service_booking'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('dashboard/ajax/', views.dashboard_ajax, name='dashboard_ajax'),
+    path('dashboard/updates/', views.dashboard_updates, name='dashboard_updates'),
     path("appointment/<int:pk>/action/", views.AppointmentActionView.as_view(), name="appointment_action"),
     path("reports/", ReportView.as_view(), name="reports"),
     path("my-appointments/", my_appointments, name="my_appointments"),

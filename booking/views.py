@@ -27,7 +27,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET
 from django.utils.timezone import now
 from django.template.context_processors import csrf
-from django.db.models import Count, Sum, DecimalField, Prefetch, F
+from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
 from collections import defaultdict
@@ -40,6 +40,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
 import re
 from django.utils.timezone import now, localtime, make_aware, timedelta
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_POST
 from django.http import HttpResponseForbidden
 import pytz
@@ -977,6 +978,8 @@ def dashboard_view(request):
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
+    latest_created = max((a.created_at for a in appointments), default=None)
+    latest_created_iso = latest_created.isoformat() if latest_created else ""
 
     # 📊 Группировка и расчёты
     visible_start = yesterday
@@ -1008,6 +1011,7 @@ def dashboard_view(request):
         "today": today,
         "default_visible_dates_json": json.dumps(default_visible_dates),
         "calendar_summary_json": json.dumps(calendar_summary),
+        "latest_created_iso": latest_created_iso,
     }
 
     return render(request, "dashboard.html", context)
@@ -1038,6 +1042,7 @@ def dashboard_ajax(request):
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
+    latest_created = max((a.created_at for a in appointments), default=None)
     default_visible_dates = [
         yesterday.isoformat(),
         today.isoformat(),
@@ -1056,6 +1061,56 @@ def dashboard_ajax(request):
         "calendar": calendar_summary,
         "default_visible_dates": default_visible_dates,
         "today": today.isoformat(),
+        "latest_created": latest_created.isoformat() if latest_created else None,
+        "count": len(appointments),
+    })
+
+
+@login_required
+@require_GET
+def dashboard_updates(request):
+    today = now().date()
+    yesterday = today - timedelta(days=1)
+    user = request.user
+    profile = getattr(user, "profile", None)
+
+    appointments_qs = Appointment.objects.filter(start_time__date__gte=yesterday)
+
+    if not user.is_superuser:
+        if profile and profile.is_salon_admin and profile.salon:
+            appointments_qs = appointments_qs.filter(stylist__salon=profile.salon)
+        else:
+            return JsonResponse({"has_updates": False, "latest_created": None, "count": 0})
+
+    totals = appointments_qs.aggregate(latest_created=Max("created_at"), total_count=Count("id"))
+    latest_created = totals.get("latest_created")
+    total_count = totals.get("total_count", 0) or 0
+
+    since_raw = request.GET.get("since")
+    has_updates = False
+
+    if since_raw:
+        parsed_since = parse_datetime(since_raw)
+        if parsed_since is not None:
+            if timezone.is_naive(parsed_since):
+                parsed_since = timezone.make_aware(parsed_since)
+            if latest_created and latest_created > parsed_since:
+                has_updates = True
+
+    last_count_raw = request.GET.get("count")
+    if not has_updates and last_count_raw is not None:
+        try:
+            last_count_value = int(last_count_raw)
+        except (TypeError, ValueError):
+            last_count_value = None
+
+        if last_count_value is not None and total_count != last_count_value:
+            has_updates = True
+
+    return JsonResponse({
+        "has_updates": has_updates,
+        "latest_created": latest_created.isoformat() if latest_created else None,
+        "count": total_count,
     })
 
 

@@ -737,10 +737,13 @@
 {% block extra_js %}
 <script>
   let lastCount = {{ appointments|length }};
-  let autoRefresh = null;
+  let updatePoll = null;
+  let isFetchingAppointments = false;
   let currentAppointmentId = null;
   let pendingActionButton = null;
   let activeStatusFilter = "all";
+  let latestCreatedAt = "{{ latest_created_iso|default_if_none:''|escapejs }}";
+  const updatesCheckUrl = "{% url 'dashboard_updates' %}";
   let defaultVisibleDatesArray = JSON.parse('{{ default_visible_dates_json|escapejs }}');
   if (!Array.isArray(defaultVisibleDatesArray)) {
     defaultVisibleDatesArray = [];
@@ -780,19 +783,65 @@
     updateDateVisibility();
     applyFilters();
     updateCalendarResetVisibility();
-    startAutoRefresh();
+    startUpdatePolling();
+    checkForUpdates();
   });
 
-  function startAutoRefresh() {
-    if (!autoRefresh) {
-      autoRefresh = setInterval(fetchAppointments, 10000);
+  function startUpdatePolling() {
+    if (!updatePoll) {
+      updatePoll = setInterval(checkForUpdates, 10000);
     }
   }
 
-  function stopAutoRefresh() {
-    if (autoRefresh) {
-      clearInterval(autoRefresh);
-      autoRefresh = null;
+  function stopUpdatePolling() {
+    if (updatePoll) {
+      clearInterval(updatePoll);
+      updatePoll = null;
+    }
+  }
+
+  async function checkForUpdates() {
+    if (!updatesCheckUrl || isFetchingAppointments) {
+      return;
+    }
+
+    if (document.querySelector('.modal.show')) {
+      return;
+    }
+
+    try {
+      const url = new URL(updatesCheckUrl, window.location.origin);
+      if (latestCreatedAt) {
+        url.searchParams.set('since', latestCreatedAt);
+      }
+      if (typeof lastCount === 'number' && Number.isFinite(lastCount)) {
+        url.searchParams.set('count', String(lastCount));
+      }
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+
+      if (typeof data.latest_created === 'string') {
+        latestCreatedAt = data.latest_created;
+      }
+
+      if (typeof data.count === 'number' && Number.isFinite(data.count)) {
+        if (data.count !== lastCount) {
+          await fetchAppointments();
+          return;
+        }
+        lastCount = data.count;
+      }
+
+      if (data.has_updates) {
+        await fetchAppointments();
+      }
+    } catch (error) {
+      console.error('Не удалось проверить обновления', error);
     }
   }
 
@@ -1030,11 +1079,17 @@
   }
 
   async function fetchAppointments() {
+    if (isFetchingAppointments) {
+      return;
+    }
+
     if (document.querySelector(".modal.show")) {
       return;
     }
 
     try {
+      isFetchingAppointments = true;
+      const previousCount = typeof lastCount === 'number' ? lastCount : 0;
       const response = await fetch("{% url 'dashboard_ajax' %}");
       if (!response.ok) {
         return;
@@ -1054,7 +1109,13 @@
       temp.innerHTML = data.html;
 
       const newCount = temp.querySelectorAll('tbody tr[data-appointment-row="true"]').length;
-      if (newCount > lastCount) {
+
+      const payloadCount =
+        data && typeof data.count === 'number' && Number.isFinite(data.count)
+          ? data.count
+          : newCount;
+
+      if (payloadCount > previousCount) {
         document.getElementById("alert-sound")?.play().catch(() => {});
       }
 
@@ -1081,16 +1142,22 @@
         }
       }
 
+      if (typeof data.latest_created === 'string') {
+        latestCreatedAt = data.latest_created;
+      }
+
       renderCalendar();
       updateDateVisibility();
 
-      lastCount = newCount;
+      lastCount = payloadCount;
 
       attachDashboardControls(true);
       applyFilters();
       updateCalendarResetVisibility();
     } catch (error) {
       console.error("Не удалось обновить записи", error);
+    } finally {
+      isFetchingAppointments = false;
     }
   }
 
@@ -1130,7 +1197,7 @@
             if (modalEl) {
               const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
               modalInstance.show();
-              stopAutoRefresh();
+              stopUpdatePolling();
             } else {
               setLoadingState(button, true);
               submitAction(appointmentId, action)
@@ -1154,7 +1221,7 @@
         }
         currentAppointmentId = null;
         pendingActionButton = null;
-        startAutoRefresh();
+        startUpdatePolling();
       });
 
       const confirmButton = document.getElementById("confirmCancelBtn");
