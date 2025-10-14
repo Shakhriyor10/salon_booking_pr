@@ -30,7 +30,7 @@
         </thead>
         <tbody>
           {% for a in appointments_on_date %}
-            <tr class="appointment-row" data-appointment-row="true" data-status="{{ a.status }}">
+            <tr class="appointment-row" data-appointment-row="true" data-status="{{ a.status }}" data-appointment-id="{{ a.id }}">
               <td data-label="Клиент">
                 {% if a.customer %}
                   <div class="client-name">{{ a.customer.first_name|default:a.customer.username }}</div>
@@ -95,7 +95,7 @@
     </div>
   </div>
 {% empty %}
-  <div class="empty-dashboard-state text-center">
+  <div class="empty-dashboard-state text-center" data-empty-dashboard-state>
     <div class="icon-wrap mb-3">
       <i class="bi bi-stars"></i>
     </div>
