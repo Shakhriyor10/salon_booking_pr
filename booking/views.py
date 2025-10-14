@@ -15,7 +15,7 @@ from .form import (
     StylistUpdateForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
-    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS
+    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -330,6 +330,40 @@ class SalonDetailView(DetailView):
             return redirect('salon_detail', pk=self.object.pk, slug=self.object.slug)
 
         return self.get(request, *args, **kwargs)
+
+@login_required
+@require_POST
+def delete_review(request, pk):
+    review = get_object_or_404(Review, pk=pk)
+
+    if review.user_id != request.user.id:
+        return JsonResponse({
+            'success': False,
+            'error': 'Вы не можете удалить этот отзыв.'
+        }, status=403)
+
+    salon = review.salon
+    review.delete()
+
+    average_rating = salon.average_rating() or 0
+    rounded_rating = round(average_rating * 2) / 2
+    full_stars = int(rounded_rating)
+    has_half_star = (rounded_rating - full_stars) == 0.5
+    empty_stars = 5 - full_stars - (1 if has_half_star else 0)
+    review_count = salon.reviews.count()
+
+    return JsonResponse({
+        'success': True,
+        'average_rating': float(average_rating),
+        'average_rating_display': f'{average_rating:.1f}',
+        'review_count': review_count,
+        'stars': {
+            'full': full_stars,
+            'half': has_half_star,
+            'empty': empty_stars,
+        },
+    })
+
 
 class CategoryServicesView(View):
     def get(self, request, pk):

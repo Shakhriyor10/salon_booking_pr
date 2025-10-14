@@ -4,7 +4,7 @@ from .views import StylistDetailView, StylistListView, ServiceListView, Appointm
     dashboard_ajax, ReportView, my_appointments, cancel_appointment, ManualAppointmentCreateView, \
     get_stylists_by_service, get_available_times, StylistManualAppointmentCreateView, get_available_times_for_stylist, \
     stylist_reports, SalonDetailView, HomePageView, CategoryServicesView, autocomplete_search, service_booking, \
-    stylist_dayoff_view
+    stylist_dayoff_view, delete_review
 
 urlpatterns = [
     # path('', ServiceListView.as_view(), name='home'),
@@ -38,5 +38,6 @@ urlpatterns = [
     path('autocomplete/', views.autocomplete_search, name='autocomplete_search'),
     path('stylist/dayoff/', views.stylist_dayoff_view, name='stylist_dayoff'),
     path('delete-dayoff/<int:pk>/', views.delete_dayoff, name='delete_dayoff'),
+    path('reviews/<int:pk>/delete/', delete_review, name='delete_review'),
 
 ]
