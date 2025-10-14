@@ -1518,31 +1518,22 @@
             {% endif %}
           {% endwith %}
           {% if user_review %}
-            <button type="button" class="btn btn-theme review-action-edit" data-review-id="{{ user_review.id }}" data-rating="{{ user_review.rating }}" data-comment="{{ user_review.comment|default_if_none:''|escapejs }}">Обновить отзыв</button>
+            <button type="button" class="btn btn-theme review-action-edit" data-bs-toggle="modal" data-bs-target="#reviewEditModal" data-review-id="{{ user_review.id }}" data-rating="{{ user_review.rating }}" data-comment="{{ user_review.comment|default_if_none:''|escapejs }}">Обновить отзыв</button>
           {% else %}
             <a href="#review-form" class="btn btn-theme">Оставить отзыв</a>
           {% endif %}
         </div>
       </div>
 
-      <div class="review-form-card">
-        <div class="review-form-card__header">
-          <div>
-            <h4 class="mb-1">{% if user_review %}Ваш отзыв опубликован{% else %}Поделитесь впечатлением{% endif %}</h4>
-            <p class="mb-0">Ваша оценка помогает другим гостям выбрать лучший салон.</p>
-          </div>
-          <i class="bi bi-chat-heart"></i>
-        </div>
-        {% if user_review %}
-          <div class="review-manage-hint">
-            <p>Вы уже поделились впечатлениями. При необходимости обновите или удалите отзыв через меню в списке ниже.</p>
-            <div class="d-flex flex-wrap gap-2">
-              <button type="button" class="btn btn-theme review-action-edit" data-review-id="{{ user_review.id }}" data-rating="{{ user_review.rating }}" data-comment="{{ user_review.comment|default_if_none:''|escapejs }}">
-                <i class="bi bi-pencil"></i> Редактировать отзыв
-              </button>
+      {% if not user_review %}
+        <div class="review-form-card">
+          <div class="review-form-card__header">
+            <div>
+              <h4 class="mb-1">Поделитесь впечатлением</h4>
+              <p class="mb-0">Ваша оценка помогает другим гостям выбрать лучший салон.</p>
             </div>
+            <i class="bi bi-chat-heart"></i>
           </div>
-        {% else %}
           <form method="post" id="review-form" class="review-form">
             {% csrf_token %}
             <div class="mb-3">
@@ -1563,8 +1554,8 @@
             </div>
             <button type="submit" class="btn btn-theme" id="review-submit-button">Отправить отзыв</button>
           </form>
-        {% endif %}
-      </div>
+        </div>
+      {% endif %}
 
       {% if reviews %}
         <div class="review-list" id="review-list">
@@ -1595,7 +1586,7 @@
                       </button>
                       <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li>
-                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 review-action-edit" data-review-id="{{ review.id }}" data-rating="{{ review.rating }}" data-comment="{{ review.comment|default_if_none:''|escapejs }}">
+                          <button type="button" class="dropdown-item d-flex align-items-center gap-2 review-action-edit" data-bs-toggle="modal" data-bs-target="#reviewEditModal" data-review-id="{{ review.id }}" data-rating="{{ review.rating }}" data-comment="{{ review.comment|default_if_none:''|escapejs }}">
                             <i class="bi bi-pencil"></i>
                             <span>Изменить</span>
                           </button>
@@ -1641,7 +1632,7 @@
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                 </div>
                 <div class="modal-body">
-                  <input type="hidden" name="review_id" id="edit-review-id" value="{% if user_review %}{{ user_review.id }}{% endif %}">
+                  <input type="hidden" name="review_id" id="edit-review-id" value="">
                   <div class="mb-3">
                     <label class="form-label d-block">Ваша оценка</label>
                     <div class="rating-select">
@@ -1652,11 +1643,11 @@
                         {% endfor %}
                       </div>
                     </div>
-                    <input type="hidden" name="rating" id="edit-rating-value" value="{% if user_review %}{{ user_review.rating }}{% endif %}" required>
+                    <input type="hidden" name="rating" id="edit-rating-value" value="" required>
                   </div>
                   <div class="mb-3">
                     <label for="edit-comment" class="form-label">Комментарий</label>
-                    <textarea name="comment" id="edit-comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)">{% if user_review %}{{ user_review.comment|default_if_none:'' }}{% endif %}</textarea>
+                    <textarea name="comment" id="edit-comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
                   </div>
                 </div>
                 <div class="modal-footer">
@@ -1773,37 +1764,27 @@
     const editReviewIdInput = document.getElementById('edit-review-id');
     const updateEditStars = setupStarRating(document.getElementById('edit-star-rating'), editRatingInput);
 
-    if (editRatingInput && editRatingInput.value) {
-      updateEditStars(editRatingInput.value);
+    updateEditStars(0);
+
+    if (editModalElement && typeof bootstrap !== 'undefined') {
+      editModalElement.addEventListener('show.bs.modal', (event) => {
+        const button = event.relatedTarget;
+        if (!button) {
+          return;
+        }
+        const { reviewId, rating, comment } = button.dataset;
+        if (editReviewIdInput) {
+          editReviewIdInput.value = reviewId || '';
+        }
+        if (editRatingInput) {
+          editRatingInput.value = rating || '';
+          updateEditStars(rating);
+        }
+        if (editCommentInput) {
+          editCommentInput.value = decodeDatasetValue(comment);
+        }
+      });
     }
-
-    const editModalInstance = (editModalElement && typeof bootstrap !== 'undefined')
-      ? bootstrap.Modal.getOrCreateInstance(editModalElement)
-      : null;
-
-    const openEditModal = (button) => {
-      if (!button) {
-        return;
-      }
-      const { reviewId, rating, comment } = button.dataset;
-      if (editReviewIdInput) {
-        editReviewIdInput.value = reviewId || '';
-      }
-      if (editRatingInput) {
-        editRatingInput.value = rating || '';
-        updateEditStars(rating);
-      }
-      if (editCommentInput) {
-        editCommentInput.value = decodeDatasetValue(comment);
-      }
-      if (editModalInstance) {
-        editModalInstance.show();
-      }
-    };
-
-    document.querySelectorAll('.review-action-edit').forEach((button) => {
-      button.addEventListener('click', () => openEditModal(button));
-    });
 
     document.querySelectorAll('.review-action-delete').forEach((button) => {
       button.addEventListener('click', (event) => {
@@ -1823,9 +1804,12 @@
         }
       });
 
-      if (editModalElement) {
+      if (editModalElement && typeof bootstrap !== 'undefined') {
         editModalElement.addEventListener('hidden.bs.modal', () => {
           editForm.reset();
+          if (editReviewIdInput) {
+            editReviewIdInput.value = '';
+          }
           updateEditStars(0);
         });
       }
