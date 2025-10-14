@@ -745,6 +745,7 @@
   let activeStatusFilter = "all";
   let latestCreatedAt = "{{ latest_created_iso|default_if_none:''|escapejs }}";
   const updatesCheckUrl = "{% url 'dashboard_updates' %}";
+  let pendingCountHint = null;
   let defaultVisibleDatesArray = JSON.parse('{{ default_visible_dates_json|escapejs }}');
   if (!Array.isArray(defaultVisibleDatesArray)) {
     defaultVisibleDatesArray = [];
@@ -875,7 +876,9 @@
         let countChanged = false;
         if (typeof data.count === 'number' && Number.isFinite(data.count)) {
           countChanged = data.count !== lastCount;
-          lastCount = data.count;
+          if (countChanged || data.has_updates) {
+            pendingCountHint = data.count;
+          }
         }
 
         if (countChanged || data.has_updates) {
@@ -1167,10 +1170,14 @@
 
       const newCount = temp.querySelectorAll('tbody tr[data-appointment-row="true"]').length;
 
-      const payloadCount =
+      let payloadCount =
         data && typeof data.count === 'number' && Number.isFinite(data.count)
           ? data.count
           : newCount;
+
+      if (typeof pendingCountHint === 'number' && Number.isFinite(pendingCountHint)) {
+        payloadCount = pendingCountHint;
+      }
 
       if (payloadCount > previousCount) {
         document.getElementById("alert-sound")?.play().catch(() => {});
@@ -1209,6 +1216,7 @@
       updateDateVisibility();
 
       lastCount = payloadCount;
+      pendingCountHint = null;
 
       attachDashboardControls(true);
       applyFilters();
@@ -1217,6 +1225,7 @@
       console.error("Не удалось обновить записи", error);
     } finally {
       isFetchingAppointments = false;
+      pendingCountHint = null;
     }
   }
 
