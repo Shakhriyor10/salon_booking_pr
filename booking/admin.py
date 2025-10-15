@@ -4,7 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 
 from users.models import Profile
 from .models import Service, Stylist, WorkingHour, Appointment, StylistService, Category, BreakPeriod, Salon, City, \
-    SalonService, User, Review, StylistLevel, StylistDayOff, AppointmentService
+    SalonService, User, Review, StylistLevel, StylistDayOff, AppointmentService, SalonPaymentCard
 
 
 class ProfileInline(admin.StackedInline):
@@ -66,6 +66,28 @@ class SalonAdmin(admin.ModelAdmin):
         }),
         ('Фото салона', {
             'fields': ('photo', 'photo_2', 'photo_3', 'photo_4', 'photo_5')
+        }),
+    )
+
+
+@admin.register(SalonPaymentCard)
+class SalonPaymentCardAdmin(admin.ModelAdmin):
+    list_display = ('salon', 'card_holder', 'masked_number', 'is_active', 'updated_at')
+    list_filter = ('is_active', 'salon')
+    search_fields = ('card_holder', 'card_number', 'salon__name')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        (None, {
+            'fields': (
+                'salon',
+                'card_holder',
+                'card_number',
+                'description',
+                'is_active',
+            )
+        }),
+        ('Служебные поля', {
+            'fields': ('created_at', 'updated_at'),
         }),
     )
 

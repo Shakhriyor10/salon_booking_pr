@@ -16,6 +16,8 @@ from .models import (
     Service,
     Category,
     SalonService,
+    SalonPaymentCard,
+    Appointment,
 )
 
 
@@ -198,6 +200,57 @@ class StylistUpdateForm(forms.Form):
 
             if stylist:
                 field.widget.attrs.setdefault('id', f'id_{field_name}_{stylist.id}')
+
+
+class SalonPaymentCardForm(forms.ModelForm):
+    class Meta:
+        model = SalonPaymentCard
+        fields = ('card_holder', 'card_number', 'description', 'is_active')
+        widgets = {
+            'card_holder': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Имя владельца карты'}),
+            'card_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '0000 0000 0000 0000'}),
+            'description': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Банк или комментарий'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+    def clean_card_number(self):
+        card_number = self.cleaned_data.get('card_number', '')
+        digits = ''.join(ch for ch in card_number if ch.isdigit())
+        if len(digits) < 12:
+            raise forms.ValidationError('Введите корректный номер карты (минимум 12 цифр).')
+        return digits
+
+
+class AppointmentPaymentMethodForm(forms.Form):
+    appointment_id = forms.IntegerField(widget=forms.HiddenInput)
+    payment_method = forms.ChoiceField(
+        choices=Appointment.PaymentMethod.choices,
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
+    )
+
+
+class AppointmentPaymentReceiptForm(forms.Form):
+    appointment_id = forms.IntegerField(widget=forms.HiddenInput)
+    receipt = forms.ImageField(label='Чек перевода')
+
+
+class AppointmentRefundForm(forms.Form):
+    appointment_id = forms.IntegerField(widget=forms.HiddenInput)
+    card_number = forms.CharField(
+        label='Карта для возврата',
+        max_length=32,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': '0000 0000 0000 0000',
+        })
+    )
+
+    def clean_card_number(self):
+        value = self.cleaned_data.get('card_number', '')
+        digits = ''.join(ch for ch in value if ch.isdigit())
+        if len(digits) < 12:
+            raise forms.ValidationError('Введите корректный номер карты для возврата.')
+        return digits
 
         if 'photo' in self.fields:
             self.fields['photo'].widget.attrs.setdefault('accept', 'image/*')
