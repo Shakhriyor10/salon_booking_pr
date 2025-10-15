@@ -244,6 +244,17 @@
       return getCommonStylists(serviceIds).length > 0;
     }
 
+    function buildButtonContent(icon, label, hint) {
+      const hintMarkup = hint ? `<span class="hint">${hint}</span>` : '';
+      return [
+        `<span class="icon-wrapper" aria-hidden="true">${icon}</span>`,
+        `<span class="text-group"><span class="label">${label}</span>${hintMarkup}</span>`,
+      ].join('');
+    }
+
+    const defaultButtonTemplate = buildButtonContent('+', 'Добавить услугу', 'в ваш список записи');
+    const addedButtonTemplate = buildButtonContent('✓', 'В корзине', 'нажмите, чтобы убрать');
+
     const addToCartButtons = Array.from(document.querySelectorAll('.add-to-cart'));
     const floatingCart = document.getElementById('floating-cart-button');
     const bookingButton = document.getElementById('go-to-booking');
@@ -290,10 +301,12 @@
 
         if (cartItems.includes(serviceId)) {
           button.classList.add('added');
-          button.textContent = '✅ Добавлено (нажмите, чтобы удалить)';
+          button.innerHTML = addedButtonTemplate;
+          button.setAttribute('aria-pressed', 'true');
         } else {
           button.classList.remove('added');
-          button.textContent = '➕ Добавить услугу';
+          button.innerHTML = defaultButtonTemplate;
+          button.setAttribute('aria-pressed', 'false');
         }
       });
     }
