@@ -195,6 +195,149 @@
 
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Платёжные карты салона</span>
+            <span class="text-muted small">Используются для приёма оплат по карте</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-lg-5">
+                    <div class="card border shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Добавить или обновить карту</h5>
+                            <form method="post" novalidate>
+                                {% csrf_token %}
+                                <input type="hidden" name="form_type" value="payment_card_save">
+                                <div class="mb-3">
+                                    <label class="form-label" for="id_card_holder">Владелец карты</label>
+                                    <input type="text" name="card_holder" id="id_card_holder" class="form-control" placeholder="Имя фамилия" value="{{ payment_card_form.card_holder.value|default:'' }}">
+                                    {% for error in payment_card_form.card_holder.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="id_card_number">Номер карты</label>
+                                    <input type="text" name="card_number" id="id_card_number" class="form-control" placeholder="0000 0000 0000 0000" value="{{ payment_card_form.card_number.value|default:'' }}">
+                                    <div class="form-text">Без пробелов и дефисов — мы отформатируем автоматически.</div>
+                                    {% for error in payment_card_form.card_number.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="id_description">Комментарий</label>
+                                    <input type="text" name="description" id="id_description" class="form-control" placeholder="Банк, тип карты" value="{{ payment_card_form.description.value|default:'' }}">
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="id_is_active" name="is_active" {% if payment_card_form.is_active.value or payment_card_form.is_active.value is None %}checked{% endif %}>
+                                    <label class="form-check-label" for="id_is_active">Сделать карту активной сразу после сохранения</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Сохранить карту</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    {% if payment_cards %}
+                        <div class="row g-3">
+                            {% for card in payment_cards %}
+                                <div class="col-12">
+                                    <div class="payment-card-tile border rounded-4 p-4 position-relative h-100 shadow-sm {% if card.is_active %}active-card{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                            <div>
+                                                <div class="text-uppercase text-muted small">Карта</div>
+                                                <div class="fs-5 fw-semibold">{{ card.card_holder }}</div>
+                                            </div>
+                                            <span class="badge {% if card.is_active %}bg-success-subtle text-success{% else %}bg-secondary-subtle text-secondary{% endif %}">
+                                                {% if card.is_active %}Активна{% else %}Отключена{% endif %}
+                                            </span>
+                                        </div>
+                                        <div class="card-number-visual mt-3 mb-3">
+                                            <div class="fake-card bg-dark text-light rounded-4 p-3 shadow">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="small text-uppercase opacity-75">Номер карты</span>
+                                                    <i class="bi bi-credit-card-2-front"></i>
+                                                </div>
+                                                <div class="fs-4 fw-semibold tracking-wide">{{ card.formatted_number }}</div>
+                                            </div>
+                                        </div>
+                                        {% if card.description %}
+                                            <div class="text-muted small mb-3">{{ card.description }}</div>
+                                        {% endif %}
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editCardModal{{ card.id }}">
+                                                <i class="bi bi-pencil"></i>
+                                                Изменить
+                                            </button>
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="payment_card_toggle">
+                                                <input type="hidden" name="card_id" value="{{ card.id }}">
+                                                <input type="hidden" name="is_active" value="{% if card.is_active %}0{% else %}1{% endif %}">
+                                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                                    {% if card.is_active %}<i class="bi bi-toggle-off"></i> Выключить{% else %}<i class="bi bi-toggle-on"></i> Включить{% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="post" class="d-inline" onsubmit="return confirm('Удалить карту? Это действие необратимо.');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="payment_card_delete">
+                                                <input type="hidden" name="card_id" value="{{ card.id }}">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="bi bi-trash"></i>
+                                                    Удалить
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal fade" id="editCardModal{{ card.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form method="post" novalidate>
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="payment_card_save">
+                                                <input type="hidden" name="card_id" value="{{ card.id }}">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Изменить карту</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="id_card_holder_{{ card.id }}">Владелец</label>
+                                                        <input type="text" name="card_holder" id="id_card_holder_{{ card.id }}" class="form-control" value="{{ card.card_holder }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="id_card_number_{{ card.id }}">Номер</label>
+                                                        <input type="text" name="card_number" id="id_card_number_{{ card.id }}" class="form-control" value="{{ card.formatted_number }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="id_description_{{ card.id }}">Комментарий</label>
+                                                        <input type="text" name="description" id="id_description_{{ card.id }}" class="form-control" value="{{ card.description }}">
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" id="id_is_active_{{ card.id }}" name="is_active" {% if card.is_active %}checked{% endif %}>
+                                                        <label class="form-check-label" for="id_is_active_{{ card.id }}">Сделать активной</label>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-muted">Карты пока не добавлены. Добавьте первую карту, чтобы клиенты могли оплачивать визиты переводом.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <span>Услуги салона</span>
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalonServiceModal">
                 Добавить услугу

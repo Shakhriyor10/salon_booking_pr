@@ -1,6 +1,6 @@
 {% load form_tags %}
 {% with show_stylist=show_stylist_column|default:True %}
-{% with total_columns=show_stylist|yesno:'7,6' %}
+{% with total_columns=show_stylist|yesno:'8,7' %}
 {% for date, appointments_on_date in grouped_appointments.items %}
   <div class="appointments-day card" data-day-block data-date="{{ date|date:'Y-m-d' }}">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 py-3 px-4">
@@ -28,6 +28,7 @@
             {% endif %}
             <th scope="col">Время</th>
             <th scope="col">Статус</th>
+            <th scope="col">Оплата</th>
             <th scope="col">Цена</th>
             <th scope="col">Действия</th>
           </tr>
@@ -63,6 +64,43 @@
               </td>
               <td data-label="Статус">
                 <span class="badge status-badge {{ a.status|status_badge_class }}">{{ a.get_status_display }}</span>
+              </td>
+              <td data-label="Оплата">
+                <div class="small text-muted">{{ a.get_payment_method_display }}</div>
+                <div class="mt-1">
+                  <span class="badge {% if a.payment_status == 'paid' %}bg-success-subtle text-success{% elif a.payment_status == 'awaiting_confirmation' %}bg-warning-subtle text-dark{% elif a.payment_status == 'refund_requested' %}bg-info-subtle text-info{% elif a.payment_status == 'refunded' %}bg-success-subtle text-success{% else %}bg-light text-dark{% endif %}">
+                    {{ a.get_payment_status_display }}
+                  </span>
+                </div>
+                {% if a.payment_method == 'card' and a.get_payment_card_display %}
+                  <div class="mt-1 small text-muted">{{ a.get_payment_card_display }}</div>
+                {% endif %}
+                {% if a.payment_receipt %}
+                  <div class="mt-1">
+                    <a href="{{ a.payment_receipt.url }}" target="_blank" class="text-decoration-none">
+                      <i class="bi bi-receipt"></i> Чек
+                    </a>
+                  </div>
+                {% endif %}
+                {% if a.payment_method == 'card' and a.refund_card_number %}
+                  <div class="mt-1 small text-danger">Возврат: {{ a.get_refund_card_display }}</div>
+                {% endif %}
+                {% if a.payment_method == 'card' %}
+                  <div class="mt-2 d-flex flex-wrap gap-1">
+                    {% if a.payment_status != 'paid' %}
+                      <button type="button" class="btn btn-outline-success btn-sm" data-appointment-action="mark_paid" data-appointment-id="{{ a.id }}">
+                        <i class="bi bi-check2"></i>
+                        Оплачено
+                      </button>
+                    {% endif %}
+                    {% if a.status == 'X' and a.payment_status != 'refunded' %}
+                      <button type="button" class="btn btn-outline-secondary btn-sm" data-appointment-action="mark_refunded" data-appointment-id="{{ a.id }}">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Возврат
+                      </button>
+                    {% endif %}
+                  </div>
+                {% endif %}
               </td>
               <td data-label="Цена">
                 <div class="price-value">{{ a.services.all|sum_prices }} сум</div>

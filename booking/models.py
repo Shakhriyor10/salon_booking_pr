@@ -90,6 +90,55 @@ class Salon(models.Model):
 
 
 
+class SalonPaymentCard(models.Model):
+    salon = models.ForeignKey('Salon', on_delete=models.CASCADE, related_name='payment_cards')
+    card_holder = models.CharField(max_length=120, verbose_name='Владелец карты')
+    card_number = models.CharField(max_length=32, verbose_name='Номер карты')
+    description = models.CharField(max_length=255, blank=True, verbose_name='Комментарий')
+    is_active = models.BooleanField(default=True, verbose_name='Активна')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-is_active', '-updated_at']
+        verbose_name = 'Карта для оплаты'
+        verbose_name_plural = 'Карты для оплаты'
+
+    def __str__(self):
+        return f"{self.salon.name}: {self.masked_number}"
+
+    @property
+    def masked_number(self):
+        digits = ''.join(ch for ch in self.card_number if ch.isdigit())
+        if len(digits) >= 4:
+            return f"**** **** **** {digits[-4:]}"
+        return self.card_number
+
+    @staticmethod
+    def format_card_number(value: str) -> str:
+        digits = ''.join(ch for ch in value or '' if ch.isdigit())
+        return ' '.join(
+            digits[i:i + 4] for i in range(0, len(digits), 4)
+        ) or value
+
+    def formatted_number(self) -> str:
+        return self.format_card_number(self.card_number)
+
+    def clean(self):
+        super().clean()
+        digits = ''.join(ch for ch in self.card_number if ch.isdigit())
+        if len(digits) < 12:
+            raise ValidationError({'card_number': 'Номер карты должен содержать не менее 12 цифр.'})
+        self.card_number = digits
+
+    def save(self, *args, **kwargs):
+        digits = ''.join(ch for ch in self.card_number if ch.isdigit())
+        if digits:
+            self.card_number = digits
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class Category(models.Model):
     name = models.CharField(max_length=100, verbose_name='Категория')
     photo = models.ImageField(upload_to='category_photos/', null=True, blank=True)
@@ -195,6 +244,17 @@ class WorkingHour(models.Model):
 class Appointment(models.Model):
     """Запись клиента на услуги (несколько)."""
 
+    class PaymentMethod(models.TextChoices):
+        CASH = 'cash', 'Наличные'
+        CARD = 'card', 'Карта'
+
+    class PaymentStatus(models.TextChoices):
+        PENDING = 'pending', 'Ожидает оплаты'
+        AWAITING_CONFIRMATION = 'awaiting_confirmation', 'Ожидает подтверждения'
+        PAID = 'paid', 'Оплачено'
+        REFUND_REQUESTED = 'refund_requested', 'Возврат запрошен'
+        REFUNDED = 'refunded', 'Возврат выполнен'
+
     class Status(models.TextChoices):
         PENDING = 'P', 'Ожидает подтверждения'
         CONFIRMED = 'C', 'Подтверждена'
@@ -229,6 +289,32 @@ class Appointment(models.Model):
         default=Status.PENDING
     )
 
+    payment_method = models.CharField(
+        max_length=16,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+    )
+    payment_status = models.CharField(
+        max_length=32,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING,
+    )
+    payment_card = models.ForeignKey(
+        SalonPaymentCard,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='appointments',
+    )
+    payment_card_snapshot = models.CharField(max_length=64, blank=True)
+    payment_receipt = models.ImageField(upload_to='payment_receipts/', null=True, blank=True)
+    payment_submitted_at = models.DateTimeField(null=True, blank=True)
+    payment_confirmed_at = models.DateTimeField(null=True, blank=True)
+    refund_card_number = models.CharField(max_length=64, blank=True)
+    refund_receipt = models.ImageField(upload_to='refund_receipts/', null=True, blank=True)
+    refund_requested_at = models.DateTimeField(null=True, blank=True)
+    refund_confirmed_at = models.DateTimeField(null=True, blank=True)
+
     notes = models.TextField('Комментарий клиента', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -242,6 +328,25 @@ class Appointment(models.Model):
         start = timezone.localtime(self.start_time).strftime('%d.%m %H:%M')
         name = self.customer if self.customer else (self.guest_name or "Гость")
         return f'{name} ➜ {self.stylist} ({start})'
+
+    def set_payment_card(self, card: SalonPaymentCard | None):
+        self.payment_card = card
+        if card:
+            self.payment_card_snapshot = card.card_number
+        else:
+            self.payment_card_snapshot = ''
+
+    def get_payment_card_display(self) -> str:
+        if self.payment_card:
+            return self.payment_card.formatted_number()
+        if self.payment_card_snapshot:
+            return SalonPaymentCard.format_card_number(self.payment_card_snapshot)
+        return ''
+
+    def get_refund_card_display(self) -> str:
+        if not self.refund_card_number:
+            return ''
+        return SalonPaymentCard.format_card_number(self.refund_card_number)
 
     def get_total_price(self):
         return sum(s.get_price() for s in self.services.all())
@@ -273,6 +378,12 @@ class Appointment(models.Model):
 
         if clash:
             raise ValidationError('На это время мастер уже занят.')
+
+        if self.payment_method == self.PaymentMethod.CARD:
+            if self.payment_card and self.payment_card.salon != self.stylist.salon:
+                raise ValidationError('Карта оплаты должна принадлежать салону мастера.')
+            if not (self.payment_card or self.payment_card_snapshot):
+                raise ValidationError('Для оплаты картой необходимо указать карту салона.')
 
 
 class AppointmentService(models.Model):

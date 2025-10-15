@@ -1,5 +1,5 @@
 {% extends 'base3.html' %}
-{% load static %}
+{% load static form_tags %}
 
 {% block content %}
 <style>
@@ -325,6 +325,114 @@
     border: 1px solid rgba(226, 232, 240, 0.7);
     box-shadow: 0 24px 44px rgba(148, 163, 184, 0.25);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .payment-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border-radius: 20px;
+    background: rgba(99, 102, 241, 0.06);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+  }
+
+  .payment-section h6 {
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+  }
+
+  .payment-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 999px;
+    padding: 0.35rem 0.85rem;
+    font-weight: 600;
+    font-size: 0.8rem;
+    background: #ffffff;
+    color: #4f46e5;
+    box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.18);
+  }
+
+  .payment-method-form select {
+    min-width: 180px;
+  }
+
+  .card-visual {
+    position: relative;
+    border-radius: 20px;
+    padding: 1.75rem;
+    background: linear-gradient(135deg, #312e81, #4338ca);
+    color: #f8fafc;
+    box-shadow: 0 25px 45px rgba(79, 70, 229, 0.25);
+  }
+
+  .card-visual .card-label {
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.16em;
+    opacity: 0.7;
+  }
+
+  .card-visual .card-number {
+    font-size: 1.7rem;
+    letter-spacing: 0.12em;
+    margin: 0.75rem 0 1.25rem;
+  }
+
+  .copy-btn {
+    position: relative;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: #ffffff;
+    color: #1f2937;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
+  }
+
+  .copy-btn:hover {
+    border-color: rgba(79, 70, 229, 0.45);
+    color: #4338ca;
+    transform: translateY(-1px);
+  }
+
+  .copy-btn[data-copy-state='copied']::after {
+    content: 'Скопировано!';
+    position: absolute;
+    top: -1.9rem;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: #10b981;
+    color: #fff;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25);
+  }
+
+  .receipt-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    color: #2563eb;
+  }
+
+  .refund-alert {
+    border-radius: 16px;
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    padding: 1rem 1.25rem;
+  }
+
+  .refund-alert strong {
+    color: #b91c1c;
   }
 
   .appointment-card::before {
@@ -699,6 +807,124 @@
           </ul>
         </section>
 
+        <section class="payment-section">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="fw-semibold text-uppercase text-secondary mb-0">Оплата</h6>
+            <span class="payment-badge">
+              <i class="bi {% if appointment.payment_method == 'card' %}bi-credit-card{% else %}bi-cash-stack{% endif %}"></i>
+              {{ appointment.get_payment_method_display }}
+            </span>
+          </div>
+
+          <form method="post" class="payment-method-form mt-3 d-flex flex-wrap gap-2 align-items-center">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_payment_method">
+            <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+            <label class="form-label mb-0 me-2 text-muted small text-uppercase">Способ оплаты</label>
+            <select name="payment_method" class="form-select form-select-sm shadow-sm">
+              <option value="cash" {% if appointment.payment_method == 'cash' %}selected{% endif %}>Наличные</option>
+              <option value="card" {% if appointment.payment_method == 'card' %}selected{% endif %}>Карта</option>
+            </select>
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-arrow-repeat"></i>
+              Обновить
+            </button>
+          </form>
+
+          {% if appointment.payment_method == 'card' %}
+            {% if appointment.get_payment_card_display %}
+              <div class="card-visual mt-4">
+                <div class="card-label">Карта для перевода</div>
+                <div class="card-number">{{ appointment.get_payment_card_display }}</div>
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="copy-btn" data-copy-value="{{ appointment.get_payment_card_display|escapejs }}">
+                    <i class="bi bi-clipboard"></i>
+                    Скопировать номер
+                  </button>
+                  {% with total_price=appointment.services.all|sum_prices %}
+                    <button type="button" class="copy-btn" data-copy-value="{{ total_price|floatformat:0 }}">
+                      <i class="bi bi-currency-dollar"></i>
+                      Скопировать сумму
+                    </button>
+                  {% endwith %}
+                </div>
+              </div>
+              <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                {% with status=appointment.payment_status %}
+                  <span class="badge {% if status == 'paid' %}bg-success-subtle text-success{% elif status == 'awaiting_confirmation' %}bg-warning-subtle text-dark{% elif status == 'refund_requested' %}bg-info-subtle text-info{% elif status == 'refunded' %}bg-success-subtle text-success{% else %}bg-light text-dark{% endif %}">
+                    {{ appointment.get_payment_status_display }}
+                  </span>
+                {% endwith %}
+                {% if appointment.payment_receipt %}
+                  <a href="{{ appointment.payment_receipt.url }}" target="_blank" class="receipt-link">
+                    <i class="bi bi-receipt"></i>
+                    Посмотреть чек
+                  </a>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="alert alert-warning mt-3 mb-0">
+                Администратор салона пока не добавил карту для оплаты. Вы можете выбрать наличный расчёт или дождаться обновления информации.
+              </div>
+            {% endif %}
+
+            {% if appointment.status != 'X' and appointment.status != 'P' %}
+              <form method="post" enctype="multipart/form-data" class="mt-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="submit_payment_receipt">
+                <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                <label class="form-label fw-semibold">Загрузить чек перевода</label>
+                <div class="input-group">
+                  <input type="file" name="receipt" accept="image/*" class="form-control" required>
+                  <button type="submit" class="btn btn-outline-primary">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    Отправить
+                  </button>
+                </div>
+                <small class="text-muted">Загрузите скрин или фото чека, чтобы администратор быстрее подтвердил оплату.</small>
+              </form>
+            {% elif appointment.status == 'P' %}
+              <p class="text-muted mt-3 mb-0">Как только мастер подтвердит запись, вы сможете загрузить чек об оплате.</p>
+            {% endif %}
+          {% else %}
+            <p class="text-muted mt-3 mb-0">Оплата производится наличными в салоне.</p>
+          {% endif %}
+
+          {% if appointment.status == 'X' and appointment.payment_method == 'card' %}
+            <div class="refund-alert mt-4">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-arrow-counterclockwise fs-4 text-danger"></i>
+                <div>
+                  <strong>Нужны реквизиты для возврата</strong>
+                  <div class="text-muted small">Укажите карту, на которую салон сможет вернуть переведённые средства.</div>
+                </div>
+              </div>
+              <form method="post" class="row g-2 align-items-center">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="submit_refund_card">
+                <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                <div class="col-sm-8">
+                  <input type="text" name="card_number" class="form-control" placeholder="0000 0000 0000 0000" value="{{ appointment.get_refund_card_display }}">
+                </div>
+                <div class="col-sm-4 d-grid d-sm-block">
+                  <button type="submit" class="btn btn-danger w-100 w-sm-auto">
+                    <i class="bi bi-send"></i>
+                    Отправить реквизиты
+                  </button>
+                </div>
+              </form>
+              {% if appointment.get_refund_card_display %}
+                <div class="text-muted small mt-2">Сохранено: {{ appointment.get_refund_card_display }}.</div>
+              {% endif %}
+              {% if appointment.payment_status == 'refund_requested' %}
+                <div class="text-muted small mt-1">Возврат в обработке. Мы уведомим вас, как только администратор загрузит чек.</div>
+              {% elif appointment.payment_status == 'refunded' %}
+                <div class="text-success small mt-1">Возврат выполнен. Спасибо за ваше терпение.</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        </section>
+
         <footer class="appointment-footer">
           <div class="time-block">
             <span class="badge px-3 py-2 fw-semibold"><i class="bi bi-clock"></i> {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}</span>
@@ -752,5 +978,30 @@
       </div>
     </div>
   </section>
+
+  <script>
+    document.addEventListener('click', function (event) {
+      const button = event.target.closest('[data-copy-value]');
+      if (!button) {
+        return;
+      }
+
+      const value = button.getAttribute('data-copy-value');
+      if (!value) {
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(value).then(function () {
+          button.setAttribute('data-copy-state', 'copied');
+          setTimeout(function () {
+            button.removeAttribute('data-copy-state');
+          }, 1600);
+        }).catch(function () {
+          button.removeAttribute('data-copy-state');
+        });
+      }
+    });
+  </script>
 </div>
 {% endblock %}
