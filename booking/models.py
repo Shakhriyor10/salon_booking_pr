@@ -5,10 +5,10 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Avg, Q
 from django.utils import timezone
 from django.utils.text import slugify
 from django.urls import reverse
-from django.db.models import Avg
 
 User = get_user_model()
 
@@ -233,10 +233,16 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('stylist', 'start_time')
         ordering = ['-start_time']
         verbose_name = 'Запись'
         verbose_name_plural = 'Записи'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['stylist', 'start_time'],
+                condition=~Q(status='X'),
+                name='unique_active_appointment_per_slot',
+            )
+        ]
 
     def __str__(self):
         start = timezone.localtime(self.start_time).strftime('%d.%m %H:%M')
@@ -265,11 +271,17 @@ class Appointment(models.Model):
         if self.customer and (self.guest_name or self.guest_phone):
             raise ValidationError('Нельзя указывать и клиента, и данные гостя одновременно.')
 
-        clash = Appointment.objects.filter(
-            stylist=self.stylist,
-            start_time__lt=self.end_time,
-            end_time__gt=self.start_time
-        ).exclude(pk=self.pk).exists()
+        clash = (
+            Appointment.objects
+            .filter(
+                stylist=self.stylist,
+                start_time__lt=self.end_time,
+                end_time__gt=self.start_time,
+            )
+            .exclude(pk=self.pk)
+            .exclude(status=Appointment.Status.CANCELLED)
+            .exists()
+        )
 
         if clash:
             raise ValidationError('На это время мастер уже занят.')

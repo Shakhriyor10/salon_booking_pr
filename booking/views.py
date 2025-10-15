@@ -465,11 +465,16 @@ class StylistDetailView(DetailView):
             current = start
 
             while current + timedelta(minutes=15) <= end:
-                overlap = Appointment.objects.filter(
-                    stylist=stylist,
-                    start_time__lt=current + timedelta(minutes=15),
-                    end_time__gt=current
-                ).exists()
+                overlap = (
+                    Appointment.objects
+                    .filter(
+                        stylist=stylist,
+                        start_time__lt=current + timedelta(minutes=15),
+                        end_time__gt=current,
+                    )
+                    .exclude(status=Appointment.Status.CANCELLED)
+                    .exists()
+                )
                 if not overlap and current >= timezone.now():
                     slots.append(current)
                 current += timedelta(minutes=15)
@@ -512,11 +517,16 @@ class AppointmentCreateView(View):
         end_time = start_time + total_duration
 
         # Проверка занятости
-        if Appointment.objects.filter(
-            stylist=stylist,
-            start_time__lt=end_time,
-            end_time__gt=start_time
-        ).exists():
+        if (
+            Appointment.objects
+            .filter(
+                stylist=stylist,
+                start_time__lt=end_time,
+                end_time__gt=start_time,
+            )
+            .exclude(status=Appointment.Status.CANCELLED)
+            .exists()
+        ):
             messages.error(request, 'Извините, мастер уже занят в это время.')
             return redirect('home')
 
@@ -778,11 +788,16 @@ def service_booking(request):
                 current = start
 
                 while current + ss_duration <= end:
-                    overlap = Appointment.objects.filter(
-                        stylist=stylist,
-                        start_time__lt=current + ss_duration,
-                        end_time__gt=current
-                    ).exists()
+                    overlap = (
+                        Appointment.objects
+                        .filter(
+                            stylist=stylist,
+                            start_time__lt=current + ss_duration,
+                            end_time__gt=current,
+                        )
+                        .exclude(status=Appointment.Status.CANCELLED)
+                        .exists()
+                    )
 
                     in_break = BreakPeriod.objects.filter(
                         working_hour=wh,
@@ -1210,7 +1225,8 @@ class AppointmentActionView(View):
             appointment.save(update_fields=["status"])
 
         elif action == "cancel":
-            appointment.delete()
+            appointment.status = Appointment.Status.CANCELLED
+            appointment.save(update_fields=["status"])
             return JsonResponse({"status": "ok", "action": action})
 
         elif action == "done":
@@ -1363,8 +1379,9 @@ def cancel_appointment(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id, customer=request.user)
 
     if appointment.status not in [Appointment.Status.DONE]:
-        appointment.delete()
-        messages.success(request, "Запись успешно отменена и удалена.")
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save(update_fields=["status"])
+        messages.success(request, "Запись отмечена как отменённая.")
     else:
         messages.error(request, "Нельзя отменить выполненную запись.")
 
@@ -1575,10 +1592,11 @@ def appointment_update_status(request, appointment_id):
     new_status = request.POST.get("status")
 
     if new_status == 'DELETE':
-        appointment.delete()
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save(update_fields=["status"])
     elif new_status in [s.value for s in Appointment.Status]:
         appointment.status = new_status
-        appointment.save()
+        appointment.save(update_fields=["status"])
 
     return redirect("stylist_dashboard")
 
@@ -1650,11 +1668,16 @@ class ManualAppointmentCreateView(View):
         end_time = start_time + total_duration
 
         # Проверка на пересечение по времени
-        if Appointment.objects.filter(
-            stylist=stylist,
-            start_time__lt=end_time,
-            end_time__gt=start_time
-        ).exists():
+        if (
+            Appointment.objects
+            .filter(
+                stylist=stylist,
+                start_time__lt=end_time,
+                end_time__gt=start_time,
+            )
+            .exclude(status=Appointment.Status.CANCELLED)
+            .exists()
+        ):
             messages.error(request, "Мастер занят в это время.")
             return redirect('manual_appointment')
 
@@ -1759,11 +1782,16 @@ def get_available_times(request):
             end_aware = st_aware + duration
 
             # Проверка на пересечение с другими записями
-            overlap = Appointment.objects.filter(
-                stylist=stylist,
-                start_time__lt=end_aware,
-                end_time__gt=st_aware
-            ).exists()
+            overlap = (
+                Appointment.objects
+                .filter(
+                    stylist=stylist,
+                    start_time__lt=end_aware,
+                    end_time__gt=st_aware,
+                )
+                .exclude(status=Appointment.Status.CANCELLED)
+                .exists()
+            )
 
             # Проверка на пересечение с перерывами
             in_break = any(
@@ -1838,11 +1866,16 @@ class StylistManualAppointmentCreateView(View):
         total_duration = sum((s.salon_service.duration for s in stylist_services), timedelta())
         end_time = start_time + total_duration
 
-        overlap = Appointment.objects.filter(
-            stylist=stylist,
-            start_time__lt=end_time,
-            end_time__gt=start_time
-        ).exists()
+        overlap = (
+            Appointment.objects
+            .filter(
+                stylist=stylist,
+                start_time__lt=end_time,
+                end_time__gt=start_time,
+            )
+            .exclude(status=Appointment.Status.CANCELLED)
+            .exists()
+        )
 
         if overlap:
             messages.error(request, "Выбранное время занято.")
@@ -1921,11 +1954,16 @@ def get_available_times_for_stylist(request):
                 st_aware = tz.localize(start_dt)
 
                 # Проверка на пересечение с другими записями
-                overlap = Appointment.objects.filter(
-                    stylist=stylist,
-                    start_time__lt=st_aware + duration,
-                    end_time__gt=st_aware
-                ).exists()
+                overlap = (
+                    Appointment.objects
+                    .filter(
+                        stylist=stylist,
+                        start_time__lt=st_aware + duration,
+                        end_time__gt=st_aware,
+                    )
+                    .exclude(status=Appointment.Status.CANCELLED)
+                    .exists()
+                )
 
                 # Проверка на пересечение с перерывами
                 in_break = any(
