@@ -8,7 +8,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 from django.urls import reverse
-from django.db.models import Avg
+from django.db.models import Avg, Q
 
 User = get_user_model()
 
@@ -307,6 +307,7 @@ class Appointment(models.Model):
         related_name='appointments',
     )
     payment_card_snapshot = models.CharField(max_length=64, blank=True)
+    payment_card_holder_snapshot = models.CharField(max_length=128, blank=True)
     payment_receipt = models.ImageField(upload_to='payment_receipts/', null=True, blank=True)
     payment_submitted_at = models.DateTimeField(null=True, blank=True)
     payment_confirmed_at = models.DateTimeField(null=True, blank=True)
@@ -319,10 +320,16 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('stylist', 'start_time')
         ordering = ['-start_time']
         verbose_name = 'Запись'
         verbose_name_plural = 'Записи'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('stylist', 'start_time'),
+                condition=~Q(status='X'),
+                name='unique_active_appointment_per_slot',
+            )
+        ]
 
     def __str__(self):
         start = timezone.localtime(self.start_time).strftime('%d.%m %H:%M')
@@ -333,8 +340,10 @@ class Appointment(models.Model):
         self.payment_card = card
         if card:
             self.payment_card_snapshot = card.card_number
+            self.payment_card_holder_snapshot = card.card_holder
         else:
             self.payment_card_snapshot = ''
+            self.payment_card_holder_snapshot = ''
 
     def get_payment_card_display(self) -> str:
         if self.payment_card:
@@ -342,6 +351,24 @@ class Appointment(models.Model):
         if self.payment_card_snapshot:
             return SalonPaymentCard.format_card_number(self.payment_card_snapshot)
         return ''
+
+    def get_payment_card_holder_display(self) -> str:
+        if self.payment_card and self.payment_card.card_holder:
+            return self.payment_card.card_holder
+        return self.payment_card_holder_snapshot
+
+    @property
+    def is_card_payment_locked(self) -> bool:
+        if self.payment_method != self.PaymentMethod.CARD:
+            return False
+        if self.payment_receipt:
+            return True
+        return self.payment_status in {
+            self.PaymentStatus.AWAITING_CONFIRMATION,
+            self.PaymentStatus.PAID,
+            self.PaymentStatus.REFUND_REQUESTED,
+            self.PaymentStatus.REFUNDED,
+        }
 
     def get_refund_card_display(self) -> str:
         if not self.refund_card_number:
@@ -374,7 +401,7 @@ class Appointment(models.Model):
             stylist=self.stylist,
             start_time__lt=self.end_time,
             end_time__gt=self.start_time
-        ).exclude(pk=self.pk).exists()
+        ).exclude(pk=self.pk).exclude(status=Appointment.Status.CANCELLED).exists()
 
         if clash:
             raise ValidationError('На это время мастер уже занят.')

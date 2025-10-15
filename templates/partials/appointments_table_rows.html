@@ -75,6 +75,9 @@
                 {% if a.payment_method == 'card' and a.get_payment_card_display %}
                   <div class="mt-1 small text-muted">{{ a.get_payment_card_display }}</div>
                 {% endif %}
+                {% if a.payment_method == 'card' and a.get_payment_card_holder_display %}
+                  <div class="mt-1 small text-muted">Владелец: {{ a.get_payment_card_holder_display }}</div>
+                {% endif %}
                 {% if a.payment_receipt %}
                   <div class="mt-1">
                     <a href="{{ a.payment_receipt.url }}" target="_blank" class="text-decoration-none">

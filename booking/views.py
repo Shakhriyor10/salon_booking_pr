@@ -1212,7 +1212,12 @@ class AppointmentActionView(View):
             appointment.save(update_fields=["status"])
 
         elif action == "cancel":
-            appointment.delete()
+            if appointment.status == Appointment.Status.DONE:
+                return JsonResponse({"status": "error", "message": "Нельзя отменить выполненную запись."}, status=400)
+
+            if appointment.status != Appointment.Status.CANCELLED:
+                appointment.status = Appointment.Status.CANCELLED
+                appointment.save(update_fields=["status"])
             return JsonResponse({"status": "ok", "action": action})
 
         elif action == "done":
@@ -1386,7 +1391,25 @@ def my_appointments(request):
                         pk=form.cleaned_data["appointment_id"],
                         customer=request.user,
                     )
+                    if appointment.status == Appointment.Status.CANCELLED:
+                        messages.error(request, "Нельзя менять оплату для отменённой записи.")
+                        return redirect('my_appointments')
                     new_method = form.cleaned_data["payment_method"]
+
+                    if new_method == appointment.payment_method:
+                        messages.info(request, "Вы уже используете этот способ оплаты.")
+                        return redirect('my_appointments')
+
+                    if (
+                        appointment.payment_method == Appointment.PaymentMethod.CARD
+                        and new_method != Appointment.PaymentMethod.CARD
+                        and appointment.is_card_payment_locked
+                    ):
+                        messages.error(
+                            request,
+                            "После загрузки чека перевод можно подтвердить только администратору. Изменение способа оплаты невозможно.",
+                        )
+                        return redirect('my_appointments')
 
                     if new_method == Appointment.PaymentMethod.CARD:
                         active_card = (
@@ -1471,6 +1494,9 @@ def my_appointments(request):
                         pk=form.cleaned_data["appointment_id"],
                         customer=request.user,
                     )
+                    if appointment.status == Appointment.Status.CANCELLED:
+                        messages.error(request, "Для отменённой записи нельзя загрузить чек.")
+                        return redirect('my_appointments')
                     if appointment.payment_method != Appointment.PaymentMethod.CARD:
                         messages.error(request, "Для этой записи выбран другой способ оплаты.")
                     else:
@@ -1529,11 +1555,24 @@ def my_appointments(request):
 def cancel_appointment(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id, customer=request.user)
 
-    if appointment.status not in [Appointment.Status.DONE]:
-        appointment.delete()
-        messages.success(request, "Запись успешно отменена и удалена.")
-    else:
+    if appointment.status == Appointment.Status.DONE:
         messages.error(request, "Нельзя отменить выполненную запись.")
+        return redirect('my_appointments')
+
+    if appointment.status == Appointment.Status.CANCELLED:
+        messages.info(request, "Эта запись уже отменена.")
+        return redirect('my_appointments')
+
+    appointment.status = Appointment.Status.CANCELLED
+    appointment.save(update_fields=['status'])
+
+    if appointment.payment_method == Appointment.PaymentMethod.CARD:
+        messages.success(
+            request,
+            "Запись отменена. Укажите реквизиты для возврата, чтобы администратор мог вернуть оплату.",
+        )
+    else:
+        messages.success(request, "Запись отменена.")
 
     return redirect('my_appointments')
 
@@ -1742,7 +1781,11 @@ def appointment_update_status(request, appointment_id):
     new_status = request.POST.get("status")
 
     if new_status == 'DELETE':
-        appointment.delete()
+        if appointment.status == Appointment.Status.DONE:
+            messages.error(request, "Нельзя отменить выполненную запись.")
+        elif appointment.status != Appointment.Status.CANCELLED:
+            appointment.status = Appointment.Status.CANCELLED
+            appointment.save(update_fields=['status'])
     elif new_status in [s.value for s in Appointment.Status]:
         appointment.status = new_status
         appointment.save()
