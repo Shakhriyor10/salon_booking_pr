@@ -15,6 +15,14 @@
     --hero-primary: rgba(72, 107, 113, 0.95);
     --hero-secondary: rgba(19, 41, 45, 0.92);
     position: relative;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding: 3rem 0;
+  }
+
+  .salon-hero__inner {
+    position: relative;
     border-radius: 24px;
     overflow: hidden;
     background: linear-gradient(135deg, var(--hero-primary), var(--hero-secondary));
@@ -26,7 +34,7 @@
     margin: 0 auto;
   }
 
-  .salon-hero::before {
+  .salon-hero__inner::before {
     content: "";
     position: absolute;
     width: 420px;
@@ -40,7 +48,7 @@
     z-index: 0;
   }
 
-  .salon-hero::after {
+  .salon-hero__inner::after {
     content: "";
     position: absolute;
     inset: 0;
@@ -916,6 +924,10 @@
 
   @media (max-width: 991px) {
     .salon-hero {
+      padding: 2.2rem 0;
+    }
+
+    .salon-hero__inner {
       padding: 2.2rem;
       border-radius: 18px;
     }
@@ -953,6 +965,10 @@
     }
 
     .salon-hero {
+      padding: 1.8rem 0;
+    }
+
+    .salon-hero__inner {
       padding: 1.8rem;
     }
 
@@ -994,63 +1010,65 @@
 
 <div class="salon-detail-page">
   <section class="salon-hero">
-    <div class="hero-content">
-      <div class="hero-info">
-        <div class="hero-info-inner">
-          <span class="hero-eyebrow"><i class="bi bi-stars"></i>Салон красоты</span>
-          <h1>{{ salon.name }}</h1>
-          <div class="salon-meta">
-            <div class="meta-chip"><i class="bi bi-geo-alt"></i> {{ salon.address }}</div>
-            {% if salon.phone %}
-              <div class="meta-chip"><i class="bi bi-telephone"></i> {{ salon.phone }}</div>
+    <div class="salon-hero__inner">
+      <div class="hero-content">
+        <div class="hero-info">
+          <div class="hero-info-inner">
+            <span class="hero-eyebrow"><i class="bi bi-stars"></i>Салон красоты</span>
+            <h1>{{ salon.name }}</h1>
+            <div class="salon-meta">
+              <div class="meta-chip"><i class="bi bi-geo-alt"></i> {{ salon.address }}</div>
+              {% if salon.phone %}
+                <div class="meta-chip"><i class="bi bi-telephone"></i> {{ salon.phone }}</div>
+              {% endif %}
+              <div class="meta-chip meta-chip--accent"><i class="bi bi-star-fill text-warning"></i> {{ average_rating|floatformat:1 }}/5 рейтинг</div>
+            </div>
+            {% if salon.description %}
+              <p class="info-paragraph mb-4">{{ salon.description }}</p>
             {% endif %}
-            <div class="meta-chip meta-chip--accent"><i class="bi bi-star-fill text-warning"></i> {{ average_rating|floatformat:1 }}/5 рейтинг</div>
-          </div>
-          {% if salon.description %}
-            <p class="info-paragraph mb-4">{{ salon.description }}</p>
-          {% endif %}
-          <div class="hero-actions">
-            <a href="{% url 'service_booking' %}?salon={{ salon.id }}" class="btn btn-theme btn-lg px-4">
-              Забронировать услугу
-            </a>
-            <a href="#salon-stylists" class="btn btn-theme btn-lg px-4" data-scroll-target="#salon-stylists">
-              Выбрать стилиста
-            </a>
-            <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>
-          </div>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
-            <div>
-              <div class="stat-value">{{ average_rating|floatformat:1 }}</div>
-              <div class="stat-label">Средняя оценка</div>
+            <div class="hero-actions">
+              <a href="{% url 'service_booking' %}?salon={{ salon.id }}" class="btn btn-theme btn-lg px-4">
+                Забронировать услугу
+              </a>
+              <a href="#salon-stylists" class="btn btn-theme btn-lg px-4" data-scroll-target="#salon-stylists">
+                Выбрать стилиста
+              </a>
+              <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>
             </div>
           </div>
-          <div class="hero-stat">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <div>
-              <div class="stat-value">{{ stylists|length }}</div>
-              <div class="stat-label">Мастеров в салоне</div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
+              <div>
+                <div class="stat-value">{{ average_rating|floatformat:1 }}</div>
+                <div class="stat-label">Средняя оценка</div>
+              </div>
             </div>
-          </div>
-          <div class="hero-stat">
-            <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
-            <div>
-              <div class="stat-value">{{ salon.reviews.count }}</div>
-              <div class="stat-label">Отзывов клиентов</div>
+            <div class="hero-stat">
+              <div class="stat-icon"><i class="bi bi-people"></i></div>
+              <div>
+                <div class="stat-value">{{ stylists|length }}</div>
+                <div class="stat-label">Мастеров в салоне</div>
+              </div>
+            </div>
+            <div class="hero-stat">
+              <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
+              <div>
+                <div class="stat-value">{{ salon.reviews.count }}</div>
+                <div class="stat-label">Отзывов клиентов</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="hero-image-wrapper">
-        {% with photos=salon.get_photos %}
-          {% if photos %}
-            <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
-          {% else %}
-            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" alt="Salon placeholder">
-          {% endif %}
-        {% endwith %}
+        <div class="hero-image-wrapper">
+          {% with photos=salon.get_photos %}
+            {% if photos %}
+              <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" alt="Salon placeholder">
+            {% endif %}
+          {% endwith %}
+        </div>
       </div>
     </div>
   </section>
@@ -1072,9 +1090,10 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const heroSection = document.querySelector(".salon-hero");
+      const heroInner = heroSection?.querySelector(".salon-hero__inner");
       const heroImage = heroSection?.querySelector(".hero-image-wrapper img");
 
-      if (!heroSection || !heroImage) {
+      if (!heroSection || !heroInner || !heroImage) {
         return;
       }
 
@@ -1085,7 +1104,7 @@
       const applyGradient = (primary, secondary) => {
         heroSection.style.setProperty("--hero-primary", primary);
         heroSection.style.setProperty("--hero-secondary", secondary);
-        heroSection.style.background = `linear-gradient(135deg, ${primary}, ${secondary})`;
+        heroInner.style.background = `linear-gradient(135deg, ${primary}, ${secondary})`;
       };
 
       const rgbToHsl = (r, g, b) => {
