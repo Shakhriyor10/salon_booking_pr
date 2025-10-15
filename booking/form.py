@@ -24,9 +24,9 @@ def validate_stylist_photo(photo):
     if not photo:
         return photo
 
-    max_size_bytes = 1024 * 1024  # 1 МБ
+    max_size_bytes = 4 * 1024 * 1024  # 4 МБ
     if photo.size > max_size_bytes:
-        raise forms.ValidationError('Размер фото должен быть не более 1 МБ.')
+        raise forms.ValidationError('Размер фото должен быть не более 4 МБ.')
 
     try:
         image = Image.open(photo)
@@ -71,7 +71,7 @@ class StylistCreationForm(UserCreationForm):
     photo = forms.ImageField(
         label='Фото',
         required=True,
-        help_text='Фото должно быть квадратным и весить не более 1 МБ.',
+        help_text='Фото должно быть квадратным и весить не более 4 МБ.',
     )
     bio = forms.CharField(
         label='О себе',
@@ -168,7 +168,7 @@ class StylistUpdateForm(forms.Form):
     photo = forms.ImageField(
         label='Новое фото',
         required=False,
-        help_text='Фото должно быть квадратным и весить не более 1 МБ.',
+        help_text='Фото должно быть квадратным и весить не более 4 МБ.',
     )
 
     def __init__(self, *args, stylist=None, **kwargs):
