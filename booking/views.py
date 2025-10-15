@@ -1210,7 +1210,8 @@ class AppointmentActionView(View):
             appointment.save(update_fields=["status"])
 
         elif action == "cancel":
-            appointment.delete()
+            appointment.status = Appointment.Status.CANCELLED
+            appointment.save(update_fields=["status"])
             return JsonResponse({"status": "ok", "action": action})
 
         elif action == "done":
@@ -1363,8 +1364,9 @@ def cancel_appointment(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id, customer=request.user)
 
     if appointment.status not in [Appointment.Status.DONE]:
-        appointment.delete()
-        messages.success(request, "Запись успешно отменена и удалена.")
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save(update_fields=["status"])
+        messages.success(request, "Запись отмечена как отменённая.")
     else:
         messages.error(request, "Нельзя отменить выполненную запись.")
 
@@ -1575,10 +1577,11 @@ def appointment_update_status(request, appointment_id):
     new_status = request.POST.get("status")
 
     if new_status == 'DELETE':
-        appointment.delete()
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save(update_fields=["status"])
     elif new_status in [s.value for s in Appointment.Status]:
         appointment.status = new_status
-        appointment.save()
+        appointment.save(update_fields=["status"])
 
     return redirect("stylist_dashboard")
 
