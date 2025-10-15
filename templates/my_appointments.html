@@ -841,22 +841,21 @@
             </span>
           </div>
 
-          {% with payment_locked=appointment.is_card_payment_locked or appointment.status == 'X' %}
           <form method="post" class="payment-method-form mt-3 d-flex flex-wrap gap-2 align-items-center">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_payment_method">
             <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
             <label class="form-label mb-0 me-2 text-muted small text-uppercase">Способ оплаты</label>
-            <select name="payment_method" class="form-select form-select-sm shadow-sm" {% if payment_locked %}disabled{% endif %}>
+            <select name="payment_method" class="form-select form-select-sm shadow-sm" {% if appointment.is_card_payment_locked or appointment.status == 'X' %}disabled{% endif %}>
               <option value="cash" {% if appointment.payment_method == 'cash' %}selected{% endif %}>Наличные</option>
               <option value="card" {% if appointment.payment_method == 'card' %}selected{% endif %}>Карта</option>
             </select>
-            <button type="submit" class="btn btn-outline-primary btn-sm" {% if payment_locked %}disabled{% endif %}>
+            <button type="submit" class="btn btn-outline-primary btn-sm" {% if appointment.is_card_payment_locked or appointment.status == 'X' %}disabled{% endif %}>
               <i class="bi bi-arrow-repeat"></i>
               Обновить
             </button>
           </form>
-          {% if payment_locked %}
+          {% if appointment.is_card_payment_locked or appointment.status == 'X' %}
             <p class="text-muted small mt-2 mb-0">
               {% if appointment.status == 'X' %}
                 Для отменённой записи способ оплаты больше не редактируется.
@@ -865,7 +864,6 @@
               {% endif %}
             </p>
           {% endif %}
-          {% endwith %}
 
           {% if appointment.payment_method == 'card' %}
             {% if appointment.get_payment_card_display %}
