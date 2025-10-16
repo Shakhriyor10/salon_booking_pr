@@ -1040,7 +1040,7 @@
               <div class="payment-method-form__control">
                 <i class="bi bi-credit-card-2-front"></i>
                 <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
-                  {% for value, label in payment_method_choices %}
+                  {% for value, label in appointment.payment_method_choices %}
                     <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
                   {% endfor %}
                 </select>

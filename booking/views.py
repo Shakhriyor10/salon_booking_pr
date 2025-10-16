@@ -1559,9 +1559,19 @@ def my_appointments(request):
     for appointment in appointments:
         salon = getattr(appointment.stylist, 'salon', None)
         appointment.active_payment_card = salon.get_active_payment_card() if salon else None
+        if appointment.active_payment_card:
+            available_payment_method_choices = list(Appointment.PaymentMethod.choices)
+        else:
+            available_payment_method_choices = [
+                choice
+                for choice in Appointment.PaymentMethod.choices
+                if choice[0] != Appointment.PaymentMethod.CARD
+            ]
+        appointment.payment_method_choices = available_payment_method_choices
         appointment.can_change_payment_method = (
             appointment.status not in {Appointment.Status.CANCELLED, Appointment.Status.DONE}
             and not appointment.payment_receipt
+            and len(appointment.payment_method_choices) > 1
         )
         appointment.show_card_details = (
             appointment.payment_method == Appointment.PaymentMethod.CARD
