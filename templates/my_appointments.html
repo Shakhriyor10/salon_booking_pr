@@ -361,50 +361,143 @@
     margin: 4px 0 0;
   }
 
-  .payment-details-card__grid {
-    display: grid;
-    gap: 16px;
-    margin-top: 18px;
+  .virtual-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 28px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 24px;
+    background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.55), transparent 60%),
+                radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.55), transparent 65%),
+                linear-gradient(135deg, #111827, #1f2937 55%, #0f172a 100%);
+    box-shadow: 0 22px 45px rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    overflow: hidden;
   }
 
-  @media (min-width: 768px) {
-    .payment-details-card__grid {
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    }
+  .virtual-card::after {
+    content: "";
+    position: absolute;
+    inset: 18px -120px -120px 18px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 68%);
+    opacity: 0.6;
+    pointer-events: none;
   }
 
-  .payment-details-card__item {
-    background: rgba(255, 255, 255, 0.72);
-    border-radius: 16px;
-    padding: 14px 16px;
-    border: 1px solid rgba(148, 163, 184, 0.22);
+  .virtual-card__top,
+  .virtual-card__footer,
+  .virtual-card__number,
+  .virtual-card__holder {
+    position: relative;
+    z-index: 1;
   }
 
-  .payment-details-card__label {
-    display: block;
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    color: #94a3b8;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-
-  .payment-details-card__value {
+  .virtual-card__top {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    font-weight: 600;
-    color: #0f172a;
+    justify-content: space-between;
+    gap: 12px;
   }
 
-  .payment-details-card__value code {
-    background: rgba(15, 23, 42, 0.85);
+  .virtual-card__chip {
+    width: 52px;
+    height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(148, 163, 184, 0.5));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #111827;
+    font-size: 1.25rem;
+  }
+
+  .virtual-card__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
+    color: rgba(226, 232, 240, 0.92);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .virtual-card__number {
+    margin: clamp(12px, 3vw, 24px) 0 clamp(4px, 2vw, 12px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .virtual-card__number-groups {
+    display: flex;
+    gap: clamp(12px, 3vw, 20px);
+    font-size: clamp(1.35rem, 3.5vw, 1.8rem);
+    letter-spacing: 0.12em;
+    font-family: 'Fira Code', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  .virtual-card__number-groups span {
+    display: inline-block;
+    min-width: 3.4ch;
+    text-align: center;
+  }
+
+  .virtual-card__holder {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    color: rgba(226, 232, 240, 0.78);
+  }
+
+  .virtual-card__holder strong {
+    font-size: clamp(0.95rem, 2.6vw, 1.1rem);
+    letter-spacing: 0.12em;
+    font-weight: 600;
     color: #f8fafc;
-    padding: 4px 8px;
-    border-radius: 10px;
-    font-size: 0.9rem;
+  }
+
+  .virtual-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .virtual-card__amount {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: clamp(1rem, 2.8vw, 1.25rem);
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .virtual-card__helper {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .virtual-card .copy-btn {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(15, 23, 42, 0.45);
+    color: rgba(226, 232, 240, 0.92);
+  }
+
+  .virtual-card .copy-btn:hover {
+    background: rgba(15, 23, 42, 0.7);
+    color: #fff;
   }
 
   .copy-btn {
@@ -974,32 +1067,46 @@
                     Безопасный перевод
                   </div>
                 </div>
-                <div class="payment-details-card__grid">
-                  <div class="payment-details-card__item">
-                    <span class="payment-details-card__label">Тип карты</span>
-                    <div class="payment-details-card__value">{{ appointment.active_payment_card.get_card_type_display }}</div>
-                  </div>
-                  <div class="payment-details-card__item">
-                    <span class="payment-details-card__label">Владелец</span>
-                    <div class="payment-details-card__value">{{ appointment.active_payment_card.cardholder_name }}</div>
-                  </div>
-                  <div class="payment-details-card__item">
-                    <span class="payment-details-card__label">Номер карты</span>
-                    <div class="payment-details-card__value">
-                      <code>{{ appointment.active_payment_card.card_number }}</code>
-                      <button type="button" class="copy-btn" data-copy="{{ appointment.active_payment_card.card_number }}" data-copy-label="Скопировать">
-                        <i class="bi bi-clipboard"></i>
-                        <span class="copy-btn__text">Скопировать</span>
-                      </button>
+                <div class="virtual-card mt-4">
+                  <div class="virtual-card__top">
+                    <div class="virtual-card__chip">
+                      <i class="bi bi-credit-card-2-front"></i>
+                    </div>
+                    <div class="virtual-card__brand">
+                      <i class="bi bi-bank"></i>
+                      {{ appointment.active_payment_card.get_card_type_display|default:"Карта" }}
                     </div>
                   </div>
-                  <div class="payment-details-card__item">
-                    <span class="payment-details-card__label">Сумма к оплате</span>
-                    <div class="payment-details-card__value">
-                      <span class="fs-5 fw-semibold">{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
-                      <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать">
+                  {% with card_number=appointment.active_payment_card.card_number|default_if_none:''|cut:' '|cut:'-' %}
+                    {% with group_one=card_number|slice:":4" group_two=card_number|slice:"4:8" group_three=card_number|slice:"8:12" group_four=card_number|slice:"12:16" %}
+                      <div class="virtual-card__number">
+                        <div class="virtual-card__number-groups">
+                          <span>{{ group_one|default:"••••" }}</span>
+                          <span>{{ group_two|default:"••••" }}</span>
+                          <span>{{ group_three|default:"••••" }}</span>
+                          <span>{{ group_four|default:"••••" }}</span>
+                          {% if card_number|length > 16 %}
+                            <span>{{ card_number|slice:"16:20"|default:"••••" }}</span>
+                          {% endif %}
+                        </div>
+                        <button type="button" class="copy-btn" data-copy="{{ card_number }}" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                          <i class="bi bi-clipboard"></i>
+                          <span class="copy-btn__text">Копировать</span>
+                        </button>
+                      </div>
+                    {% endwith %}
+                  {% endwith %}
+                  <div class="virtual-card__holder">
+                    <span>Владелец карты</span>
+                    <strong>{{ appointment.active_payment_card.cardholder_name|default:"—" }}</strong>
+                  </div>
+                  <div class="virtual-card__footer">
+                    <div class="virtual-card__helper">Сумма перевода</div>
+                    <div class="virtual-card__amount">
+                      <span>{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
+                      <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать" data-copy-success="Скопировано!">
                         <i class="bi bi-clipboard"></i>
-                        <span class="copy-btn__text">Скопировать</span>
+                        <span class="copy-btn__text">Копировать</span>
                       </button>
                     </div>
                   </div>
