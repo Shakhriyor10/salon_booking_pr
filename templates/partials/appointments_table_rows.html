@@ -88,6 +88,37 @@
                       <span>Отменить</span>
                     </button>
                   {% endif %}
+                  {% if a.payment_method == 'card' %}
+                    <span class="badge bg-light text-dark">{{ a.get_payment_status_display }}</span>
+                    {% if a.payment_receipt %}
+                      <a href="{{ a.payment_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-receipt"></i>
+                        <span>Чек</span>
+                      </a>
+                    {% endif %}
+                    {% if a.payment_status == 'awaiting_confirmation' %}
+                      <form method="post" action="{% url 'appointment_payment_action' a.id %}">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="payment_action" value="confirm">
+                        <button type="submit" class="btn btn-success btn-sm">
+                          <i class="bi bi-shield-check"></i>
+                          <span>Подтвердить оплату</span>
+                        </button>
+                      </form>
+                    {% elif a.payment_status == 'refund_requested' %}
+                      <form method="post" action="{% url 'appointment_payment_action' a.id %}">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="payment_action" value="mark_refunded">
+                        <button type="submit" class="btn btn-outline-success btn-sm">
+                          <i class="bi bi-arrow-repeat"></i>
+                          <span>Возврат выполнен</span>
+                        </button>
+                      </form>
+                    {% endif %}
+                    {% if a.refund_card_number %}
+                      <span class="text-muted small">Возврат: <code>{{ a.refund_card_number }}</code></span>
+                    {% endif %}
+                  {% endif %}
                 </div>
               </td>
             </tr>

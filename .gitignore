@@ -44,6 +44,9 @@ share/python-wheels/
 MANIFEST
 
 **/migrations/*
+!booking/migrations/
+!booking/migrations/__init__.py
+!booking/migrations/0001_initial.py
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
