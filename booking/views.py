@@ -1577,11 +1577,9 @@ def my_appointments(request):
                         appointment.payment_status = Appointment.PaymentStatus.REFUND_REQUESTED
                         updates.add('payment_status')
 
-                    if not appointment.refund_requested_at:
+                    if updates:
                         appointment.refund_requested_at = timezone.now()
                         updates.add('refund_requested_at')
-
-                    if updates:
                         appointment.save(update_fields=sorted(updates))
                     messages.success(request, "Данные для возврата сохранены. Мы сообщим, когда перевод будет выполнен.")
                 else:
