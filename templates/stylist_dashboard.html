@@ -416,6 +416,145 @@
     font-size: 1rem;
   }
 
+  .refund-card {
+    margin-top: 0.75rem;
+    padding: 1.25rem;
+    border-radius: 20px;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.32), rgba(30, 41, 59, 0.92));
+    color: #e2e8f0;
+    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+  }
+
+  .refund-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .refund-card__label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(226, 232, 240, 0.75);
+  }
+
+  .refund-card__brand {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .refund-card__number {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .refund-card__digits {
+    display: flex;
+    gap: clamp(12px, 3vw, 20px);
+    font-size: clamp(1.2rem, 3vw, 1.55rem);
+    letter-spacing: 0.14em;
+    font-family: "Fira Code", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    color: #ffffff;
+  }
+
+  .refund-card__digits span {
+    min-width: 3.3ch;
+    text-align: center;
+  }
+
+  .refund-card__holder {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    color: rgba(226, 232, 240, 0.68);
+    margin-bottom: 1rem;
+  }
+
+  .refund-card__holder strong {
+    font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .refund-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .refund-card__helper {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: rgba(226, 232, 240, 0.7);
+    display: block;
+  }
+
+  .refund-card__amount {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .refund-card__amount strong {
+    font-size: clamp(1.05rem, 3vw, 1.35rem);
+    font-weight: 600;
+    color: #f8fafc;
+    display: block;
+    margin-top: 0.25rem;
+  }
+
+  .refund-card .copy-btn {
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.38);
+    color: rgba(226, 232, 240, 0.92);
+    border-radius: 999px;
+    padding: 0.45rem 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .refund-card .copy-btn:hover {
+    background: rgba(15, 23, 42, 0.62);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .refund-card .copy-btn.copied {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border-color: transparent;
+    color: #ffffff;
+  }
+
+  .refund-card .copy-btn i {
+    font-size: 1rem;
+  }
+
+  .refund-card .copy-btn__text {
+    white-space: nowrap;
+  }
+
   .btn-action {
     border-radius: 14px;
     font-weight: 600;
@@ -779,6 +918,84 @@
     currentMonth: createMonthStart(todayDate),
   };
 
+  function bindCopyButtons(context = document) {
+    const scope = context && typeof context.querySelectorAll === 'function' ? context : document;
+    scope.querySelectorAll('.copy-btn[data-copy]').forEach((button) => {
+      if (button.dataset.copyBound === 'true') {
+        return;
+      }
+
+      const labelEl = button.querySelector('.copy-btn__text');
+      const baseLabel = button.dataset.copyLabel || (labelEl ? labelEl.textContent.trim() : '');
+      if (!button.dataset.copyLabel && labelEl) {
+        button.dataset.copyLabel = baseLabel;
+      }
+
+      button.addEventListener('click', async () => {
+        const value = button.dataset.copy;
+        if (!value) {
+          return;
+        }
+
+        const copied = await copyValueToClipboard(value);
+        if (!copied) {
+          return;
+        }
+
+        const successLabel = button.dataset.copySuccess || 'Скопировано!';
+        const resetLabel = button.dataset.copyLabel || baseLabel;
+
+        button.classList.add('copied');
+        if (labelEl) {
+          labelEl.textContent = successLabel;
+        }
+
+        window.setTimeout(() => {
+          button.classList.remove('copied');
+          if (labelEl) {
+            labelEl.textContent = resetLabel;
+          }
+        }, 1600);
+      });
+
+      button.dataset.copyBound = 'true';
+    });
+  }
+
+  async function copyValueToClipboard(value) {
+    if (!value) {
+      return false;
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(value);
+        return true;
+      } catch (error) {
+        // fallback will run below
+      }
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+
+    let copied = false;
+    try {
+      copied = document.execCommand('copy');
+    } catch (error) {
+      copied = false;
+    }
+
+    document.body.removeChild(textarea);
+    return copied;
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     initializeCalendar();
     attachDashboardControls();
@@ -786,6 +1003,7 @@
     applyFilters();
     updateCalendarResetVisibility();
     startUpdatePolling();
+    bindCopyButtons(document);
   });
 
   document.addEventListener("visibilitychange", () => {
@@ -1314,6 +1532,7 @@
       cancelModal.dataset.bound = "true";
     }
 
+    bindCopyButtons(document);
     applyFilters();
   }
 

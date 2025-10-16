@@ -1077,6 +1077,7 @@ def dashboard_view(request):
         "default_visible_dates_json": json.dumps(default_visible_dates),
         "calendar_summary_json": json.dumps(calendar_summary),
         "latest_created_iso": latest_created_iso,
+        "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
     }
 
     return render(request, "dashboard.html", context)
@@ -1118,6 +1119,7 @@ def dashboard_ajax(request):
     context = {
         "grouped_appointments": grouped_appointments,
         "csrf_token": get_token(request),
+        "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
     }
 
     html = render_to_string("partials/appointments_table_rows.html", context)
@@ -1726,6 +1728,7 @@ def stylist_dashboard(request):
         "calendar_summary_json": json.dumps(calendar_summary),
         "latest_created_iso": latest_created_iso,
         "total_cash": cash_today,
+        "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
     }
 
     return render(request, "stylist_dashboard.html", context)
@@ -1772,6 +1775,7 @@ def stylist_dashboard_ajax(request):
         "grouped_appointments": grouped_appointments,
         "csrf_token": get_token(request),
         "show_stylist_column": False,
+        "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
     }
 
     html = render_to_string("partials/appointments_table_rows.html", context)

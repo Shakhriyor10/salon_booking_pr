@@ -1,4 +1,4 @@
-{% load form_tags %}
+{% load form_tags humanize %}
 {% with show_stylist=show_stylist_column|default:True %}
 {% with total_columns=show_stylist|yesno:'7,6' %}
 {% for date, appointments_on_date in grouped_appointments.items %}
@@ -125,7 +125,61 @@
                       </form>
                     {% endif %}
                     {% if a.refund_card_number %}
-                      <span class="text-muted small">Возврат: <code>{{ a.refund_card_number }}</code></span>
+                      <div class="refund-card">
+                        <div class="refund-card__header">
+                          <span class="refund-card__label">Карта клиента для возврата</span>
+                          <span class="refund-card__brand">
+                            {{ a.refund_card_type|card_type_label|default:"Карта" }}
+                          </span>
+                        </div>
+                        {% with groups=a.refund_card_number|card_groups %}
+                          <div class="refund-card__number">
+                            <div class="refund-card__digits">
+                              {% if groups %}
+                                {% for group in groups %}
+                                  <span>{{ group }}</span>
+                                {% endfor %}
+                              {% else %}
+                                <span>{{ a.refund_card_number }}</span>
+                              {% endif %}
+                            </div>
+                            <button
+                              type="button"
+                              class="copy-btn"
+                              data-copy="{% if groups %}{{ groups|join:' ' }}{% else %}{{ a.refund_card_number }}{% endif %}"
+                              data-copy-label="Копировать"
+                              data-copy-success="Скопировано!"
+                            >
+                              <i class="bi bi-clipboard"></i>
+                              <span class="copy-btn__text">Копировать</span>
+                            </button>
+                          </div>
+                        {% endwith %}
+                        <div class="refund-card__holder">
+                          <span>Владелец карты</span>
+                          <strong>{{ a.refund_cardholder_name|default:"—" }}</strong>
+                        </div>
+                        {% with refund_total=a.services.all|sum_prices %}
+                          <div class="refund-card__footer">
+                            <div class="refund-card__amount">
+                              <div>
+                                <span class="refund-card__helper">Сумма возврата</span>
+                                <strong>{{ refund_total|default:0|intcomma }} сум</strong>
+                              </div>
+                              <button
+                                type="button"
+                                class="copy-btn"
+                                data-copy="{{ refund_total|default:0|intcomma }} сум"
+                                data-copy-label="Копировать"
+                                data-copy-success="Скопировано!"
+                              >
+                                <i class="bi bi-clipboard"></i>
+                                <span class="copy-btn__text">Копировать</span>
+                              </button>
+                            </div>
+                          </div>
+                        {% endwith %}
+                      </div>
                     {% endif %}
                     {% if a.refund_receipt %}
                       <a href="{{ a.refund_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
