@@ -710,7 +710,7 @@
                 </span>
               </div>
             </div>
-            {% if appointment.status != 'X' and appointment.status != 'D' %}
+            {% if appointment.can_change_payment_method %}
             <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
               {% csrf_token %}
               <input type="hidden" name="payment_action" value="change_method">
@@ -723,6 +723,8 @@
               </select>
               <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
             </form>
+            {% elif appointment.payment_receipt %}
+            <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
             {% endif %}
           </div>
 

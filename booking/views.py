@@ -1392,6 +1392,13 @@ def my_appointments(request):
                     messages.error(request, "Изменение способа оплаты недоступно для этой записи.")
                     return redirect('my_appointments')
 
+                if appointment.payment_receipt:
+                    messages.error(
+                        request,
+                        "После загрузки чека изменить способ оплаты нельзя.",
+                    )
+                    return redirect('my_appointments')
+
                 form = AppointmentPaymentMethodForm(request.POST, appointment=appointment)
                 if form.is_valid():
                     method = form.cleaned_data["payment_method"]
@@ -1542,6 +1549,10 @@ def my_appointments(request):
     for appointment in appointments:
         salon = getattr(appointment.stylist, 'salon', None)
         appointment.active_payment_card = salon.get_active_payment_card() if salon else None
+        appointment.can_change_payment_method = (
+            appointment.status not in {Appointment.Status.CANCELLED, Appointment.Status.DONE}
+            and not appointment.payment_receipt
+        )
         appointment.show_card_details = (
             appointment.payment_method == Appointment.PaymentMethod.CARD
             and appointment.payment_status == Appointment.PaymentStatus.AWAITING_PAYMENT

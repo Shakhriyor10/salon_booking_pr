@@ -466,6 +466,10 @@ class AppointmentPaymentMethodForm(forms.Form):
 
     def clean_payment_method(self):
         method = self.cleaned_data['payment_method']
+        if self.appointment.payment_receipt:
+            raise forms.ValidationError(
+                'После загрузки чека изменить способ оплаты нельзя.'
+            )
         if method == Appointment.PaymentMethod.CARD:
             salon = getattr(self.appointment.stylist, 'salon', None)
             if not salon or not salon.get_active_payment_card():
