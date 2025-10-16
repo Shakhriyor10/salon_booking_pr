@@ -1411,21 +1411,20 @@
 
     const previousStatus = row.dataset.status || "";
     const appointmentDate = row.dataset.date || null;
-    const dayCard = row.closest("[data-day-block]");
-    row.remove();
 
-    if (dayCard) {
-      const countBadge = dayCard.querySelector("[data-day-count]");
-      if (countBadge) {
-        const currentCount = parseInt(countBadge.textContent, 10);
-        const nextCount = Number.isNaN(currentCount) ? 0 : Math.max(0, currentCount - 1);
-        countBadge.textContent = nextCount;
-      }
+    row.dataset.status = "X";
 
-      const remainingRows = dayCard.querySelectorAll('tbody tr[data-appointment-row="true"]').length;
-      if (remainingRows === 0) {
-        dayCard.remove();
-      }
+    const statusBadge = row.querySelector(".status-badge");
+    if (statusBadge) {
+      statusBadge.textContent = "Отменена";
+      statusBadge.className = "badge status-badge bg-secondary";
+    }
+
+    row.querySelectorAll("[data-appointment-action]").forEach((button) => button.remove());
+
+    const actionsCell = row.querySelector('[data-label="Действия"]');
+    if (actionsCell) {
+      actionsCell.innerHTML = '<span class="text-muted">Отменена</span>';
     }
 
     adjustCalendarCounts(appointmentDate, previousStatus, -1);
