@@ -194,6 +194,113 @@
     </div>
 
     <div class="card mb-4">
+        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <span>Карты для приёма платежей</span>
+        </div>
+        <div class="card-body">
+            <h5 class="fw-semibold mb-3">Добавить карту</h5>
+            <form method="post" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="payment_card_add">
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ payment_card_form.card_type.id_for_label }}">{{ payment_card_form.card_type.label }}</label>
+                    {{ payment_card_form.card_type }}
+                    {% for error in payment_card_form.card_type.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ payment_card_form.cardholder_name.id_for_label }}">{{ payment_card_form.cardholder_name.label }}</label>
+                    {{ payment_card_form.cardholder_name }}
+                    {% for error in payment_card_form.cardholder_name.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ payment_card_form.card_number.id_for_label }}">{{ payment_card_form.card_number.label }}</label>
+                    {{ payment_card_form.card_number }}
+                    {% for error in payment_card_form.card_number.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        {{ payment_card_form.is_active }}
+                        <label class="form-check-label" for="{{ payment_card_form.is_active.id_for_label }}">Сделать активной</label>
+                    </div>
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+                {% if payment_card_form.non_field_errors %}
+                    <div class="col-12">
+                        <div class="alert alert-danger mb-0">
+                            {% for error in payment_card_form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+
+            <hr class="my-4">
+
+            {% if payment_cards %}
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Владелец</th>
+                                <th>Номер</th>
+                                <th>Статус</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for card in payment_cards %}
+                            <tr>
+                                <td>{{ card.get_card_type_display }}</td>
+                                <td>{{ card.cardholder_name }}</td>
+                                <td><code>{{ card.card_number }}</code></td>
+                                <td>
+                                    {% if card.is_active %}
+                                        <span class="badge bg-success">Активна</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Не активна</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="payment_card_toggle">
+                                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                                            <input type="hidden" name="target_state" value="{% if card.is_active %}0{% else %}1{% endif %}">
+                                            <button type="submit" class="btn btn-sm {% if card.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                                                {% if card.is_active %}Сделать неактивной{% else %}Сделать активной{% endif %}
+                                            </button>
+                                        </form>
+                                        <form method="post" onsubmit="return confirm('Удалить карту?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="payment_card_delete">
+                                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Карты пока не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Услуги салона</span>
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalonServiceModal">

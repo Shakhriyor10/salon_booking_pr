@@ -27,6 +27,8 @@ urlpatterns = [
     path("stylist/dashboard/updates/", views.stylist_dashboard_updates, name="stylist_dashboard_updates"),
     path("appointment/<int:appointment_id>/update-status/", views.appointment_update_status,
          name="appointment_update_status"),
+    path("appointment/<int:appointment_id>/payment-action/", views.appointment_payment_action,
+         name="appointment_payment_action"),
     path('manual-appointment/', ManualAppointmentCreateView.as_view(), name='manual_appointment'),
     path('get-stylists-by-service/', get_stylists_by_service, name='get_stylists_by_service'),
     path('get-available-times/', get_available_times, name='get_available_times'),
