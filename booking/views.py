@@ -1967,6 +1967,21 @@ def appointment_payment_action(request, appointment_id):
         update_fields.append('payment_status')
         success_message = "Оплата подтверждена."
     elif action == "mark_refunded":
+        if appointment.status != Appointment.Status.CANCELLED:
+            messages.error(request, "Возврат можно завершить только для отменённых записей.")
+            return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
+        if not all([
+            appointment.refund_card_number,
+            appointment.refund_cardholder_name,
+            appointment.refund_card_type,
+        ]):
+            messages.error(
+                request,
+                "Нельзя завершить возврат: клиент ещё не указал реквизиты карты для перевода.",
+            )
+            return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
         form = AppointmentRefundCompleteForm(request.POST, request.FILES)
         if not form.is_valid():
             for field_errors in form.errors.values():

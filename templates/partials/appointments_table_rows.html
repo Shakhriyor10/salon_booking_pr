@@ -106,23 +106,29 @@
                         </button>
                       </form>
                     {% elif a.payment_status == 'refund_requested' %}
-                      <form
-                        method="post"
-                        action="{% url 'appointment_payment_action' a.id %}"
-                        enctype="multipart/form-data"
-                        class="d-flex flex-column gap-2"
-                      >
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                        <input type="hidden" name="payment_action" value="mark_refunded">
-                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                          <input type="file" name="refund_receipt" class="form-control form-control-sm" accept="image/*">
-                          <button type="submit" class="btn btn-outline-success btn-sm">
-                            <i class="bi bi-arrow-repeat"></i>
-                            <span>Возврат выполнен</span>
-                          </button>
+                      {% if a.refund_card_number and a.refund_cardholder_name and a.refund_card_type %}
+                        <form
+                          method="post"
+                          action="{% url 'appointment_payment_action' a.id %}"
+                          enctype="multipart/form-data"
+                          class="d-flex flex-column gap-2"
+                        >
+                          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                          <input type="hidden" name="payment_action" value="mark_refunded">
+                          <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <input type="file" name="refund_receipt" class="form-control form-control-sm" accept="image/*">
+                            <button type="submit" class="btn btn-outline-success btn-sm">
+                              <i class="bi bi-arrow-repeat"></i>
+                              <span>Возврат выполнен</span>
+                            </button>
+                          </div>
+                          <span class="text-muted small">Можно приложить чек возврата, чтобы клиент увидел подтверждение.</span>
+                        </form>
+                      {% else %}
+                        <div class="alert alert-warning py-2 px-3 mb-0 small">
+                          Клиент ещё не указал реквизиты карты для возврата. Дождитесь данных, прежде чем завершать перевод.
                         </div>
-                        <span class="text-muted small">Можно приложить чек возврата, чтобы клиент увидел подтверждение.</span>
-                      </form>
+                      {% endif %}
                     {% endif %}
                     {% if a.payment_status != 'refunded' and a.refund_card_number %}
                       <div class="refund-card">
