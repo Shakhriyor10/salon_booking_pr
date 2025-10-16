@@ -13,9 +13,13 @@ from .form import (
     SalonServiceForm,
     SalonServiceUpdateForm,
     StylistUpdateForm,
+    SalonPaymentCardForm,
+    AppointmentPaymentMethodForm,
+    AppointmentReceiptForm,
+    AppointmentRefundForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
-    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review
+    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -1222,16 +1226,22 @@ class AppointmentActionView(View):
 
         if action == "confirm":
             appointment.status = Appointment.Status.CONFIRMED
-            appointment.save(update_fields=["status"])
+            updates = appointment.update_payment_status_for_status(Appointment.Status.CONFIRMED)
+            update_fields = ['status'] + updates
+            appointment.save(update_fields=update_fields)
 
         elif action == "cancel":
             appointment.status = Appointment.Status.CANCELLED
-            appointment.save(update_fields=["status"])
+            updates = appointment.update_payment_status_for_status(Appointment.Status.CANCELLED)
+            update_fields = ['status'] + updates
+            appointment.save(update_fields=update_fields)
             return JsonResponse({"status": "ok", "action": action})
 
         elif action == "done":
             appointment.status = Appointment.Status.DONE
-            appointment.save(update_fields=["status"])
+            updates = appointment.update_payment_status_for_status(Appointment.Status.DONE)
+            update_fields = ['status'] + updates
+            appointment.save(update_fields=update_fields)
 
         else:
             return JsonResponse(
@@ -1343,35 +1353,236 @@ class ReportView(View):
 
 @login_required(login_url='login')
 def my_appointments(request):
-    appointments = (
+    appointments_qs = (
         Appointment.objects
-        .select_related("stylist")
-        .prefetch_related("services__stylist_service__salon_service__service")  # подгружаем услуги
+        .select_related("stylist", "stylist__salon", "payment_card")
+        .prefetch_related("services__stylist_service__salon_service__service")
         .filter(customer=request.user)
         .order_by("-start_time")
     )
 
     upcoming_appointment = (
-        appointments
+        appointments_qs
         .filter(start_time__gte=now())
         .order_by("start_time")
         .first()
     )
 
-    if request.method == "POST" and request.POST.get("profile_form"):
-        profile_form = ProfileUpdateForm(request.user, request.POST)
-        if profile_form.is_valid():
-            profile_form.save()
-            messages.success(request, "Профиль обновлён.")
-            return redirect('my_appointments')
-    else:
-        profile_form = ProfileUpdateForm(request.user)
+    profile_form = ProfileUpdateForm(request.user)
+
+    if request.method == "POST":
+        if request.POST.get("profile_form"):
+            profile_form = ProfileUpdateForm(request.user, request.POST)
+            if profile_form.is_valid():
+                profile_form.save()
+                messages.success(request, "Профиль обновлён.")
+                return redirect('my_appointments')
+        elif request.POST.get("payment_action"):
+            appointment_id = request.POST.get("appointment_id")
+            appointment = get_object_or_404(
+                Appointment,
+                id=appointment_id,
+                customer=request.user,
+            )
+
+            action = request.POST.get("payment_action")
+
+            if action == "change_method":
+                if appointment.status in {Appointment.Status.CANCELLED, Appointment.Status.DONE}:
+                    messages.error(request, "Изменение способа оплаты недоступно для этой записи.")
+                    return redirect('my_appointments')
+
+                if appointment.payment_receipt:
+                    messages.error(
+                        request,
+                        "После загрузки чека изменить способ оплаты нельзя.",
+                    )
+                    return redirect('my_appointments')
+
+                form = AppointmentPaymentMethodForm(request.POST, appointment=appointment)
+                if form.is_valid():
+                    method = form.cleaned_data["payment_method"]
+                    updates = set()
+
+                    if method == Appointment.PaymentMethod.CASH:
+                        if appointment.payment_method != Appointment.PaymentMethod.CASH:
+                            appointment.payment_method = Appointment.PaymentMethod.CASH
+                            updates.add('payment_method')
+                        if appointment.payment_status != Appointment.PaymentStatus.NOT_REQUIRED:
+                            appointment.payment_status = Appointment.PaymentStatus.NOT_REQUIRED
+                            updates.add('payment_status')
+                        if appointment.payment_card_id:
+                            appointment.payment_card = None
+                            updates.add('payment_card')
+                        if appointment.payment_receipt:
+                            appointment.payment_receipt.delete(save=False)
+                            appointment.payment_receipt = None
+                            appointment.receipt_uploaded_at = None
+                            updates.update({'payment_receipt', 'receipt_uploaded_at'})
+                        if any([
+                            appointment.refund_cardholder_name,
+                            appointment.refund_card_number,
+                            appointment.refund_card_type,
+                            appointment.refund_requested_at,
+                        ]):
+                            appointment.refund_cardholder_name = ''
+                            appointment.refund_card_number = ''
+                            appointment.refund_card_type = ''
+                            appointment.refund_requested_at = None
+                            updates.update({
+                                'refund_cardholder_name',
+                                'refund_card_number',
+                                'refund_card_type',
+                                'refund_requested_at',
+                            })
+                    else:
+                        salon = getattr(appointment.stylist, 'salon', None)
+                        active_card = salon.get_active_payment_card() if salon else None
+                        if not active_card:
+                            messages.error(request, "У салона нет активной карты для оплаты.")
+                            return redirect('my_appointments')
+
+                        if appointment.payment_method != Appointment.PaymentMethod.CARD:
+                            appointment.payment_method = Appointment.PaymentMethod.CARD
+                            updates.add('payment_method')
+
+                        if appointment.payment_card_id != active_card.id:
+                            appointment.payment_card = active_card
+                            updates.add('payment_card')
+
+                        new_status = (
+                            Appointment.PaymentStatus.AWAITING_PAYMENT
+                            if appointment.status == Appointment.Status.CONFIRMED
+                            else Appointment.PaymentStatus.PENDING
+                        )
+                        if appointment.payment_status != new_status:
+                            appointment.payment_status = new_status
+                            updates.add('payment_status')
+
+                    if updates:
+                        appointment.save(update_fields=sorted(updates))
+                    messages.success(request, "Способ оплаты обновлён.")
+                else:
+                    for error in form.errors.get('payment_method', []):
+                        messages.error(request, error)
+
+                return redirect('my_appointments')
+
+            elif action == "upload_receipt":
+                if appointment.payment_method != Appointment.PaymentMethod.CARD:
+                    messages.error(request, "Для этой записи не требуется загрузка чека.")
+                    return redirect('my_appointments')
+
+                if appointment.payment_receipt:
+                    messages.error(request, "Чек уже загружен и ожидает проверки.")
+                    return redirect('my_appointments')
+
+                if appointment.status != Appointment.Status.CONFIRMED:
+                    messages.error(request, "Чек можно загрузить после подтверждения записи мастером.")
+                    return redirect('my_appointments')
+
+                if appointment.payment_status not in {Appointment.PaymentStatus.AWAITING_PAYMENT}:
+                    messages.error(request, "Сейчас нельзя загрузить чек для этой записи.")
+                    return redirect('my_appointments')
+
+                form = AppointmentReceiptForm(request.POST, request.FILES)
+                if form.is_valid():
+                    receipt = form.cleaned_data['receipt']
+                    appointment.payment_receipt = receipt
+                    appointment.receipt_uploaded_at = timezone.now()
+                    appointment.payment_status = Appointment.PaymentStatus.AWAITING_CONFIRMATION
+                    appointment.save(update_fields=[
+                        'payment_receipt',
+                        'receipt_uploaded_at',
+                        'payment_status',
+                    ])
+                    messages.success(request, "Чек успешно загружен и отправлен на проверку.")
+                else:
+                    for field_errors in form.errors.values():
+                        for error in field_errors:
+                            messages.error(request, error)
+
+                return redirect('my_appointments')
+
+            elif action == "provide_refund":
+                if appointment.status != Appointment.Status.CANCELLED:
+                    messages.error(request, "Возврат возможен только для отменённых записей.")
+                    return redirect('my_appointments')
+
+                if appointment.payment_method != Appointment.PaymentMethod.CARD:
+                    messages.error(request, "Возврат доступен только для переводов на карту.")
+                    return redirect('my_appointments')
+
+                if appointment.refund_card_number:
+                    messages.info(request, "Данные карты для возврата уже сохранены.")
+                    return redirect('my_appointments')
+
+                form = AppointmentRefundForm(request.POST)
+                if form.is_valid():
+                    appointment.refund_card_type = form.cleaned_data['refund_card_type']
+                    appointment.refund_cardholder_name = form.cleaned_data['refund_cardholder_name']
+                    appointment.refund_card_number = form.cleaned_data['refund_card_number']
+                    updates = {
+                        'refund_card_type',
+                        'refund_cardholder_name',
+                        'refund_card_number',
+                    }
+
+                    if appointment.payment_status != Appointment.PaymentStatus.REFUND_REQUESTED:
+                        appointment.payment_status = Appointment.PaymentStatus.REFUND_REQUESTED
+                        updates.add('payment_status')
+
+                    if not appointment.refund_requested_at:
+                        appointment.refund_requested_at = timezone.now()
+                        updates.add('refund_requested_at')
+
+                    appointment.save(update_fields=sorted(updates))
+                    messages.success(request, "Данные для возврата сохранены. Мы сообщим, когда перевод будет выполнен.")
+                else:
+                    for field_errors in form.errors.values():
+                        for error in field_errors:
+                            messages.error(request, error)
+
+                return redirect('my_appointments')
+
+    appointments = list(appointments_qs)
+    for appointment in appointments:
+        salon = getattr(appointment.stylist, 'salon', None)
+        appointment.active_payment_card = salon.get_active_payment_card() if salon else None
+        appointment.can_change_payment_method = (
+            appointment.status not in {Appointment.Status.CANCELLED, Appointment.Status.DONE}
+            and not appointment.payment_receipt
+        )
+        appointment.show_card_details = (
+            appointment.payment_method == Appointment.PaymentMethod.CARD
+            and appointment.payment_status == Appointment.PaymentStatus.AWAITING_PAYMENT
+            and appointment.status == Appointment.Status.CONFIRMED
+            and appointment.active_payment_card is not None
+        )
+        appointment.can_upload_receipt = (
+            appointment.payment_method == Appointment.PaymentMethod.CARD
+            and appointment.status == Appointment.Status.CONFIRMED
+            and appointment.payment_status == Appointment.PaymentStatus.AWAITING_PAYMENT
+            and not appointment.payment_receipt
+        )
+        appointment.needs_refund_details = (
+            appointment.status == Appointment.Status.CANCELLED
+            and appointment.payment_method == Appointment.PaymentMethod.CARD
+            and not appointment.refund_card_number
+            and appointment.payment_status in {
+                Appointment.PaymentStatus.REFUND_REQUESTED,
+                Appointment.PaymentStatus.PAID,
+                Appointment.PaymentStatus.AWAITING_CONFIRMATION,
+            }
+        )
 
     return render(request, "my_appointments.html", {
         "appointments": appointments,
         "now": now(),
         "upcoming_appointment": upcoming_appointment,
         "profile_form": profile_form,
+        "payment_method_choices": Appointment.PaymentMethod.choices,
+        "card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
     })
 
 @login_required
@@ -1380,7 +1591,10 @@ def cancel_appointment(request, appointment_id):
 
     if appointment.status not in [Appointment.Status.DONE]:
         appointment.status = Appointment.Status.CANCELLED
-        appointment.save(update_fields=["status"])
+        updates = appointment.update_payment_status_for_status(Appointment.Status.CANCELLED)
+        update_fields = ['status']
+        update_fields.extend(updates)
+        appointment.save(update_fields=update_fields)
         messages.success(request, "Запись отмечена как отменённая.")
     else:
         messages.error(request, "Нельзя отменить выполненную запись.")
@@ -1403,7 +1617,7 @@ def stylist_dashboard(request):
     appointments_qs = (
         Appointment.objects
         .filter(stylist=stylist, start_time__date__gte=yesterday)
-        .select_related("customer")
+        .select_related("customer", "payment_card")
         .prefetch_related(
             Prefetch(
                 "services",
@@ -1467,7 +1681,7 @@ def stylist_dashboard_ajax(request):
     appointments_qs = (
         Appointment.objects
         .filter(stylist=stylist, start_time__date__gte=yesterday)
-        .select_related("customer")
+        .select_related("customer", "payment_card")
         .prefetch_related(
             Prefetch(
                 "services",
@@ -1593,12 +1807,71 @@ def appointment_update_status(request, appointment_id):
 
     if new_status == 'DELETE':
         appointment.status = Appointment.Status.CANCELLED
-        appointment.save(update_fields=["status"])
+        updates = appointment.update_payment_status_for_status(Appointment.Status.CANCELLED)
+        update_fields = ['status'] + updates
+        appointment.save(update_fields=update_fields)
     elif new_status in [s.value for s in Appointment.Status]:
         appointment.status = new_status
-        appointment.save(update_fields=["status"])
+        updates = appointment.update_payment_status_for_status(new_status)
+        update_fields = ['status'] + updates
+        appointment.save(update_fields=update_fields)
 
     return redirect("stylist_dashboard")
+
+
+@require_POST
+@login_required
+def appointment_payment_action(request, appointment_id):
+    appointment = get_object_or_404(Appointment, id=appointment_id)
+
+    user = request.user
+    profile = getattr(user, "profile", None)
+    stylist_profile = getattr(user, "stylist_profile", None)
+
+    is_superuser = user.is_superuser
+    is_salon_admin = bool(
+        profile and profile.is_salon_admin and profile.salon and profile.salon == appointment.stylist.salon
+    )
+    is_stylist_owner = bool(stylist_profile and stylist_profile == appointment.stylist)
+
+    if not (is_superuser or is_salon_admin or is_stylist_owner):
+        return HttpResponseForbidden("Недостаточно прав для обновления статуса оплаты.")
+
+    action = request.POST.get("payment_action")
+    update_fields = []
+    success_message = None
+
+    if appointment.payment_method != Appointment.PaymentMethod.CARD:
+        messages.error(request, "Для этой записи не настроена оплата через карту.")
+        return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
+    if action == "confirm":
+        appointment.payment_status = Appointment.PaymentStatus.PAID
+        update_fields.append('payment_status')
+        success_message = "Оплата подтверждена."
+    elif action == "mark_refunded":
+        appointment.payment_status = Appointment.PaymentStatus.REFUNDED
+        update_fields.append('payment_status')
+        success_message = "Возврат отмечен как выполненный."
+    elif action == "request_refund":
+        appointment.payment_status = Appointment.PaymentStatus.REFUND_REQUESTED
+        update_fields.append('payment_status')
+        if not appointment.refund_requested_at:
+            appointment.refund_requested_at = timezone.now()
+            update_fields.append('refund_requested_at')
+        success_message = "Статус возврата обновлён."
+    else:
+        messages.error(request, "Неизвестное действие оплаты.")
+        return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
+    if update_fields:
+        unique_fields = list(dict.fromkeys(update_fields))
+        appointment.save(update_fields=unique_fields)
+
+    if success_message:
+        messages.success(request, success_message)
+
+    return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
 
 
 @method_decorator(login_required, name='dispatch')
@@ -2078,6 +2351,8 @@ def stylist_dayoff_view(request):
     salon_services = None
     selected_stylist = None
     selected_stylist_id = None
+    payment_card_form = None
+    payment_cards = SalonPaymentCard.objects.none()
 
     stylists = []
     stylists_map = {}
@@ -2102,6 +2377,8 @@ def stylist_dayoff_view(request):
 
         stylist_creation_form = StylistCreationForm()
         salon_service_form = SalonServiceForm(profile.salon)
+        payment_card_form = SalonPaymentCardForm()
+        payment_cards = SalonPaymentCard.objects.filter(salon=profile.salon).order_by('-is_active', '-updated_at')
 
         selected_stylist_id = request.POST.get('stylist_id') or request.GET.get('stylist_id')
 
@@ -2120,6 +2397,8 @@ def stylist_dayoff_view(request):
         stylists = None
         selected_stylist = request.user.stylist_profile
         selected_stylist_id = str(selected_stylist.id)
+        if selected_stylist and selected_stylist.salon:
+            payment_cards = SalonPaymentCard.objects.filter(salon=selected_stylist.salon).order_by('-is_active', '-updated_at')
 
     stylist = selected_stylist
 
@@ -2213,6 +2492,35 @@ def stylist_dayoff_view(request):
                 )
             else:
                 messages.success(request, 'Стилист удалён из салона.')
+            return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'payment_card_add':
+            payment_card_form = SalonPaymentCardForm(request.POST)
+            if payment_card_form.is_valid():
+                card = payment_card_form.save(commit=False)
+                card.salon = profile.salon
+                if card.is_active:
+                    SalonPaymentCard.objects.filter(salon=profile.salon).update(is_active=False)
+                card.save()
+                messages.success(request, 'Карта добавлена.')
+                return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'payment_card_toggle':
+            card_id = request.POST.get('card_id')
+            card = get_object_or_404(SalonPaymentCard, id=card_id, salon=profile.salon)
+            target_state = request.POST.get('target_state') == '1'
+            if target_state:
+                SalonPaymentCard.objects.filter(salon=profile.salon).exclude(id=card.id).update(is_active=False)
+            card.is_active = target_state
+            card.save(update_fields=['is_active', 'updated_at'])
+            if target_state:
+                messages.success(request, 'Карта отмечена как активная.')
+            else:
+                messages.success(request, 'Карта переведена в неактивное состояние.')
+            return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'payment_card_delete':
+            card_id = request.POST.get('card_id')
+            card = get_object_or_404(SalonPaymentCard, id=card_id, salon=profile.salon)
+            card.delete()
+            messages.success(request, 'Карта удалена.')
             return redirect(reverse('stylist_dayoff'))
 
         # Дальнейшие действия требуют выбранного стилиста
@@ -2404,6 +2712,9 @@ def stylist_dayoff_view(request):
             'stylist_creation_form': stylist_creation_form,
             'salon_service_form': salon_service_form,
             'salon_services': salon_services,
+            'payment_cards': payment_cards,
+            'payment_card_form': payment_card_form,
+            'is_salon_admin': profile.is_salon_admin,
         },
     )
 

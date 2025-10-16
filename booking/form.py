@@ -16,6 +16,8 @@ from .models import (
     Service,
     Category,
     SalonService,
+    SalonPaymentCard,
+    Appointment,
 )
 
 
@@ -425,3 +427,82 @@ class SalonServiceUpdateForm(forms.ModelForm):
         if position is None:
             return 0
         return position
+
+
+class SalonPaymentCardForm(forms.ModelForm):
+    class Meta:
+        model = SalonPaymentCard
+        fields = [
+            'card_type',
+            'cardholder_name',
+            'card_number',
+            'is_active',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            css_class = 'form-control'
+            if isinstance(field.widget, forms.CheckboxInput):
+                css_class = 'form-check-input'
+            field.widget.attrs.setdefault('class', css_class)
+
+    def clean_card_number(self):
+        value = (self.cleaned_data.get('card_number') or '').replace(' ', '')
+        if not value:
+            raise forms.ValidationError('Введите номер карты салона.')
+        if not value.isdigit():
+            raise forms.ValidationError('Номер карты должен содержать только цифры.')
+        return value
+
+
+class AppointmentPaymentMethodForm(forms.Form):
+    payment_method = forms.ChoiceField(choices=Appointment.PaymentMethod.choices)
+
+    def __init__(self, *args, appointment: Appointment, **kwargs):
+        self.appointment = appointment
+        super().__init__(*args, **kwargs)
+        self.fields['payment_method'].widget.attrs.setdefault('class', 'form-select form-select-sm')
+
+    def clean_payment_method(self):
+        method = self.cleaned_data['payment_method']
+        if self.appointment.payment_receipt:
+            raise forms.ValidationError(
+                'После загрузки чека изменить способ оплаты нельзя.'
+            )
+        if method == Appointment.PaymentMethod.CARD:
+            salon = getattr(self.appointment.stylist, 'salon', None)
+            if not salon or not salon.get_active_payment_card():
+                raise forms.ValidationError('У салона нет активной карты для оплаты.')
+        return method
+
+
+class AppointmentReceiptForm(forms.Form):
+    receipt = forms.ImageField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['receipt'].widget.attrs.setdefault('class', 'form-control')
+        self.fields['receipt'].widget.attrs.setdefault('accept', 'image/*')
+
+
+class AppointmentRefundForm(forms.Form):
+    refund_card_type = forms.ChoiceField(
+        choices=SalonPaymentCard.CARD_TYPE_CHOICES,
+        label='Тип карты',
+    )
+    refund_cardholder_name = forms.CharField(max_length=120, label='Имя владельца')
+    refund_card_number = forms.CharField(max_length=32, label='Номер карты')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_refund_card_number(self):
+        value = (self.cleaned_data.get('refund_card_number') or '').replace(' ', '')
+        if not value:
+            raise forms.ValidationError('Введите номер карты для возврата.')
+        if not value.isdigit():
+            raise forms.ValidationError('Номер карты для возврата должен содержать только цифры.')
+        return value

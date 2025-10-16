@@ -85,8 +85,40 @@ class Salon(models.Model):
                 photos.append(image)
         return photos
 
+    def get_active_payment_card(self):
+        return self.payment_cards.filter(is_active=True).order_by('-updated_at').first()
+
     class Meta:
         ordering = ['-position', 'name']
+
+
+
+class SalonPaymentCard(models.Model):
+    CARD_TYPE_CHOICES = [
+        ('uzcard', 'UZCARD'),
+        ('humo', 'HUMO'),
+        ('visa', 'VISA'),
+        ('mastercard', 'Mastercard'),
+        ('mir', 'МИР'),
+        ('other', 'Другая'),
+    ]
+
+    salon = models.ForeignKey(Salon, related_name='payment_cards', on_delete=models.CASCADE)
+    card_type = models.CharField(max_length=32, choices=CARD_TYPE_CHOICES, default='other')
+    cardholder_name = models.CharField(max_length=120)
+    card_number = models.CharField(max_length=32)
+    is_active = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('salon', 'card_number')
+        ordering = ['-is_active', '-updated_at']
+        verbose_name = 'Карта салона'
+        verbose_name_plural = 'Карты салона'
+
+    def __str__(self):
+        return f"{self.salon.name}: {self.get_card_type_display()} — {self.card_number}"
 
 
 
@@ -201,6 +233,19 @@ class Appointment(models.Model):
         CANCELLED = 'X', 'Отменена'
         DONE = 'D', 'Выполнена'
 
+    class PaymentMethod(models.TextChoices):
+        CASH = 'cash', 'Наличные'
+        CARD = 'card', 'Перевод на карту'
+
+    class PaymentStatus(models.TextChoices):
+        NOT_REQUIRED = 'not_required', 'Не требуется'
+        PENDING = 'pending', 'Ожидает подтверждения записи'
+        AWAITING_PAYMENT = 'awaiting_payment', 'Ожидает оплаты'
+        AWAITING_CONFIRMATION = 'awaiting_confirmation', 'Чек на проверке'
+        PAID = 'paid', 'Оплачено'
+        REFUND_REQUESTED = 'refund_requested', 'Ожидает возврата'
+        REFUNDED = 'refunded', 'Возврат выполнен'
+
     customer = models.ForeignKey(
         User,
         related_name='appointments',
@@ -228,6 +273,34 @@ class Appointment(models.Model):
         choices=Status.choices,
         default=Status.PENDING
     )
+
+    payment_method = models.CharField(
+        max_length=16,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+    )
+    payment_status = models.CharField(
+        max_length=24,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_REQUIRED,
+    )
+    payment_card = models.ForeignKey(
+        'SalonPaymentCard',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='appointments',
+    )
+    payment_receipt = models.ImageField(
+        upload_to='payment_receipts/',
+        null=True,
+        blank=True,
+    )
+    receipt_uploaded_at = models.DateTimeField(null=True, blank=True)
+    refund_cardholder_name = models.CharField(max_length=120, blank=True)
+    refund_card_number = models.CharField(max_length=64, blank=True)
+    refund_card_type = models.CharField(max_length=64, blank=True)
+    refund_requested_at = models.DateTimeField(null=True, blank=True)
 
     notes = models.TextField('Комментарий клиента', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -285,6 +358,48 @@ class Appointment(models.Model):
 
         if clash:
             raise ValidationError('На это время мастер уже занят.')
+
+    def update_payment_status_for_status(self, new_status):
+        updates = []
+        if self.payment_method != Appointment.PaymentMethod.CARD:
+            return updates
+
+        if new_status == Appointment.Status.CONFIRMED:
+            if self.payment_status in {
+                Appointment.PaymentStatus.PENDING,
+                Appointment.PaymentStatus.NOT_REQUIRED,
+            }:
+                self.payment_status = Appointment.PaymentStatus.AWAITING_PAYMENT
+                updates.append('payment_status')
+                if not self.payment_card and self.stylist and self.stylist.salon:
+                    active_card = self.stylist.salon.get_active_payment_card()
+                    if active_card:
+                        self.payment_card = active_card
+                        updates.append('payment_card')
+
+        elif new_status == Appointment.Status.CANCELLED:
+            if self.payment_status == Appointment.PaymentStatus.AWAITING_PAYMENT:
+                self.payment_status = Appointment.PaymentStatus.NOT_REQUIRED
+                updates.append('payment_status')
+            elif self.payment_status in {
+                Appointment.PaymentStatus.AWAITING_CONFIRMATION,
+                Appointment.PaymentStatus.PAID,
+            }:
+                self.payment_status = Appointment.PaymentStatus.REFUND_REQUESTED
+                updates.append('payment_status')
+                if not self.refund_requested_at:
+                    self.refund_requested_at = timezone.now()
+                    updates.append('refund_requested_at')
+
+        elif new_status == Appointment.Status.DONE:
+            if (
+                self.payment_status == Appointment.PaymentStatus.AWAITING_PAYMENT
+                and self.payment_receipt
+            ):
+                self.payment_status = Appointment.PaymentStatus.AWAITING_CONFIRMATION
+                updates.append('payment_status')
+
+        return updates
 
 
 class AppointmentService(models.Model):
