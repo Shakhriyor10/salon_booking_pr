@@ -17,6 +17,7 @@ from .form import (
     AppointmentPaymentMethodForm,
     AppointmentReceiptForm,
     AppointmentRefundForm,
+    AppointmentRefundCompleteForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
     SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard
@@ -35,7 +36,7 @@ from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
 from calendar import monthrange
-from collections import defaultdict
+from collections import defaultdict, Counter
 import json
 from decimal import Decimal, InvalidOperation
 import datetime as dt
@@ -1513,20 +1514,28 @@ def my_appointments(request):
                     messages.error(request, "Возврат доступен только для переводов на карту.")
                     return redirect('my_appointments')
 
-                if appointment.refund_card_number:
-                    messages.info(request, "Данные карты для возврата уже сохранены.")
+                if appointment.payment_status == Appointment.PaymentStatus.REFUNDED:
+                    messages.info(request, "Возврат уже выполнен, данные нельзя изменить.")
                     return redirect('my_appointments')
 
                 form = AppointmentRefundForm(request.POST)
                 if form.is_valid():
-                    appointment.refund_card_type = form.cleaned_data['refund_card_type']
-                    appointment.refund_cardholder_name = form.cleaned_data['refund_cardholder_name']
-                    appointment.refund_card_number = form.cleaned_data['refund_card_number']
-                    updates = {
-                        'refund_card_type',
-                        'refund_cardholder_name',
-                        'refund_card_number',
-                    }
+                    new_type = form.cleaned_data['refund_card_type']
+                    new_holder = form.cleaned_data['refund_cardholder_name']
+                    new_number = form.cleaned_data['refund_card_number']
+                    updates = set()
+
+                    if appointment.refund_card_type != new_type:
+                        appointment.refund_card_type = new_type
+                        updates.add('refund_card_type')
+
+                    if appointment.refund_cardholder_name != new_holder:
+                        appointment.refund_cardholder_name = new_holder
+                        updates.add('refund_cardholder_name')
+
+                    if appointment.refund_card_number != new_number:
+                        appointment.refund_card_number = new_number
+                        updates.add('refund_card_number')
 
                     if appointment.payment_status != Appointment.PaymentStatus.REFUND_REQUESTED:
                         appointment.payment_status = Appointment.PaymentStatus.REFUND_REQUESTED
@@ -1536,7 +1545,8 @@ def my_appointments(request):
                         appointment.refund_requested_at = timezone.now()
                         updates.add('refund_requested_at')
 
-                    appointment.save(update_fields=sorted(updates))
+                    if updates:
+                        appointment.save(update_fields=sorted(updates))
                     messages.success(request, "Данные для возврата сохранены. Мы сообщим, когда перевод будет выполнен.")
                 else:
                     for field_errors in form.errors.values():
@@ -1565,16 +1575,60 @@ def my_appointments(request):
             and appointment.payment_status == Appointment.PaymentStatus.AWAITING_PAYMENT
             and not appointment.payment_receipt
         )
-        appointment.needs_refund_details = (
+        appointment.can_provide_refund_details = (
             appointment.status == Appointment.Status.CANCELLED
             and appointment.payment_method == Appointment.PaymentMethod.CARD
-            and not appointment.refund_card_number
             and appointment.payment_status in {
                 Appointment.PaymentStatus.REFUND_REQUESTED,
                 Appointment.PaymentStatus.PAID,
                 Appointment.PaymentStatus.AWAITING_CONFIRMATION,
             }
         )
+        appointment.needs_refund_details = (
+            appointment.can_provide_refund_details and not appointment.refund_card_number
+        )
+        appointment.can_edit_refund_details = (
+            appointment.can_provide_refund_details
+            and appointment.payment_status != Appointment.PaymentStatus.REFUNDED
+        )
+
+    status_counts = Counter(a.status for a in appointments)
+    status_summary = []
+    status_meta = [
+        (
+            Appointment.Status.PENDING,
+            "Ожидают подтверждения",
+            "pending",
+            "bi bi-hourglass-split",
+        ),
+        (
+            Appointment.Status.CONFIRMED,
+            "Подтверждено",
+            "confirmed",
+            "bi bi-check2-circle",
+        ),
+        (
+            Appointment.Status.DONE,
+            "Завершено",
+            "done",
+            "bi bi-stars",
+        ),
+        (
+            Appointment.Status.CANCELLED,
+            "Отменено",
+            "canceled",
+            "bi bi-x-octagon",
+        ),
+    ]
+
+    for status, label, card_class, icon_class in status_meta:
+        status_summary.append({
+            "status": status,
+            "count": status_counts.get(status, 0),
+            "label": label,
+            "card_class": card_class,
+            "icon_class": icon_class,
+        })
 
     return render(request, "my_appointments.html", {
         "appointments": appointments,
@@ -1583,6 +1637,7 @@ def my_appointments(request):
         "profile_form": profile_form,
         "payment_method_choices": Appointment.PaymentMethod.choices,
         "card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
+        "status_summary": status_summary,
     })
 
 @login_required
@@ -1850,6 +1905,21 @@ def appointment_payment_action(request, appointment_id):
         update_fields.append('payment_status')
         success_message = "Оплата подтверждена."
     elif action == "mark_refunded":
+        form = AppointmentRefundCompleteForm(request.POST, request.FILES)
+        if not form.is_valid():
+            for field_errors in form.errors.values():
+                for error in field_errors:
+                    messages.error(request, error)
+            return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
+        refund_receipt = form.cleaned_data.get('refund_receipt')
+        if refund_receipt:
+            if appointment.refund_receipt:
+                appointment.refund_receipt.delete(save=False)
+            appointment.refund_receipt = refund_receipt
+            appointment.refund_receipt_uploaded_at = timezone.now()
+            update_fields.extend(['refund_receipt', 'refund_receipt_uploaded_at'])
+
         appointment.payment_status = Appointment.PaymentStatus.REFUNDED
         update_fields.append('payment_status')
         success_message = "Возврат отмечен как выполненный."

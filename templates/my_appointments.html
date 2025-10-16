@@ -620,7 +620,6 @@
   </section>
 
   {% if appointments %}
-    {% regroup appointments by status as status_groups %}
     <div class="summary-grid">
       <div class="summary-card total">
         <div class="summary-icon"><i class="bi bi-calendar-heart"></i></div>
@@ -628,23 +627,13 @@
         <p>Всего записей</p>
       </div>
 
-      {% for group in status_groups %}
-        <div class="summary-card {% if group.grouper == 'P' %}pending{% elif group.grouper == 'C' %}confirmed{% elif group.grouper == 'D' %}done{% elif group.grouper == 'X' %}canceled{% endif %}">
+      {% for item in status_summary %}
+        <div class="summary-card {{ item.card_class }}">
           <div class="summary-icon">
-            {% if group.grouper == 'P' %}
-              <i class="bi bi-hourglass-split"></i>
-            {% elif group.grouper == 'C' %}
-              <i class="bi bi-check2-circle"></i>
-            {% elif group.grouper == 'D' %}
-              <i class="bi bi-stars"></i>
-            {% elif group.grouper == 'X' %}
-              <i class="bi bi-x-octagon"></i>
-            {% endif %}
+            <i class="{{ item.icon_class }}"></i>
           </div>
-          <h3>{{ group.list|length }}</h3>
-          <p>
-            {% if group.grouper == 'P' %}Ожидают подтверждения{% elif group.grouper == 'C' %}Подтверждено{% elif group.grouper == 'D' %}Завершено{% elif group.grouper == 'X' %}Отменено{% endif %}
-          </p>
+          <h3>{{ item.count }}</h3>
+          <p>{{ item.label }}</p>
         </div>
       {% endfor %}
     </div>
@@ -778,35 +767,8 @@
               </div>
             {% endif %}
 
-            {% if appointment.status == 'X' %}
-              {% if appointment.needs_refund_details %}
-                <form method="post" class="mt-3">
-                  {% csrf_token %}
-                  <input type="hidden" name="payment_action" value="provide_refund">
-                  <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-                  <div class="row g-2">
-                    <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Тип карты</label>
-                      <select name="refund_card_type" class="form-select form-select-sm" required>
-                        {% for value, label in card_type_choices %}
-                          <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Имя владельца</label>
-                      <input type="text" name="refund_cardholder_name" class="form-control form-control-sm" required>
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Номер карты</label>
-                      <input type="text" name="refund_card_number" class="form-control form-control-sm" required>
-                    </div>
-                    <div class="col-12 d-flex justify-content-end">
-                      <button type="submit" class="btn btn-outline-primary btn-sm">Отправить данные для возврата</button>
-                    </div>
-                  </div>
-                </form>
-              {% elif appointment.refund_card_number %}
+            {% if appointment.status == 'X' and appointment.payment_method == 'card' %}
+              {% if appointment.refund_card_number %}
                 <div class="alert alert-secondary mt-3 mb-0">
                   <div class="small text-uppercase text-muted">Карта для возврата</div>
                   <div class="fw-semibold mt-1">{{ appointment.refund_cardholder_name }}</div>
@@ -818,6 +780,58 @@
                     {% endfor %}
                     • <code>{{ appointment.refund_card_number }}</code>
                   </div>
+                </div>
+              {% endif %}
+
+              {% if appointment.can_edit_refund_details %}
+                <form method="post" class="mt-3">
+                  {% csrf_token %}
+                  <input type="hidden" name="payment_action" value="provide_refund">
+                  <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                  <div class="row g-2">
+                    <div class="col-md-4">
+                      <label class="form-label small text-uppercase text-muted">Тип карты</label>
+                      <select name="refund_card_type" class="form-select form-select-sm" required>
+                        {% for value, label in card_type_choices %}
+                          <option value="{{ value }}" {% if value == appointment.refund_card_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small text-uppercase text-muted">Имя владельца</label>
+                      <input type="text" name="refund_cardholder_name" class="form-control form-control-sm" value="{{ appointment.refund_cardholder_name|default_if_none:'' }}" required>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label small text-uppercase text-muted">Номер карты</label>
+                      <input type="text" name="refund_card_number" class="form-control form-control-sm" value="{{ appointment.refund_card_number|default_if_none:'' }}" required>
+                    </div>
+                    <div class="col-12 d-flex justify-content-between align-items-center">
+                      <div class="text-muted small">
+                        {% if appointment.refund_card_number %}
+                          Можно обновлять данные до выполнения возврата.
+                        {% else %}
+                          Укажите реквизиты карты, чтобы мы могли вернуть оплату.
+                        {% endif %}
+                      </div>
+                      <button type="submit" class="btn btn-outline-primary btn-sm">
+                        {% if appointment.refund_card_number %}
+                          Обновить данные для возврата
+                        {% else %}
+                          Отправить данные для возврата
+                        {% endif %}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              {% elif not appointment.refund_card_number %}
+                <div class="alert alert-warning mt-3 mb-0">
+                  Для возврата средств укажите реквизиты карты. Обратитесь к администратору, если нужна помощь.
+                </div>
+              {% endif %}
+
+              {% if appointment.refund_receipt %}
+                <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                  <a href="{{ appointment.refund_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Посмотреть чек возврата</a>
                 </div>
               {% endif %}
             {% endif %}

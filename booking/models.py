@@ -301,6 +301,12 @@ class Appointment(models.Model):
     refund_card_number = models.CharField(max_length=64, blank=True)
     refund_card_type = models.CharField(max_length=64, blank=True)
     refund_requested_at = models.DateTimeField(null=True, blank=True)
+    refund_receipt = models.ImageField(
+        upload_to='refund_receipts/',
+        null=True,
+        blank=True,
+    )
+    refund_receipt_uploaded_at = models.DateTimeField(null=True, blank=True)
 
     notes = models.TextField('Комментарий клиента', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

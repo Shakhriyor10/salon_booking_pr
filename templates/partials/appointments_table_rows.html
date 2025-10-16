@@ -106,17 +106,32 @@
                         </button>
                       </form>
                     {% elif a.payment_status == 'refund_requested' %}
-                      <form method="post" action="{% url 'appointment_payment_action' a.id %}">
+                      <form
+                        method="post"
+                        action="{% url 'appointment_payment_action' a.id %}"
+                        enctype="multipart/form-data"
+                        class="d-flex flex-column gap-2"
+                      >
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                         <input type="hidden" name="payment_action" value="mark_refunded">
-                        <button type="submit" class="btn btn-outline-success btn-sm">
-                          <i class="bi bi-arrow-repeat"></i>
-                          <span>Возврат выполнен</span>
-                        </button>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                          <input type="file" name="refund_receipt" class="form-control form-control-sm" accept="image/*">
+                          <button type="submit" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <span>Возврат выполнен</span>
+                          </button>
+                        </div>
+                        <span class="text-muted small">Можно приложить чек возврата, чтобы клиент увидел подтверждение.</span>
                       </form>
                     {% endif %}
                     {% if a.refund_card_number %}
                       <span class="text-muted small">Возврат: <code>{{ a.refund_card_number }}</code></span>
+                    {% endif %}
+                    {% if a.refund_receipt %}
+                      <a href="{{ a.refund_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-receipt"></i>
+                        <span>Чек возврата</span>
+                      </a>
                     {% endif %}
                   {% endif %}
                 </div>
