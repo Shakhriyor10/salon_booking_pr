@@ -1,5 +1,5 @@
 {% extends 'base3.html' %}
-{% load static %}
+{% load static humanize %}
 
 {% block content %}
 <style>
@@ -198,6 +198,241 @@
     align-items: center;
     gap: 8px;
     transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .payment-section {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  @media (min-width: 992px) {
+    .payment-section {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: stretch;
+    }
+  }
+
+  .payment-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .payment-summary-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .payment-method-form {
+    position: relative;
+    background: rgba(255, 255, 255, 0.86);
+    border-radius: 18px;
+    padding: 16px 20px;
+    border: 1px solid rgba(99, 102, 241, 0.18);
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
+    display: grid;
+    gap: 12px;
+  }
+
+  @media (min-width: 768px) {
+    .payment-method-form {
+      grid-template-columns: auto minmax(200px, 1fr) auto;
+      align-items: center;
+      gap: 16px;
+    }
+  }
+
+  .payment-method-form__label {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: #6366f1;
+    margin-bottom: 4px;
+  }
+
+  .payment-method-form__helper {
+    color: #6b7280;
+    font-size: 0.85rem;
+  }
+
+  .payment-method-form__control {
+    position: relative;
+  }
+
+  .payment-method-form__control i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6366f1;
+    pointer-events: none;
+  }
+
+  .payment-method-form select {
+    padding-left: 40px;
+    border-radius: 12px;
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    box-shadow: none;
+  }
+
+  .payment-method-form select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.15);
+  }
+
+  .payment-method-form button {
+    justify-self: flex-start;
+  }
+
+  @media (min-width: 768px) {
+    .payment-method-form button {
+      justify-self: end;
+    }
+  }
+
+  .btn-gradient {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-gradient.btn-sm {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+  }
+
+  .btn-gradient:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.35);
+  }
+
+  .payment-details-card {
+    background: linear-gradient(135deg, rgba(236, 233, 255, 0.92), rgba(255, 255, 255, 0.95));
+    border-radius: 22px;
+    padding: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.16);
+    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.12);
+  }
+
+  .payment-details-card__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .payment-details-card__badge {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .payment-details-card__title {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: #6366f1;
+    font-weight: 700;
+  }
+
+  .payment-details-card__hint {
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin: 4px 0 0;
+  }
+
+  .payment-details-card__grid {
+    display: grid;
+    gap: 16px;
+    margin-top: 18px;
+  }
+
+  @media (min-width: 768px) {
+    .payment-details-card__grid {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
+  }
+
+  .payment-details-card__item {
+    background: rgba(255, 255, 255, 0.72);
+    border-radius: 16px;
+    padding: 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+  }
+
+  .payment-details-card__label {
+    display: block;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .payment-details-card__value {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .payment-details-card__value code {
+    background: rgba(15, 23, 42, 0.85);
+    color: #f8fafc;
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+
+  .copy-btn {
+    border: none;
+    background: rgba(99, 102, 241, 0.16);
+    color: #4338ca;
+    border-radius: 999px;
+    padding: 6px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .copy-btn:hover {
+    background: rgba(99, 102, 241, 0.28);
+    transform: translateY(-1px);
+  }
+
+  .copy-btn.copied {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+  }
+
+  .copy-btn i {
+    font-size: 1rem;
   }
 
   .profile-update-btn:hover {
@@ -689,10 +924,10 @@
         </section>
 
         <section class="mt-4">
-          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 align-items-lg-center">
-            <div>
+          <div class="payment-section">
+            <div class="payment-summary">
               <h6 class="fw-semibold text-uppercase text-secondary mb-2">Оплата</h6>
-              <div class="d-flex flex-wrap gap-2 align-items-center">
+              <div class="payment-summary-badges">
                 <span class="badge bg-dark text-uppercase">{{ appointment.get_payment_method_display }}</span>
                 <span class="badge {% if appointment.payment_status == 'paid' %}bg-success{% elif appointment.payment_status == 'awaiting_payment' %}bg-warning text-dark{% elif appointment.payment_status == 'awaiting_confirmation' %}bg-info text-dark{% elif appointment.payment_status == 'refund_requested' %}bg-danger{% else %}bg-secondary{% endif %}">
                   {{ appointment.get_payment_status_display }}
@@ -700,17 +935,26 @@
               </div>
             </div>
             {% if appointment.can_change_payment_method %}
-            <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
+            <form method="post" class="payment-method-form">
               {% csrf_token %}
               <input type="hidden" name="payment_action" value="change_method">
               <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-              <label class="form-label small mb-0 text-muted text-uppercase">Способ оплаты</label>
-              <select name="payment_method" class="form-select form-select-sm">
-                {% for value, label in payment_method_choices %}
-                  <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+              <div>
+                <label for="payment-method-{{ appointment.id }}" class="payment-method-form__label">Способ оплаты</label>
+                <div class="payment-method-form__helper">Можно менять до отправки чека или подтверждения перевода.</div>
+              </div>
+              <div class="payment-method-form__control">
+                <i class="bi bi-credit-card-2-front"></i>
+                <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
+                  {% for value, label in payment_method_choices %}
+                    <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <button type="submit" class="btn-gradient btn-sm">
+                <i class="bi bi-arrow-repeat"></i>
+                <span>Обновить</span>
+              </button>
             </form>
             {% elif appointment.payment_receipt %}
             <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
@@ -719,23 +963,47 @@
 
           {% if appointment.payment_method == 'card' %}
             {% if appointment.show_card_details %}
-              <div class="alert alert-info mt-3 mb-0">
-                <div class="fw-semibold">Реквизиты салона для перевода</div>
-                <div class="row g-2 mt-2">
-                  <div class="col-md-4">
-                    <div class="small text-uppercase text-muted">Тип карты</div>
-                    <div class="fw-semibold">{{ appointment.active_payment_card.get_card_type_display }}</div>
+              <div class="payment-details-card mt-3 mb-0">
+                <div class="payment-details-card__head">
+                  <div>
+                    <div class="payment-details-card__title">Реквизиты салона для перевода</div>
+                    <p class="payment-details-card__hint mb-0">После перевода загрузите чек, чтобы мастер быстрее подтвердил оплату.</p>
                   </div>
-                  <div class="col-md-4">
-                    <div class="small text-uppercase text-muted">Владелец</div>
-                    <div class="fw-semibold">{{ appointment.active_payment_card.cardholder_name }}</div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="small text-uppercase text-muted">Номер</div>
-                    <div class="fw-semibold"><code>{{ appointment.active_payment_card.card_number }}</code></div>
+                  <div class="payment-details-card__badge">
+                    <i class="bi bi-shield-lock"></i>
+                    Безопасный перевод
                   </div>
                 </div>
-                <div class="mt-2 text-muted small">После перевода загрузите фото или скрин чека, чтобы мастеру было проще подтвердить оплату.</div>
+                <div class="payment-details-card__grid">
+                  <div class="payment-details-card__item">
+                    <span class="payment-details-card__label">Тип карты</span>
+                    <div class="payment-details-card__value">{{ appointment.active_payment_card.get_card_type_display }}</div>
+                  </div>
+                  <div class="payment-details-card__item">
+                    <span class="payment-details-card__label">Владелец</span>
+                    <div class="payment-details-card__value">{{ appointment.active_payment_card.cardholder_name }}</div>
+                  </div>
+                  <div class="payment-details-card__item">
+                    <span class="payment-details-card__label">Номер карты</span>
+                    <div class="payment-details-card__value">
+                      <code>{{ appointment.active_payment_card.card_number }}</code>
+                      <button type="button" class="copy-btn" data-copy="{{ appointment.active_payment_card.card_number }}" data-copy-label="Скопировать">
+                        <i class="bi bi-clipboard"></i>
+                        <span class="copy-btn__text">Скопировать</span>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="payment-details-card__item">
+                    <span class="payment-details-card__label">Сумма к оплате</span>
+                    <div class="payment-details-card__value">
+                      <span class="fs-5 fw-semibold">{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
+                      <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать">
+                        <i class="bi bi-clipboard"></i>
+                        <span class="copy-btn__text">Скопировать</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             {% elif not appointment.active_payment_card and appointment.status != 'X' %}
               <div class="alert alert-warning mt-3 mb-0">
@@ -892,4 +1160,93 @@
     </div>
   </section>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const copyButtons = document.querySelectorAll('.copy-btn[data-copy]');
+
+    async function copyValue(value) {
+      if (!value) {
+        return false;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(value);
+          return true;
+        } catch (error) {
+          // fallback will run below
+        }
+      }
+
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch (error) {
+        copied = false;
+      }
+
+      document.body.removeChild(textarea);
+      return copied;
+    }
+
+    copyButtons.forEach(function (button) {
+      const labelEl = button.querySelector('.copy-btn__text');
+
+      if (labelEl && !labelEl.dataset.defaultText) {
+        labelEl.dataset.defaultText = labelEl.textContent.trim();
+      }
+
+      if (!button.dataset.copyLabel && labelEl && labelEl.dataset.defaultText) {
+        button.dataset.copyLabel = labelEl.dataset.defaultText;
+      }
+
+      button.addEventListener('click', async function () {
+        const value = button.getAttribute('data-copy');
+        const successText = button.dataset.copySuccess || 'Скопировано!';
+        const errorText = button.dataset.copyError || 'Не удалось';
+        const defaultLabel = button.dataset.copyLabel || (labelEl ? labelEl.dataset.defaultText || '' : '');
+
+        try {
+          const wasCopied = await copyValue(value);
+          if (!wasCopied) {
+            throw new Error('copy-failed');
+          }
+
+          button.classList.add('copied');
+          if (labelEl) {
+            labelEl.textContent = successText;
+          }
+
+          setTimeout(function () {
+            button.classList.remove('copied');
+            if (labelEl) {
+              labelEl.textContent = defaultLabel;
+            }
+          }, 2000);
+        } catch (error) {
+          if (labelEl) {
+            labelEl.textContent = errorText;
+          }
+
+          setTimeout(function () {
+            button.classList.remove('copied');
+            if (labelEl) {
+              labelEl.textContent = defaultLabel;
+            }
+          }, 2000);
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}
