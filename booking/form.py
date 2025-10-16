@@ -506,3 +506,13 @@ class AppointmentRefundForm(forms.Form):
         if not value.isdigit():
             raise forms.ValidationError('Номер карты для возврата должен содержать только цифры.')
         return value
+
+
+class AppointmentRefundCompleteForm(forms.Form):
+    refund_receipt = forms.ImageField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields['refund_receipt']
+        field.widget.attrs.setdefault('class', 'form-control form-control-sm')
+        field.widget.attrs.setdefault('accept', 'image/*')

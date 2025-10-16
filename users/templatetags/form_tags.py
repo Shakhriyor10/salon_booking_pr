@@ -1,5 +1,7 @@
 from django import template
 
+from booking.models import SalonPaymentCard
+
 register = template.Library()
 
 
@@ -45,3 +47,32 @@ def status_badge_class(status):
     }
 
     return palette.get(status, "bg-secondary")
+
+
+@register.filter
+def card_groups(value):
+    """Split a card number into groups of four digits for display."""
+
+    if not value:
+        return []
+
+    digits = "".join(ch for ch in str(value) if ch.isdigit())
+
+    if not digits:
+        return []
+
+    return [digits[i : i + 4] for i in range(0, len(digits), 4)]
+
+
+@register.filter
+def card_type_label(value):
+    """Return a human-readable label for a stored card type value."""
+
+    if not value:
+        return ""
+
+    for key, label in SalonPaymentCard.CARD_TYPE_CHOICES:
+        if key == value:
+            return label
+
+    return value
