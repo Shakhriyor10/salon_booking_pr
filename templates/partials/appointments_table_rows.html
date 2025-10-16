@@ -124,7 +124,7 @@
                         <span class="text-muted small">Можно приложить чек возврата, чтобы клиент увидел подтверждение.</span>
                       </form>
                     {% endif %}
-                    {% if a.refund_card_number %}
+                    {% if a.payment_status != 'refunded' and a.refund_card_number %}
                       <div class="refund-card">
                         <div class="refund-card__header">
                           <span class="refund-card__label">Карта клиента для возврата</span>
