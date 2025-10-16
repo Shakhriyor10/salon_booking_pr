@@ -404,6 +404,19 @@ class Appointment(models.Model):
             ):
                 self.payment_status = Appointment.PaymentStatus.AWAITING_CONFIRMATION
                 updates.append('payment_status')
+            elif not self.payment_receipt:
+                if self.payment_method != Appointment.PaymentMethod.CASH:
+                    self.payment_method = Appointment.PaymentMethod.CASH
+                    updates.append('payment_method')
+                if self.payment_status != Appointment.PaymentStatus.NOT_REQUIRED:
+                    self.payment_status = Appointment.PaymentStatus.NOT_REQUIRED
+                    updates.append('payment_status')
+                if self.payment_card_id:
+                    self.payment_card = None
+                    updates.append('payment_card')
+                if self.receipt_uploaded_at:
+                    self.receipt_uploaded_at = None
+                    updates.append('receipt_uploaded_at')
 
         return updates
 
