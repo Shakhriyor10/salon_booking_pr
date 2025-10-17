@@ -1,0 +1,62 @@
+{% load static %}
+<div id="support-chat-root" aria-live="polite">
+  <div id="support-chat-window" aria-hidden="true">
+    <div class="support-chat__header">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <h6 class="mb-1" id="support-chat-title">Онлайн-поддержка</h6>
+          <p class="mb-0 small text-white-50">Напишите нам, мы онлайн</p>
+        </div>
+        <button type="button" class="btn-close btn-close-white" aria-label="Закрыть" id="support-chat-close"></button>
+      </div>
+    </div>
+    <div class="support-chat__messages" id="support-chat-messages">
+      <p class="text-muted small mb-0">Загрузка...</p>
+    </div>
+    <div class="support-chat__form">
+      <div class="support-chat__error d-none" id="support-chat-error"></div>
+      <form id="support-chat-form">
+        {% csrf_token %}
+        <div class="mb-2" id="support-chat-name-row">
+          <input type="text" name="contact_name" class="form-control form-control-sm" placeholder="Ваше имя">
+        </div>
+        <div class="mb-2" id="support-chat-email-row">
+          <input type="email" name="contact_email" class="form-control form-control-sm" placeholder="Электронная почта">
+        </div>
+        <div class="mb-2">
+          <textarea class="form-control" name="message" rows="2" placeholder="Введите сообщение..." required></textarea>
+        </div>
+        <div class="d-grid">
+          <button type="submit" class="btn btn-dark btn-sm">Отправить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <button id="support-chat-toggle" aria-label="Открыть чат поддержки" aria-expanded="false">
+    <i class="bi bi-chat-dots-fill fs-4"></i>
+  </button>
+</div>
+<script>
+  window.supportWidgetConfig = {
+    stateUrl: '{% url 'support:widget_state' %}',
+    sendUrl: '{% url 'support:widget_send' %}',
+    pollInterval: 8000
+  };
+</script>
+<script src="{% static 'js/support_widget.js' %}"></script>
+<script>
+  (function(){
+    var closeBtn = document.getElementById('support-chat-close');
+    var windowEl = document.getElementById('support-chat-window');
+    var toggleBtn = document.getElementById('support-chat-toggle');
+    if (closeBtn && windowEl) {
+      closeBtn.addEventListener('click', function() {
+        windowEl.classList.remove('show');
+        windowEl.setAttribute('aria-hidden', 'true');
+        if (toggleBtn) {
+          toggleBtn.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+  })();
+</script>
