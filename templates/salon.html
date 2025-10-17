@@ -366,6 +366,20 @@ document.addEventListener("DOMContentLoaded", function () {
     return earthRadiusKm * c;
   }
 
+  function parseCoordinate(value) {
+    if (typeof value !== "string") {
+      return NaN;
+    }
+
+    const normalized = value.replace(/,/g, ".").replace(/[^0-9+\-\.]/g, "").trim();
+    if (normalized === "") {
+      return NaN;
+    }
+
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
   function sortSalonsByDistance(userLat, userLng) {
     if (!salonGrid) {
       return;
@@ -375,8 +389,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const salonsWithoutCoords = [];
 
     salonColumns.forEach(column => {
-      const lat = parseFloat(column.dataset.lat);
-      const lng = parseFloat(column.dataset.lng);
+      const lat = parseCoordinate(column.dataset.lat);
+      const lng = parseCoordinate(column.dataset.lng);
       const distanceElement = column.querySelector(".salon-card__distance");
 
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
