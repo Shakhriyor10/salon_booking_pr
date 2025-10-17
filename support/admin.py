@@ -23,6 +23,8 @@ class SupportMessageAdmin(admin.ModelAdmin):
     list_filter = ('is_from_staff', 'created_at')
     autocomplete_fields = ('thread', 'author')
 
-    @admin.display(boolean=True, description='Вложение')
     def has_attachment(self, obj: SupportMessage) -> bool:
         return bool(obj.attachment)
+
+    has_attachment.boolean = True
+    has_attachment.short_description = 'Вложение'
