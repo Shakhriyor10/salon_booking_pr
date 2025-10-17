@@ -11,4 +11,5 @@ urlpatterns = [
     path('inbox/threads/', views.threads_list, name='threads_list'),
     path('inbox/threads/<uuid:thread_id>/messages/', views.thread_messages, name='thread_messages'),
     path('inbox/threads/<uuid:thread_id>/send/', views.staff_send, name='staff_send'),
+    path('inbox/threads/<uuid:thread_id>/close/', views.thread_close, name='thread_close'),
 ]

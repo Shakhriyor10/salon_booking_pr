@@ -9,12 +9,29 @@
   const messageInput = form ? form.querySelector('textarea[name="message"]') : null;
   const attachmentInput = form ? form.querySelector('input[name="attachment"]') : null;
   const submitButton = form ? form.querySelector('button[type="submit"]') : null;
+  const attachmentTrigger = document.getElementById('support-attachment-trigger');
+  const attachmentIndicator = document.getElementById('support-attachment-indicator');
+  const closeButton = document.getElementById('support-thread-close');
 
   if (!listEl || !form) {
     return;
   }
 
   let activeThreadId = null;
+
+  function updateAttachmentIndicator() {
+    if (!attachmentIndicator || !attachmentInput) {
+      return;
+    }
+    const file = attachmentInput.files && attachmentInput.files[0];
+    if (file) {
+      attachmentIndicator.innerText = 'Вложение: ' + file.name;
+      attachmentIndicator.classList.remove('d-none');
+    } else {
+      attachmentIndicator.innerText = '';
+      attachmentIndicator.classList.add('d-none');
+    }
+  }
 
   function getCsrfToken() {
     const input = form.querySelector('input[name="csrfmiddlewaretoken"]');
@@ -29,8 +46,17 @@
     if (attachmentInput) {
       attachmentInput.disabled = disabled;
     }
+    if (attachmentTrigger) {
+      attachmentTrigger.disabled = disabled;
+    }
     if (submitButton) {
       submitButton.disabled = disabled;
+    }
+    if (disabled) {
+      if (attachmentInput) {
+        attachmentInput.value = '';
+      }
+      updateAttachmentIndicator();
     }
   }
 
@@ -61,6 +87,12 @@
     }
 
     setFormAvailability(meta ? meta.can_reply : false);
+
+    if (closeButton) {
+      const canClose = !!(meta && meta.can_close);
+      closeButton.classList.toggle('d-none', !canClose);
+      closeButton.disabled = !canClose;
+    }
   }
 
   function renderThreads(threads) {
@@ -215,6 +247,7 @@
         if (attachmentInput) {
           attachmentInput.value = '';
         }
+        updateAttachmentIndicator();
         if (noticeEl) {
           noticeEl.className = 'alert d-none mb-3';
           noticeEl.innerText = '';
@@ -249,6 +282,74 @@
         }
       });
   });
+
+  if (attachmentTrigger && attachmentInput) {
+    attachmentTrigger.addEventListener('click', () => {
+      if (!attachmentTrigger.disabled) {
+        attachmentInput.click();
+      }
+    });
+  }
+
+  if (attachmentInput) {
+    attachmentInput.addEventListener('change', () => {
+      updateAttachmentIndicator();
+    });
+  }
+
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      if (!activeThreadId || closeButton.disabled) {
+        return;
+      }
+      const closeUrl = window.supportInboxConfig.closeUrlTemplate.replace('00000000-0000-0000-0000-000000000000', activeThreadId);
+      closeButton.disabled = true;
+      fetch(closeUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCsrfToken(),
+        },
+        credentials: 'include',
+      })
+        .then(response => {
+          if (!response.ok) {
+            return response.json().then(data => { throw data; });
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.thread) {
+            applyThreadMeta(data.thread);
+          }
+          selectThread(activeThreadId);
+          refreshThreads();
+          if (noticeEl) {
+            noticeEl.className = 'alert alert-secondary mb-3';
+            noticeEl.innerText = 'Обращение закрыто.';
+            noticeEl.classList.remove('d-none');
+          }
+        })
+        .catch(error => {
+          if (error && error.thread) {
+            applyThreadMeta(error.thread);
+          }
+          if (noticeEl) {
+            const message = (error && error.errors && Object.values(error.errors).flat().join(' '))
+              || 'Не удалось закрыть обращение.';
+            noticeEl.className = 'alert alert-warning mb-3';
+            noticeEl.innerText = message;
+            noticeEl.classList.remove('d-none');
+          }
+          if ((!error || !error.thread) && closeButton) {
+            closeButton.disabled = false;
+          }
+        });
+    });
+  }
+
+  if (attachmentInput) {
+    updateAttachmentIndicator();
+  }
 
   applyThreadMeta(null);
   refreshThreads();

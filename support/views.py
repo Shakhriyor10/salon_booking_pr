@@ -86,6 +86,7 @@ def _format_thread(thread: SupportThread, user) -> Dict[str, Any]:
         'status': status['label'],
         'status_badge': status['badge'],
         'can_reply': _can_staff_reply(thread, user),
+        'can_close': (not thread.is_closed) and _can_staff_reply(thread, user),
         'notice': notice_text,
         'notice_level': notice_level,
     }
@@ -265,6 +266,33 @@ def staff_send(request: HttpRequest, thread_id: str) -> JsonResponse:
             'thread': _format_thread(thread, request.user),
         }
     )
+
+
+@login_required
+@user_passes_test(_user_is_support_staff)
+@require_POST
+def thread_close(request: HttpRequest, thread_id: str) -> JsonResponse:
+    thread = get_object_or_404(
+        SupportThread.objects.select_related('assigned_to', 'user'), pk=thread_id
+    )
+
+    if thread.is_closed:
+        return JsonResponse({'thread': _format_thread(thread, request.user)})
+
+    if not _can_staff_reply(thread, request.user):
+        return JsonResponse(
+            {
+                'errors': {'__all__': ['У вас нет прав закрыть это обращение.']},
+                'thread': _format_thread(thread, request.user),
+            },
+            status=403,
+        )
+
+    thread.is_closed = True
+    thread.updated_at = timezone.now()
+    thread.save(update_fields=['is_closed', 'updated_at'])
+
+    return JsonResponse({'thread': _format_thread(thread, request.user)})
 
 
 def _last_message_preview(thread: SupportThread) -> str:
