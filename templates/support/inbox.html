@@ -39,9 +39,8 @@
             {% csrf_token %}
             <input class="d-none" type="file" name="attachment" accept="image/*" id="support-attachment-input">
             <div class="d-flex align-items-stretch gap-2 flex-wrap">
-              <button class="btn btn-outline-secondary" type="button" id="support-attachment-trigger" title="Прикрепить изображение">
-                <span aria-hidden="true">📎</span>
-                <span class="visually-hidden">Прикрепить изображение</span>
+              <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center" type="button" id="support-attachment-trigger" title="Прикрепить изображение" aria-label="Прикрепить изображение">
+                <i class="bi bi-paperclip"></i>
               </button>
               <textarea class="form-control flex-grow-1" name="message" rows="2" placeholder="Введите ответ..."></textarea>
               <button class="btn btn-dark" type="submit">Отправить</button>
@@ -59,7 +58,7 @@
     messagesUrlTemplate: '{% url 'support:thread_messages' thread_id='00000000-0000-0000-0000-000000000000' %}',
     sendUrlTemplate: '{% url 'support:staff_send' thread_id='00000000-0000-0000-0000-000000000000' %}',
     closeUrlTemplate: '{% url 'support:thread_close' thread_id='00000000-0000-0000-0000-000000000000' %}',
-    refreshInterval: 10000
+    refreshInterval: 30000
   };
 </script>
 <script src="{% static 'js/support_inbox.js' %}"></script>
