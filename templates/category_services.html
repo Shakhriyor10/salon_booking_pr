@@ -111,6 +111,21 @@
     justify-content: center;
     font-size: 1.1rem;
   }
+
+  @media (max-width: 575.98px) {
+    .floating-cart {
+      left: 50%;
+      right: auto;
+      transform: translate(-50%, 0);
+      width: min(340px, calc(100vw - 48px));
+      border-radius: 20px;
+      padding: 0.6rem 0.75rem 0.6rem 0.9rem;
+    }
+
+    .floating-cart.d-none {
+      transform: translate(-50%, 30px);
+    }
+  }
 </style>
 <h3 class="text-center fw-semibold mt-4 mb-3">{{ category.name }}</h3>
 
