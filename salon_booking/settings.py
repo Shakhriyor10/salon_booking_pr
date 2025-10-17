@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'widget_tweaks',
     'booking',
-    'users'
+    'users',
+    'support',
 ]
 
 MIDDLEWARE = [

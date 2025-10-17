@@ -26,10 +26,11 @@
 	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css' %}">
 	<link rel="stylesheet" type="text/css" href="{% static 'css/animate.css' %}">
 	<link rel="stylesheet" type="text/css" href="{% static 'css/owl-carousel.css' %}">
-	<link rel="stylesheet" type="text/css" href="{% static 'css/lightbox.css' %}">
-	<link rel="stylesheet" type="text/css" href="{% static 'css/form-framework.css' %}">
-	<link rel="stylesheet" type="text/css" href="{% static 'css/icomoon.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/lightbox.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/form-framework.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/icomoon.css' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/support_widget.css' %}">
 <!--	<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">-->
 
 	<!-- SLIDER REVOLUTION 4.x CSS SETTINGS -->
@@ -108,6 +109,9 @@
           </li>
           <li class="nav-item">
               <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'support:inbox' %}">💬 Поддержка</a>
           </li>
           {% endif %}
         {% endif %}
@@ -270,6 +274,7 @@
         });
       }
     </script>
+    {% include 'partials/support_widget.html' %}
     {% block extra_js %}{% endblock %}
 </body>
 </html>
