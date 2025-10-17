@@ -91,6 +91,12 @@
     margin-bottom: 1.2rem;
   }
 
+  .salon-card__distance {
+    color: #8a999c;
+    font-size: 0.85rem;
+    margin-left: 0.35rem;
+  }
+
   .salon-card__button {
     background: var(--salon-accent);
     color: #fff;
@@ -208,7 +214,11 @@
 <h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 salon-grid">
     {% for salon in salons %}
-        <div class="col">
+        <div
+          class="col"
+          data-lat="{{ salon.latitude|default_if_none:'' }}"
+          data-lng="{{ salon.longitude|default_if_none:'' }}"
+        >
             <div class="salon-card h-100">
                 <div class="salon-card__image-wrapper">
                     {% with photos=salon.get_photos %}
@@ -238,8 +248,10 @@
                         {% endfor %}
                         <span>{{ salon.rating_value }}/5</span>
                     </div>
-                    <p class="salon-card__location">
-                        <i class="bi bi-geo-alt-fill me-1 text-warning"></i>{{ salon.city.name }}
+                    <p class="salon-card__location" data-location-name="{{ salon.city.name }}">
+                        <i class="bi bi-geo-alt-fill me-1 text-warning"></i>
+                        <span class="salon-card__location-text">{{ salon.city.name }}</span>
+                        <span class="salon-card__distance"></span>
                     </p>
                     <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn salon-card__button mt-auto">Посмотреть</a>
                 </div>
@@ -278,53 +290,140 @@ document.addEventListener("DOMContentLoaded", function () {
   const input = document.getElementById("searchInput");
   const suggestionsBox = document.getElementById("suggestions");
   const searchTypeInput = document.getElementById("searchTypeInput");
+  const salonGrid = document.querySelector(".salon-grid");
+  const salonColumns = salonGrid ? Array.from(salonGrid.querySelectorAll(".col[data-lat][data-lng]")) : [];
   let suggestions = [];
 
-  input.addEventListener("input", function () {
-    const query = input.value.trim();
-    searchTypeInput.value = ""; // сбрасываем search_type, если пользователь вводит вручную
+  if (input) {
+    input.addEventListener("input", function () {
+      const query = input.value.trim();
+      if (searchTypeInput) {
+        searchTypeInput.value = ""; // сбрасываем search_type, если пользователь вводит вручную
+      }
 
-    if (query.length < 2) {
-      suggestionsBox.style.display = "none";
-      return;
-    }
-
-    fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
-      .then(response => response.json())
-      .then(data => {
-        suggestions = data;
-        suggestionsBox.innerHTML = "";
-        if (suggestions.length === 0) {
+      if (query.length < 2) {
+        if (suggestionsBox) {
           suggestionsBox.style.display = "none";
-          return;
         }
+        return;
+      }
 
-        suggestions.forEach(item => {
-          const li = document.createElement("li");
-          let label = item.label;
+      fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          suggestions = data;
+          if (!suggestionsBox) {
+            return;
+          }
+          suggestionsBox.innerHTML = "";
+          if (suggestions.length === 0) {
+            suggestionsBox.style.display = "none";
+            return;
+          }
+
+          suggestions.forEach(item => {
+            const li = document.createElement("li");
+            let label = item.label;
             if (item.type === "service" && item.gender) {
               label += ` (${item.gender})`;
             }
             li.textContent = label;
-          li.classList.add("list-group-item", "list-group-item-action");
-          li.addEventListener("click", () => {
-            input.value = item.label;
-            searchTypeInput.value = item.type;
-            suggestionsBox.style.display = "none";
+            li.classList.add("list-group-item", "list-group-item-action");
+            li.addEventListener("click", () => {
+              input.value = item.label;
+              if (searchTypeInput) {
+                searchTypeInput.value = item.type;
+              }
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(li);
           });
-          suggestionsBox.appendChild(li);
+
+          suggestionsBox.style.display = "block";
         });
+    });
+  }
 
-        suggestionsBox.style.display = "block";
-      });
-  });
+  if (suggestionsBox) {
+    // Скрыть подсказки при клике вне
+    document.addEventListener("click", function (e) {
+      if (!suggestionsBox.contains(e.target) && e.target !== input) {
+        suggestionsBox.style.display = "none";
+      }
+    });
+  }
 
-  // Скрыть подсказки при клике вне
-  document.addEventListener("click", function (e) {
-    if (!suggestionsBox.contains(e.target) && e.target !== input) {
-      suggestionsBox.style.display = "none";
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const toRad = value => (value * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  function sortSalonsByDistance(userLat, userLng) {
+    if (!salonGrid) {
+      return;
     }
-  });
+
+    const salonsWithCoords = [];
+    const salonsWithoutCoords = [];
+
+    salonColumns.forEach(column => {
+      const lat = parseFloat(column.dataset.lat);
+      const lng = parseFloat(column.dataset.lng);
+      const distanceElement = column.querySelector(".salon-card__distance");
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        if (distanceElement) {
+          distanceElement.textContent = "";
+        }
+        salonsWithoutCoords.push(column);
+        return;
+      }
+
+      const distance = calculateDistance(userLat, userLng, lat, lng);
+      column.dataset.distance = String(distance);
+
+      if (distanceElement) {
+        distanceElement.textContent = `· ${distance.toFixed(1)} км`;
+      }
+
+      salonsWithCoords.push({ column, distance });
+    });
+
+    salonsWithCoords.sort((a, b) => a.distance - b.distance);
+
+    const fragment = document.createDocumentFragment();
+    salonsWithCoords.forEach(item => fragment.appendChild(item.column));
+    salonsWithoutCoords.forEach(column => fragment.appendChild(column));
+    salonGrid.appendChild(fragment);
+  }
+
+  if (
+    "geolocation" in navigator &&
+    salonColumns.some(column => column.dataset.lat && column.dataset.lng)
+  ) {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        sortSalonsByDistance(latitude, longitude);
+      },
+      error => {
+        console.warn("Не удалось получить геолокацию пользователя:", error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 300000,
+        timeout: 15000,
+      }
+    );
+  }
 });
 </script>
 
