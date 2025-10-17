@@ -110,9 +110,11 @@
           <li class="nav-item">
               <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
           </li>
+          {% if user.is_staff %}
           <li class="nav-item">
               <a class="nav-link" href="{% url 'support:inbox' %}">💬 Поддержка</a>
           </li>
+          {% endif %}
           {% endif %}
         {% endif %}
         {% if user.is_authenticated and user.stylist_profile and not user.is_staff and not user.profile.is_salon_admin %}
@@ -125,9 +127,9 @@
         <li class="nav-item">
           <a class="nav-link" href="{% url 'stylist_reports' %}">📊 Мои отчеты</a>
         </li>
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
-          </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
+        </li>
         {% endif %}
           {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
           <li class="nav-item">

@@ -15,8 +15,24 @@
   const messageField = form.querySelector('textarea[name="message"]');
   const submitButton = form.querySelector('button[type="submit"]');
   const attachmentInput = form.querySelector('input[name="attachment"]');
+  const attachmentTrigger = document.getElementById('support-chat-attachment-trigger');
+  const attachmentIndicator = document.getElementById('support-chat-attachment-indicator');
 
   let threadId = null;
+
+  function updateAttachmentIndicator() {
+    if (!attachmentIndicator || !attachmentInput) {
+      return;
+    }
+    const file = attachmentInput.files && attachmentInput.files[0];
+    if (file) {
+      attachmentIndicator.innerText = 'Вложение: ' + file.name;
+      attachmentIndicator.classList.remove('d-none');
+    } else {
+      attachmentIndicator.innerText = '';
+      attachmentIndicator.classList.add('d-none');
+    }
+  }
 
   function getCsrfToken() {
     const cookie = document.cookie.match(/csrftoken=([^;]+)/);
@@ -91,6 +107,10 @@
             attachmentInput.disabled = false;
             attachmentInput.value = '';
           }
+          if (attachmentTrigger) {
+            attachmentTrigger.disabled = false;
+          }
+          updateAttachmentIndicator();
           errorEl.classList.add('d-none');
           nameFieldRow.classList.remove('d-none');
           emailFieldRow.classList.remove('d-none');
@@ -110,6 +130,9 @@
             if (attachmentInput) {
               attachmentInput.disabled = true;
             }
+            if (attachmentTrigger) {
+              attachmentTrigger.disabled = true;
+            }
             errorEl.classList.remove('d-none');
             errorEl.innerText = 'Диалог закрыт. Создайте новое обращение, чтобы продолжить.';
           } else {
@@ -117,6 +140,9 @@
             submitButton.disabled = false;
             if (attachmentInput) {
               attachmentInput.disabled = false;
+            }
+            if (attachmentTrigger) {
+              attachmentTrigger.disabled = false;
             }
             errorEl.classList.add('d-none');
           }
@@ -126,6 +152,7 @@
           if (data.thread.contact_email) {
             emailFieldRow.classList.add('d-none');
           }
+          updateAttachmentIndicator();
         }
       })
       .catch(() => {
@@ -158,6 +185,9 @@
           if (attachmentInput) {
             attachmentInput.disabled = true;
           }
+          if (attachmentTrigger) {
+            attachmentTrigger.disabled = true;
+          }
           errorEl.classList.remove('d-none');
           errorEl.innerText = 'Диалог закрыт. Создайте новое обращение, чтобы продолжить.';
         } else {
@@ -166,10 +196,14 @@
           if (attachmentInput) {
             attachmentInput.disabled = false;
           }
+          if (attachmentTrigger) {
+            attachmentTrigger.disabled = false;
+          }
           if (!errorEl.classList.contains('d-none') && errorEl.innerText.includes('Диалог закрыт')) {
             errorEl.classList.add('d-none');
           }
         }
+        updateAttachmentIndicator();
       })
       .finally(() => {
         setTimeout(pollMessages, window.supportWidgetConfig.pollInterval);
@@ -222,6 +256,7 @@
         if (attachmentInput) {
           attachmentInput.value = '';
         }
+        updateAttachmentIndicator();
         renderMessage(data.message);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       })
@@ -235,6 +270,19 @@
       });
   });
 
+  if (attachmentTrigger && attachmentInput) {
+    attachmentTrigger.addEventListener('click', () => {
+      if (!attachmentTrigger.disabled) {
+        attachmentInput.click();
+      }
+    });
+  }
+
+  if (attachmentInput) {
+    attachmentInput.addEventListener('change', updateAttachmentIndicator);
+  }
+
   loadState();
+  updateAttachmentIndicator();
   setTimeout(pollMessages, window.supportWidgetConfig.pollInterval);
 })();

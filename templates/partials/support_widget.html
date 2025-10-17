@@ -23,14 +23,17 @@
         <div class="mb-2" id="support-chat-email-row">
           <input type="email" name="contact_email" class="form-control form-control-sm" placeholder="Электронная почта">
         </div>
-        <div class="mb-2">
-          <textarea class="form-control" name="message" rows="2" placeholder="Введите сообщение..."></textarea>
+        <input class="d-none" type="file" name="attachment" accept="image/*" id="support-chat-attachment-input">
+        <div class="support-chat__input-row">
+          <button class="support-chat__attach-btn" type="button" id="support-chat-attachment-trigger" title="Прикрепить файл">
+            <i class="bi bi-paperclip"></i>
+            <span class="visually-hidden">Прикрепить файл</span>
+          </button>
+          <textarea class="form-control support-chat__textarea" name="message" rows="2" placeholder="Введите сообщение..."></textarea>
         </div>
-        <div class="mb-2">
-          <input class="form-control form-control-sm" type="file" name="attachment" accept="image/*">
-          <small class="text-muted">Можно прикрепить изображение до 10 МБ.</small>
-        </div>
-        <div class="d-grid">
+        <div class="small text-muted mt-1 d-none" id="support-chat-attachment-indicator"></div>
+        <div class="small text-muted mt-1">Можно прикрепить изображение до 10 МБ.</div>
+        <div class="d-grid mt-3">
           <button type="submit" class="btn btn-dark btn-sm">Отправить</button>
         </div>
       </form>
@@ -44,7 +47,7 @@
   window.supportWidgetConfig = {
     stateUrl: '{% url 'support:widget_state' %}',
     sendUrl: '{% url 'support:widget_send' %}',
-    pollInterval: 8000
+    pollInterval: 30000
   };
 </script>
 <script src="{% static 'js/support_widget.js' %}"></script>
