@@ -23,6 +23,7 @@
       <form method="post">
         {% csrf_token %}
         {{ form.non_field_errors }}
+        <input type="hidden" name="next" value="{{ next_url }}">
 
         <div class="mb-3">
           {{ form.username.label_tag }}
@@ -63,6 +64,53 @@
 
         <button type="submit" class="btn btn-custom w-100">Зарегистрироваться</button>
       </form>
+      {% if telegram_bot_name %}
+      <div class="mt-4 text-center">
+        <p class="text-muted mb-2">Или используйте Telegram</p>
+        <div class="d-flex justify-content-center">
+          <script async src="https://telegram.org/js/telegram-widget.js?21"
+                  data-telegram-login="{{ telegram_bot_name }}"
+                  data-size="large"
+                  data-userpic="false"
+                  data-request-access="write"
+                  data-onauth="onTelegramAuth"></script>
+        </div>
+        <div id="telegram-login-message" class="text-danger small mt-2" style="display: none;"></div>
+      </div>
+      <script>
+        function onTelegramAuth(user) {
+          const payload = Object.assign({ next: "{{ telegram_redirect_url|escapejs }}" }, user);
+          fetch("{% url 'telegram_login' %}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            credentials: "same-origin",
+            body: JSON.stringify(payload)
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.ok) {
+              window.location.href = data.redirect_url || "{{ telegram_redirect_url }}";
+            } else {
+              showTelegramError(data.error || 'Не удалось выполнить вход через Telegram.');
+            }
+          })
+          .catch(function() {
+            showTelegramError('Произошла ошибка при авторизации через Telegram.');
+          });
+        }
+
+        function showTelegramError(message) {
+          var container = document.getElementById('telegram-login-message');
+          if (!container) {
+            return;
+          }
+          container.textContent = message;
+          container.style.display = 'block';
+        }
+      </script>
+      {% endif %}
     </div>
 
     <div class="card-footer text-center bg-light">
