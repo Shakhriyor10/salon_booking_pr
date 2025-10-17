@@ -228,71 +228,146 @@
   }
 
   .payment-method-form {
+    margin: 0;
+  }
+
+  .payment-method-card {
     position: relative;
-    background: rgba(255, 255, 255, 0.86);
-    border-radius: 18px;
-    padding: 16px 20px;
+    border-radius: 20px;
+    padding: 20px clamp(18px, 4vw, 28px);
+    background: linear-gradient(145deg, rgba(248, 249, 255, 0.95), rgba(235, 233, 255, 0.86));
     border: 1px solid rgba(99, 102, 241, 0.18);
-    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.12);
-    display: grid;
-    gap: 12px;
+    box-shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+  }
+
+  .payment-method-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.18), transparent 55%),
+                radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.12), transparent 60%);
+    pointer-events: none;
+  }
+
+  .payment-method-card__inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .payment-method-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .payment-method-card__heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1 1 220px;
+  }
+
+  .payment-method-card__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(129, 140, 248, 0.24));
+    color: #4338ca;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+  }
+
+  .payment-method-card__label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: #4338ca;
+    margin-bottom: 6px;
+    display: inline-block;
+  }
+
+  .payment-method-card__title {
+    display: block;
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+
+  .payment-method-card__helper {
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  .payment-method-card__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+
+  .payment-method-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   @media (min-width: 768px) {
-    .payment-method-form {
-      grid-template-columns: auto minmax(200px, 1fr) auto;
+    .payment-method-card__body {
+      flex-direction: row;
       align-items: center;
       gap: 16px;
     }
   }
 
-  .payment-method-form__label {
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: #6366f1;
-    margin-bottom: 4px;
-  }
-
-  .payment-method-form__helper {
-    color: #6b7280;
-    font-size: 0.85rem;
-  }
-
-  .payment-method-form__control {
+  .payment-method-card__control {
     position: relative;
+    flex: 1 1 auto;
   }
 
-  .payment-method-form__control i {
+  .payment-method-card__control i {
     position: absolute;
-    left: 12px;
     top: 50%;
+    left: 16px;
     transform: translateY(-50%);
     color: #6366f1;
     pointer-events: none;
+    font-size: 1.1rem;
   }
 
-  .payment-method-form select {
-    padding-left: 40px;
-    border-radius: 12px;
-    border: 1px solid rgba(99, 102, 241, 0.25);
+  .payment-method-card select {
+    width: 100%;
+    padding: 12px 16px 12px 48px;
+    border-radius: 14px;
+    border: 1px solid rgba(99, 102, 241, 0.24);
+    background-color: rgba(255, 255, 255, 0.9);
     box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .payment-method-form select:focus {
+  .payment-method-card select:focus {
     border-color: #6366f1;
-    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.15);
+    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.18);
   }
 
-  .payment-method-form button {
-    justify-self: flex-start;
-  }
-
-  @media (min-width: 768px) {
-    .payment-method-form button {
-      justify-self: end;
-    }
+  .payment-method-card .btn-gradient {
+    align-self: flex-start;
+    white-space: nowrap;
+    box-shadow: 0 18px 30px rgba(99, 102, 241, 0.3);
   }
 
   .btn-gradient {
@@ -649,7 +724,7 @@
     background: #ffffff;
     border-radius: 22px;
     padding: clamp(22px, 3vw, 28px);
-    margin-left: 22px;
+
     margin-bottom: 24px;
     border: 1px solid rgba(226, 232, 240, 0.7);
     box-shadow: 0 24px 44px rgba(148, 163, 184, 0.25);
@@ -657,7 +732,6 @@
   }
 
   .appointment-card::before {
-    content: "";
     position: absolute;
     left: -32px;
     top: 32px;
@@ -967,7 +1041,6 @@
       {% endfor %}
     </div>
 
-    <div class="timeline">
       {% for appointment in appointments %}
       <article class="appointment-card">
         <header class="appointment-header">
@@ -1033,22 +1106,40 @@
               {% csrf_token %}
               <input type="hidden" name="payment_action" value="change_method">
               <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-              <div>
-                <label for="payment-method-{{ appointment.id }}" class="payment-method-form__label">Способ оплаты</label>
-                <div class="payment-method-form__helper">Можно менять до отправки чека или подтверждения перевода.</div>
+              <div class="payment-method-card">
+                <div class="payment-method-card__inner">
+                  <div class="payment-method-card__header">
+                    <div class="payment-method-card__heading">
+                      <div class="payment-method-card__icon">
+                        <i class="bi bi-credit-card-2-front"></i>
+                      </div>
+                      <div>
+                        <span class="payment-method-card__label">Способ оплаты</span>
+                        <label for="payment-method-{{ appointment.id }}" class="payment-method-card__title">Обновить способ оплаты</label>
+                        <p class="payment-method-card__helper">Можно менять до отправки чека или подтверждения перевода.</p>
+                      </div>
+                    </div>
+                    <span class="payment-method-card__badge">
+                      <i class="bi bi-shield-check"></i>
+                      Гибкие варианты
+                    </span>
+                  </div>
+                  <div class="payment-method-card__body">
+                    <div class="payment-method-card__control">
+                      <i class="bi bi-wallet2"></i>
+                      <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
+                        {% for value, label in appointment.payment_method_choices %}
+                          <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <button type="submit" class="btn-gradient btn-sm">
+                      <i class="bi bi-arrow-repeat"></i>
+                      <span>Обновить</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-              <div class="payment-method-form__control">
-                <i class="bi bi-credit-card-2-front"></i>
-                <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
-                  {% for value, label in appointment.payment_method_choices %}
-                    <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <button type="submit" class="btn-gradient btn-sm">
-                <i class="bi bi-arrow-repeat"></i>
-                <span>Обновить</span>
-              </button>
             </form>
             {% elif appointment.payment_receipt %}
             <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
@@ -1234,7 +1325,6 @@
         </footer>
       </article>
       {% endfor %}
-    </div>
   {% else %}
     <div class="empty-state">
       <div class="emoji">💫</div>
