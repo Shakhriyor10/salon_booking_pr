@@ -36,7 +36,7 @@
   <button type="submit" class="btn btn-custom w-100">Войти</button>
 </form>
     </div>
-    {% if telegram_bot_name %}
+    {% if telegram_login_enabled %}
     <div class="card-body border-top">
       <p class="text-center text-muted mb-2">Или войдите через Telegram</p>
       <div class="d-flex justify-content-center">
@@ -82,6 +82,19 @@
         container.style.display = 'block';
       }
     </script>
+    {% elif telegram_bot_name %}
+    <div class="card-body border-top">
+      <p class="text-center text-muted mb-0">
+        Телеграм-бот <strong>@{{ telegram_bot_name }}</strong> настроен, но токен не указан.
+        Обратитесь к администратору для завершения настройки авторизации.
+      </p>
+    </div>
+    {% else %}
+    <div class="card-body border-top">
+      <p class="text-center text-muted mb-0">
+        Авторизация через Telegram будет доступна после указания имени бота в настройках.
+      </p>
+    </div>
     {% endif %}
     <div class="card-footer text-center bg-light">
       <p class="mb-0">Нет аккаунта? <a href="{% url 'register' %}">Создать</a></p>

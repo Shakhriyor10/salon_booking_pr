@@ -34,8 +34,35 @@ def _build_username(base_username):
     return username
 
 
+def _get_telegram_token():
+    token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '') or getattr(settings, 'TELEGRAM_LOGIN_BOT_TOKEN', '')
+    if token and isinstance(token, str):
+        return token.strip()
+    return ''
+
+
+def _get_telegram_bot_name():
+    value = (
+        getattr(settings, 'TELEGRAM_BOT_NAME', '')
+        or getattr(settings, 'TELEGRAM_LOGIN_BOT', '')
+        or getattr(settings, 'TELEGRAM_BOT_USERNAME', '')
+    )
+    if not isinstance(value, str):
+        return ''
+    return value.strip().lstrip('@')
+
+
+def _get_telegram_context():
+    bot_name = _get_telegram_bot_name()
+    token = _get_telegram_token()
+    return {
+        'telegram_bot_name': bot_name,
+        'telegram_login_enabled': bool(bot_name and token),
+    }
+
+
 def _verify_telegram_payload(payload):
-    token = getattr(settings, 'TELEGRAM_BOT_TOKEN', '')
+    token = _get_telegram_token()
     if not token:
         return False
 
@@ -117,9 +144,9 @@ def register_view(request):
     context = {
         'form': form,
         'next_url': next_url,
-        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', ''),
         'telegram_redirect_url': next_url,
     }
+    context.update(_get_telegram_context())
     return render(request, 'users/register.html', context)
 
 
@@ -143,9 +170,9 @@ def login_view(request):
     context = {
         'form': form,
         'next_url': next_url,
-        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', ''),
         'telegram_redirect_url': next_url,
     }
+    context.update(_get_telegram_context())
     return render(request, 'users/login.html', context)
 
 
@@ -159,7 +186,8 @@ def logout_view(request):
 @csrf_exempt
 @require_POST
 def telegram_login_view(request):
-    if not getattr(settings, 'TELEGRAM_BOT_TOKEN', '') or not getattr(settings, 'TELEGRAM_BOT_NAME', ''):
+    context = _get_telegram_context()
+    if not context['telegram_login_enabled']:
         return JsonResponse({'ok': False, 'error': 'Telegram авторизация не настроена.'}, status=503)
 
     try:

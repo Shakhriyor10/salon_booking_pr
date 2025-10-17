@@ -132,5 +132,29 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 мегабайт
 DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
 FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_SIZE
 
-TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
-TELEGRAM_BOT_NAME = os.getenv('TELEGRAM_BOT_NAME', '')
+def _get_env_setting(*names, default=''):
+    """Return the first non-empty environment variable value from ``names``."""
+
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value
+    return default
+
+
+TELEGRAM_BOT_TOKEN = _get_env_setting(
+    'TELEGRAM_LOGIN_BOT_TOKEN',
+    'TELEGRAM_BOT_TOKEN',
+    'TELEGRAM_BOT_API_TOKEN',
+    default='',
+)
+TELEGRAM_BOT_NAME = _get_env_setting(
+    'TELEGRAM_LOGIN_BOT',
+    'TELEGRAM_BOT_NAME',
+    'TELEGRAM_BOT_USERNAME',
+    default='',
+)
+
+# Provide aliases so the application code can check alternative setting names in one place.
+TELEGRAM_LOGIN_BOT_TOKEN = TELEGRAM_BOT_TOKEN
+TELEGRAM_LOGIN_BOT = TELEGRAM_BOT_NAME
