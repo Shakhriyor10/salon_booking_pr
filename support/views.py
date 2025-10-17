@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -26,6 +26,69 @@ def _user_is_support_staff(user) -> bool:
         return True
     profile = getattr(user, 'profile', None)
     return bool(profile and getattr(profile, 'is_salon_admin', False))
+
+
+def _can_staff_reply(thread: SupportThread, user) -> bool:
+    return thread.can_user_reply(user)
+
+
+def _thread_status(thread: SupportThread, user) -> Dict[str, Any]:
+    assigned_name = thread.assigned_to_name()
+    assigned_to_me = bool(thread.assigned_to_id and user.is_authenticated and thread.assigned_to_id == user.id)
+
+    if thread.is_closed:
+        label = 'Закрыто'
+        badge = 'bg-secondary'
+    elif assigned_to_me:
+        label = 'Назначено вам'
+        badge = 'bg-primary'
+    elif assigned_name:
+        label = f'Назначено: {assigned_name}'
+        badge = 'bg-warning text-dark'
+    else:
+        label = 'Ожидает ответа'
+        badge = 'bg-success'
+
+    return {
+        'label': label,
+        'badge': badge,
+        'assigned_to_me': assigned_to_me,
+        'assigned_name': assigned_name,
+    }
+
+
+def _thread_notice(thread: SupportThread, user) -> Tuple[str, str]:
+    if thread.is_closed:
+        return 'Обращение закрыто. Новые сообщения не принимаются.', 'secondary'
+    if not _can_staff_reply(thread, user):
+        assigned_name = thread.assigned_to_name()
+        if assigned_name:
+            message = (
+                'Обращение закреплено за администратором '
+                f'{assigned_name}. Только он или суперпользователь может отвечать.'
+            )
+        else:
+            message = 'У вас нет прав отвечать на это обращение.'
+        return message, 'warning'
+    return '', ''
+
+
+def _format_thread(thread: SupportThread, user) -> Dict[str, Any]:
+    status = _thread_status(thread, user)
+    notice_text, notice_level = _thread_notice(thread, user)
+    return {
+        'id': str(thread.id),
+        'display_name': thread.display_name,
+        'contact_email': thread.contact_email,
+        'is_closed': thread.is_closed,
+        'assigned_to': status['assigned_name'],
+        'assigned_to_me': status['assigned_to_me'],
+        'status': status['label'],
+        'status_badge': status['badge'],
+        'can_reply': _can_staff_reply(thread, user),
+        'notice': notice_text,
+        'notice_level': notice_level,
+    }
 
 
 def _format_message(message: SupportMessage) -> Dict[str, Any]:
@@ -119,16 +182,21 @@ class SupportInboxView(LoginRequiredMixin, TemplateView):
 @user_passes_test(_user_is_support_staff)
 @require_GET
 def threads_list(request: HttpRequest) -> JsonResponse:
-    threads = SupportThread.objects.filter(is_closed=False)
-    data = [
-        {
-            'id': str(thread.id),
-            'display_name': thread.display_name,
-            'last_message': _last_message_preview(thread),
-            'updated_at': format_date(timezone.localtime(thread.updated_at), 'd.m.Y H:i'),
-        }
-        for thread in threads
-    ]
+    threads = SupportThread.objects.filter(is_closed=False).select_related('assigned_to', 'user')
+    data = []
+    for thread in threads:
+        status = _thread_status(thread, request.user)
+        data.append(
+            {
+                'id': str(thread.id),
+                'display_name': thread.display_name,
+                'last_message': _last_message_preview(thread),
+                'updated_at': format_date(timezone.localtime(thread.updated_at), 'd.m.Y H:i'),
+                'status': status['label'],
+                'status_badge': status['badge'],
+                'assigned_to_me': status['assigned_to_me'],
+            }
+        )
     return JsonResponse({'threads': data})
 
 
@@ -136,16 +204,13 @@ def threads_list(request: HttpRequest) -> JsonResponse:
 @user_passes_test(_user_is_support_staff)
 @require_GET
 def thread_messages(request: HttpRequest, thread_id: str) -> JsonResponse:
-    thread = get_object_or_404(SupportThread, pk=thread_id)
+    thread = get_object_or_404(
+        SupportThread.objects.select_related('assigned_to', 'user'), pk=thread_id
+    )
     messages_data = [_format_message(message) for message in thread.messages.all()]
     return JsonResponse(
         {
-            'thread': {
-                'id': str(thread.id),
-                'display_name': thread.display_name,
-                'contact_email': thread.contact_email,
-                'is_closed': thread.is_closed,
-            },
+            'thread': _format_thread(thread, request.user),
             'messages': messages_data,
         }
     )
@@ -155,10 +220,29 @@ def thread_messages(request: HttpRequest, thread_id: str) -> JsonResponse:
 @user_passes_test(_user_is_support_staff)
 @require_POST
 def staff_send(request: HttpRequest, thread_id: str) -> JsonResponse:
-    thread = get_object_or_404(SupportThread, pk=thread_id)
+    thread = get_object_or_404(
+        SupportThread.objects.select_related('assigned_to', 'user'), pk=thread_id
+    )
     form = SupportMessageForm(request.POST, request.FILES)
     if not form.is_valid():
         return JsonResponse({'errors': form.errors}, status=400)
+
+    if thread.is_closed:
+        return JsonResponse(
+            {
+                'errors': {'__all__': ['Обращение закрыто. Новые сообщения не принимаются.']},
+                'thread': _format_thread(thread, request.user),
+            },
+            status=400,
+        )
+    if thread.assigned_to_id and thread.assigned_to_id != request.user.id and not request.user.is_superuser:
+        return JsonResponse(
+            {
+                'errors': {'__all__': ['Обращение закреплено за другим администратором.']},
+                'thread': _format_thread(thread, request.user),
+            },
+            status=403,
+        )
 
     message = SupportMessage.objects.create(
         thread=thread,
@@ -167,10 +251,20 @@ def staff_send(request: HttpRequest, thread_id: str) -> JsonResponse:
         body=form.cleaned_data['message'],
         attachment=form.cleaned_data.get('attachment'),
     )
-    thread.updated_at = timezone.now()
-    thread.save(update_fields=['updated_at'])
 
-    return JsonResponse({'message': _format_message(message)})
+    thread.updated_at = timezone.now()
+    update_fields = ['updated_at']
+    if not thread.assigned_to_id:
+        thread.assigned_to = request.user
+        update_fields.append('assigned_to')
+    thread.save(update_fields=update_fields)
+
+    return JsonResponse(
+        {
+            'message': _format_message(message),
+            'thread': _format_thread(thread, request.user),
+        }
+    )
 
 
 def _last_message_preview(thread: SupportThread) -> str:

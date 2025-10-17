@@ -4,6 +4,11 @@
   const titleEl = document.getElementById('support-thread-title');
   const emailEl = document.getElementById('support-thread-email');
   const form = document.getElementById('support-staff-form');
+  const statusEl = document.getElementById('support-thread-status');
+  const noticeEl = document.getElementById('support-thread-notice');
+  const messageInput = form ? form.querySelector('textarea[name="message"]') : null;
+  const attachmentInput = form ? form.querySelector('input[name="attachment"]') : null;
+  const submitButton = form ? form.querySelector('button[type="submit"]') : null;
 
   if (!listEl || !form) {
     return;
@@ -16,6 +21,48 @@
     return input ? input.value : '';
   }
 
+  function setFormAvailability(canReply) {
+    const disabled = !canReply;
+    if (messageInput) {
+      messageInput.disabled = disabled;
+    }
+    if (attachmentInput) {
+      attachmentInput.disabled = disabled;
+    }
+    if (submitButton) {
+      submitButton.disabled = disabled;
+    }
+  }
+
+  function applyThreadMeta(meta) {
+    if (statusEl) {
+      statusEl.className = 'badge rounded-pill';
+      if (meta && meta.status_badge) {
+        statusEl.className += ' ' + meta.status_badge;
+      }
+      if (meta && meta.status) {
+        statusEl.innerText = meta.status;
+        statusEl.classList.remove('d-none');
+      } else {
+        statusEl.innerText = '—';
+        statusEl.classList.add('d-none');
+      }
+    }
+
+    if (noticeEl) {
+      noticeEl.innerText = '';
+      noticeEl.className = 'alert d-none mb-3';
+      if (meta && meta.notice) {
+        const level = meta.notice_level || 'info';
+        noticeEl.className = 'alert alert-' + level + ' mb-3';
+        noticeEl.innerText = meta.notice;
+        noticeEl.classList.remove('d-none');
+      }
+    }
+
+    setFormAvailability(meta ? meta.can_reply : false);
+  }
+
   function renderThreads(threads) {
     listEl.innerHTML = '';
     if (threads.length === 0) {
@@ -25,14 +72,27 @@
     threads.forEach(thread => {
       const item = document.createElement('button');
       item.type = 'button';
-      item.className = 'list-group-item list-group-item-action';
+      item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-start';
       if (activeThreadId === thread.id) {
         item.classList.add('active');
       }
+      if (thread.assigned_to_me) {
+        item.classList.add('border', 'border-2', 'border-primary');
+      }
       item.dataset.threadId = thread.id;
-      item.innerHTML = '<div class="fw-semibold">' + thread.display_name + '</div>' +
+
+      const content = document.createElement('div');
+      content.innerHTML = '<div class="fw-semibold">' + thread.display_name + '</div>' +
         '<div class="small text-muted">' + (thread.last_message || 'Нет сообщений') + '</div>' +
         '<div class="small text-muted">' + thread.updated_at + '</div>';
+
+      const badge = document.createElement('span');
+      badge.className = 'badge rounded-pill ' + (thread.status_badge || 'bg-secondary');
+      badge.innerText = thread.status;
+
+      item.appendChild(content);
+      item.appendChild(badge);
+
       item.addEventListener('click', () => selectThread(thread.id));
       listEl.appendChild(item);
     });
@@ -118,10 +178,12 @@
       .then(data => {
         titleEl.innerText = data.thread.display_name;
         emailEl.innerText = data.thread.contact_email || '';
+        applyThreadMeta(data.thread);
         renderMessages(data.messages);
       })
       .catch(() => {
         messagesEl.innerHTML = '<p class="text-danger">Не удалось загрузить сообщения.</p>';
+        applyThreadMeta(null);
       });
   }
 
@@ -146,23 +208,49 @@
         }
         return response.json();
       })
-      .then(() => {
-        form.querySelector('textarea[name="message"]').value = '';
-        const attachmentInput = form.querySelector('input[name="attachment"]');
+      .then(data => {
+        if (messageInput) {
+          messageInput.value = '';
+        }
         if (attachmentInput) {
           attachmentInput.value = '';
         }
+        if (noticeEl) {
+          noticeEl.className = 'alert d-none mb-3';
+          noticeEl.innerText = '';
+        }
+        if (data.thread) {
+          applyThreadMeta(data.thread);
+        }
         selectThread(activeThreadId);
+        refreshThreads();
       })
       .catch(error => {
+        if (error && error.thread) {
+          applyThreadMeta(error.thread);
+        }
         if (error && error.errors) {
-          messagesEl.innerHTML += '<p class="text-danger">' + Object.values(error.errors).flat().join(' ') + '</p>';
+          const message = Object.values(error.errors).flat().join(' ');
+          if (noticeEl) {
+            noticeEl.className = 'alert alert-warning mb-3';
+            noticeEl.innerText = message;
+            noticeEl.classList.remove('d-none');
+          } else {
+            messagesEl.innerHTML += '<p class="text-danger">' + message + '</p>';
+          }
         } else {
-          messagesEl.innerHTML += '<p class="text-danger">Не удалось отправить сообщение.</p>';
+          if (noticeEl) {
+            noticeEl.className = 'alert alert-danger mb-3';
+            noticeEl.innerText = 'Не удалось отправить сообщение.';
+            noticeEl.classList.remove('d-none');
+          } else {
+            messagesEl.innerHTML += '<p class="text-danger">Не удалось отправить сообщение.</p>';
+          }
         }
       });
   });
 
+  applyThreadMeta(null);
   refreshThreads();
   setInterval(refreshThreads, window.supportInboxConfig.refreshInterval);
 })();
