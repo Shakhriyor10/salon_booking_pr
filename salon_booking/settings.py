@@ -146,13 +146,13 @@ TELEGRAM_BOT_TOKEN = _get_env_setting(
     'TELEGRAM_LOGIN_BOT_TOKEN',
     'TELEGRAM_BOT_TOKEN',
     'TELEGRAM_BOT_API_TOKEN',
-    default='',
+    default='8429409883:AAGru4tQ_J1_X60a_IsJzurcEENVGJ7cWKs',
 )
 TELEGRAM_BOT_NAME = _get_env_setting(
     'TELEGRAM_LOGIN_BOT',
     'TELEGRAM_BOT_NAME',
     'TELEGRAM_BOT_USERNAME',
-    default='',
+    default='salontestmybot',
 )
 
 # Provide aliases so the application code can check alternative setting names in one place.
