@@ -72,6 +72,7 @@
                   data-telegram-login="{{ telegram_bot_name }}"
                   data-size="large"
                   data-userpic="false"
+                  {% if telegram_bot_domain %}data-domain="{{ telegram_bot_domain }}"{% endif %}
                   data-request-access="write"
                   data-onauth="onTelegramAuth"></script>
         </div>

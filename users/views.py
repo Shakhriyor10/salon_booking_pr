@@ -52,12 +52,35 @@ def _get_telegram_bot_name():
     return value.strip().lstrip('@')
 
 
-def _get_telegram_context():
+def _get_telegram_bot_domain(request=None):
+    explicit_domain = getattr(settings, 'TELEGRAM_LOGIN_DOMAIN', '') or getattr(
+        settings, 'TELEGRAM_BOT_DOMAIN', ''
+    )
+    if isinstance(explicit_domain, str) and explicit_domain.strip():
+        domain = explicit_domain.strip()
+    elif request is not None:
+        domain = request.get_host()
+    else:
+        domain = ''
+
+    if isinstance(domain, str):
+        domain = domain.strip()
+        if domain.startswith('http://') or domain.startswith('https://'):
+            domain = domain.split('://', 1)[1]
+    else:
+        domain = ''
+
+    return domain
+
+
+def _get_telegram_context(request=None):
     bot_name = _get_telegram_bot_name()
     token = _get_telegram_token()
+    domain = _get_telegram_bot_domain(request)
     return {
         'telegram_bot_name': bot_name,
         'telegram_login_enabled': bool(bot_name and token),
+        'telegram_bot_domain': domain,
     }
 
 
@@ -145,8 +168,9 @@ def register_view(request):
         'form': form,
         'next_url': next_url,
         'telegram_redirect_url': next_url,
+        'telegram_auth_url': request.build_absolute_uri(reverse('telegram_login')),
     }
-    context.update(_get_telegram_context())
+    context.update(_get_telegram_context(request))
     return render(request, 'users/register.html', context)
 
 
@@ -171,8 +195,9 @@ def login_view(request):
         'form': form,
         'next_url': next_url,
         'telegram_redirect_url': next_url,
+        'telegram_auth_url': request.build_absolute_uri(reverse('telegram_login')),
     }
-    context.update(_get_telegram_context())
+    context.update(_get_telegram_context(request))
     return render(request, 'users/login.html', context)
 
 
@@ -186,7 +211,7 @@ def logout_view(request):
 @csrf_exempt
 @require_POST
 def telegram_login_view(request):
-    context = _get_telegram_context()
+    context = _get_telegram_context(request)
     if not context['telegram_login_enabled']:
         return JsonResponse({'ok': False, 'error': 'Telegram авторизация не настроена.'}, status=503)
 
