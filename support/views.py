@@ -22,14 +22,7 @@ from .utils import get_or_create_thread_for_request
 def _user_is_support_staff(user) -> bool:
     if not user.is_authenticated:
         return False
-    if user.is_staff:
-        return True
-
-    profile = getattr(user, 'profile', None)
-    if profile and getattr(profile, 'is_salon_admin', False):
-        return True
-
-    return hasattr(user, 'stylist_profile')
+    return bool(user.is_staff)
 
 
 def _can_staff_reply(thread: SupportThread, user) -> bool:
