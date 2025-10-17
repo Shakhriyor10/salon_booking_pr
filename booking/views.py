@@ -992,6 +992,24 @@ def group_appointments_by_date(appointments):
     return dict(sorted(grouped.items(), reverse=True))  # свежие даты сверху
 
 
+def get_latest_activity_timestamp(appointments):
+    timestamps = []
+    for appointment in appointments:
+        timestamps.extend(
+            filter(
+                None,
+                (
+                    appointment.created_at,
+                    getattr(appointment, "receipt_uploaded_at", None),
+                    getattr(appointment, "refund_receipt_uploaded_at", None),
+                    getattr(appointment, "refund_requested_at", None),
+                ),
+            )
+        )
+
+    return max(timestamps) if timestamps else None
+
+
 def build_calendar_summary(appointments):
     summary = defaultdict(lambda: {
         Appointment.Status.PENDING: 0,
@@ -1043,8 +1061,8 @@ def dashboard_view(request):
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
-    latest_created = max((a.created_at for a in appointments), default=None)
-    latest_created_iso = latest_created.isoformat() if latest_created else ""
+    latest_activity = get_latest_activity_timestamp(appointments)
+    latest_created_iso = latest_activity.isoformat() if latest_activity else ""
 
     # 📊 Группировка и расчёты
     visible_start = yesterday
@@ -1108,7 +1126,7 @@ def dashboard_ajax(request):
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
-    latest_created = max((a.created_at for a in appointments), default=None)
+    latest_activity = get_latest_activity_timestamp(appointments)
     default_visible_dates = [
         yesterday.isoformat(),
         today.isoformat(),
@@ -1128,7 +1146,7 @@ def dashboard_ajax(request):
         "calendar": calendar_summary,
         "default_visible_dates": default_visible_dates,
         "today": today.isoformat(),
-        "latest_created": latest_created.isoformat() if latest_created else None,
+        "latest_created": latest_activity.isoformat() if latest_activity else None,
         "count": len(appointments),
     })
 
@@ -1166,9 +1184,25 @@ def dashboard_updates(request):
 
     def evaluate_changes():
         totals_local = appointments_qs.aggregate(
-            latest_created=Max("created_at"), total_count=Count("id")
+            latest_created=Max("created_at"),
+            latest_receipt_uploaded=Max("receipt_uploaded_at"),
+            latest_refund_receipt_uploaded=Max("refund_receipt_uploaded_at"),
+            latest_refund_requested=Max("refund_requested_at"),
+            total_count=Count("id"),
         )
-        latest_created_local = totals_local.get("latest_created")
+        latest_created_local = max(
+            (
+                ts
+                for ts in (
+                    totals_local.get("latest_created"),
+                    totals_local.get("latest_receipt_uploaded"),
+                    totals_local.get("latest_refund_receipt_uploaded"),
+                    totals_local.get("latest_refund_requested"),
+                )
+                if ts is not None
+            ),
+            default=None,
+        )
         total_count_local = totals_local.get("total_count", 0) or 0
 
         has_updates_local = False
@@ -1543,11 +1577,9 @@ def my_appointments(request):
                         appointment.payment_status = Appointment.PaymentStatus.REFUND_REQUESTED
                         updates.add('payment_status')
 
-                    if not appointment.refund_requested_at:
+                    if updates:
                         appointment.refund_requested_at = timezone.now()
                         updates.add('refund_requested_at')
-
-                    if updates:
                         appointment.save(update_fields=sorted(updates))
                     messages.success(request, "Данные для возврата сохранены. Мы сообщим, когда перевод будет выполнен.")
                 else:
@@ -1698,8 +1730,8 @@ def stylist_dashboard(request):
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
-    latest_created = max((a.created_at for a in appointments), default=None)
-    latest_created_iso = latest_created.isoformat() if latest_created else ""
+    latest_activity = get_latest_activity_timestamp(appointments)
+    latest_created_iso = latest_activity.isoformat() if latest_activity else ""
 
     cash_total = sum(
         a.get_total_price() for a in appointments if a.status == Appointment.Status.DONE
@@ -1763,7 +1795,7 @@ def stylist_dashboard_ajax(request):
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
-    latest_created = max((a.created_at for a in appointments), default=None)
+    latest_activity = get_latest_activity_timestamp(appointments)
     default_visible_dates = [
         yesterday.isoformat(),
         today.isoformat(),
@@ -1784,7 +1816,7 @@ def stylist_dashboard_ajax(request):
         "calendar": calendar_summary,
         "default_visible_dates": default_visible_dates,
         "today": today.isoformat(),
-        "latest_created": latest_created.isoformat() if latest_created else None,
+        "latest_created": latest_activity.isoformat() if latest_activity else None,
         "count": len(appointments),
     })
 
@@ -1822,9 +1854,25 @@ def stylist_dashboard_updates(request):
 
     def evaluate_changes():
         totals_local = appointments_qs.aggregate(
-            latest_created=Max("created_at"), total_count=Count("id")
+            latest_created=Max("created_at"),
+            latest_receipt_uploaded=Max("receipt_uploaded_at"),
+            latest_refund_receipt_uploaded=Max("refund_receipt_uploaded_at"),
+            latest_refund_requested=Max("refund_requested_at"),
+            total_count=Count("id"),
         )
-        latest_created_local = totals_local.get("latest_created")
+        latest_created_local = max(
+            (
+                ts
+                for ts in (
+                    totals_local.get("latest_created"),
+                    totals_local.get("latest_receipt_uploaded"),
+                    totals_local.get("latest_refund_receipt_uploaded"),
+                    totals_local.get("latest_refund_requested"),
+                )
+                if ts is not None
+            ),
+            default=None,
+        )
         total_count_local = totals_local.get("total_count", 0) or 0
 
         has_updates_local = False
@@ -1919,6 +1967,21 @@ def appointment_payment_action(request, appointment_id):
         update_fields.append('payment_status')
         success_message = "Оплата подтверждена."
     elif action == "mark_refunded":
+        if appointment.status != Appointment.Status.CANCELLED:
+            messages.error(request, "Возврат можно завершить только для отменённых записей.")
+            return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
+        if not all([
+            appointment.refund_card_number,
+            appointment.refund_cardholder_name,
+            appointment.refund_card_type,
+        ]):
+            messages.error(
+                request,
+                "Нельзя завершить возврат: клиент ещё не указал реквизиты карты для перевода.",
+            )
+            return redirect(request.META.get('HTTP_REFERER') or 'stylist_dashboard')
+
         form = AppointmentRefundCompleteForm(request.POST, request.FILES)
         if not form.is_valid():
             for field_errors in form.errors.values():
