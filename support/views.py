@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+import os
+
+from typing import Any, Dict, Optional
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -28,12 +30,19 @@ def _user_is_support_staff(user) -> bool:
 
 def _format_message(message: SupportMessage) -> Dict[str, Any]:
     timestamp = timezone.localtime(message.created_at)
+    attachment: Optional[Dict[str, Any]] = None
+    if message.attachment:
+        attachment = {
+            'url': message.attachment.url,
+            'name': os.path.basename(message.attachment.name),
+        }
     return {
         'id': message.id,
-        'body': message.body,
+        'body': message.body or '',
         'is_from_staff': message.is_from_staff,
         'author': message.author.get_username() if message.author else None,
         'created_at': format_date(timestamp, 'd.m.Y H:i'),
+        'attachment': attachment,
     }
 
 
@@ -68,7 +77,7 @@ def widget_state(request: HttpRequest) -> JsonResponse:
 
 @require_POST
 def widget_send(request: HttpRequest) -> JsonResponse:
-    form = SupportMessageForm(request.POST)
+    form = SupportMessageForm(request.POST, request.FILES)
     if not form.is_valid():
         return JsonResponse({'errors': form.errors}, status=400)
 
@@ -87,6 +96,7 @@ def widget_send(request: HttpRequest) -> JsonResponse:
         author=request.user if request.user.is_authenticated else None,
         is_from_staff=_user_is_support_staff(request.user),
         body=form.cleaned_data['message'],
+        attachment=form.cleaned_data.get('attachment'),
     )
     thread.updated_at = timezone.now()
     thread.save(update_fields=['updated_at'])
@@ -114,7 +124,7 @@ def threads_list(request: HttpRequest) -> JsonResponse:
         {
             'id': str(thread.id),
             'display_name': thread.display_name,
-            'last_message': thread.messages.last().body if thread.messages.exists() else '',
+            'last_message': _last_message_preview(thread),
             'updated_at': format_date(timezone.localtime(thread.updated_at), 'd.m.Y H:i'),
         }
         for thread in threads
@@ -146,7 +156,7 @@ def thread_messages(request: HttpRequest, thread_id: str) -> JsonResponse:
 @require_POST
 def staff_send(request: HttpRequest, thread_id: str) -> JsonResponse:
     thread = get_object_or_404(SupportThread, pk=thread_id)
-    form = SupportMessageForm(request.POST)
+    form = SupportMessageForm(request.POST, request.FILES)
     if not form.is_valid():
         return JsonResponse({'errors': form.errors}, status=400)
 
@@ -155,8 +165,20 @@ def staff_send(request: HttpRequest, thread_id: str) -> JsonResponse:
         author=request.user,
         is_from_staff=True,
         body=form.cleaned_data['message'],
+        attachment=form.cleaned_data.get('attachment'),
     )
     thread.updated_at = timezone.now()
     thread.save(update_fields=['updated_at'])
 
     return JsonResponse({'message': _format_message(message)})
+
+
+def _last_message_preview(thread: SupportThread) -> str:
+    last_message: Optional[SupportMessage] = thread.messages.last()
+    if not last_message:
+        return ''
+    if last_message.body:
+        return last_message.body
+    if last_message.attachment:
+        return '📎 Фото'
+    return ''

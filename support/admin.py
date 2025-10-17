@@ -18,7 +18,11 @@ class SupportThreadAdmin(admin.ModelAdmin):
 
 @admin.register(SupportMessage)
 class SupportMessageAdmin(admin.ModelAdmin):
-    list_display = ('thread', 'author', 'is_from_staff', 'created_at')
+    list_display = ('thread', 'author', 'is_from_staff', 'created_at', 'has_attachment')
     search_fields = ('body', 'thread__contact_name', 'thread__user__username')
     list_filter = ('is_from_staff', 'created_at')
     autocomplete_fields = ('thread', 'author')
+
+    @admin.display(boolean=True, description='Вложение')
+    def has_attachment(self, obj: SupportMessage) -> bool:
+        return bool(obj.attachment)

@@ -15,7 +15,7 @@
     </div>
     <div class="support-chat__form">
       <div class="support-chat__error d-none" id="support-chat-error"></div>
-      <form id="support-chat-form">
+      <form id="support-chat-form" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="mb-2" id="support-chat-name-row">
           <input type="text" name="contact_name" class="form-control form-control-sm" placeholder="Ваше имя">
@@ -24,7 +24,11 @@
           <input type="email" name="contact_email" class="form-control form-control-sm" placeholder="Электронная почта">
         </div>
         <div class="mb-2">
-          <textarea class="form-control" name="message" rows="2" placeholder="Введите сообщение..." required></textarea>
+          <textarea class="form-control" name="message" rows="2" placeholder="Введите сообщение..."></textarea>
+        </div>
+        <div class="mb-2">
+          <input class="form-control form-control-sm" type="file" name="attachment" accept="image/*">
+          <small class="text-muted">Можно прикрепить изображение до 10 МБ.</small>
         </div>
         <div class="d-grid">
           <button type="submit" class="btn btn-dark btn-sm">Отправить</button>

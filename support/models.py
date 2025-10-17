@@ -50,7 +50,12 @@ class SupportMessage(models.Model):
         related_name='support_messages',
     )
     is_from_staff = models.BooleanField(default=False)
-    body = models.TextField()
+    body = models.TextField(blank=True)
+    attachment = models.ImageField(
+        upload_to='support/attachments/%Y/%m/',
+        blank=True,
+        null=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

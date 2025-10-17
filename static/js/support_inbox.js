@@ -47,9 +47,40 @@
     messages.forEach(message => {
       const wrapper = document.createElement('div');
       wrapper.className = 'mb-3';
-      wrapper.innerHTML = '<div class="small text-muted">' + message.created_at + '</div>' +
-        '<div class="p-3 rounded ' + (message.is_from_staff ? 'bg-light' : 'bg-dark text-white') + '">' +
-        message.body + '</div>';
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'small text-muted';
+      timeEl.innerText = message.created_at;
+      wrapper.appendChild(timeEl);
+
+      const bodyEl = document.createElement('div');
+      bodyEl.className = 'p-3 rounded ' + (message.is_from_staff ? 'bg-light' : 'bg-dark text-white');
+
+      if (message.body) {
+        const textEl = document.createElement('p');
+        textEl.className = 'mb-2';
+        textEl.innerText = message.body;
+        bodyEl.appendChild(textEl);
+      }
+
+      if (message.attachment) {
+        const link = document.createElement('a');
+        link.href = message.attachment.url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        const img = document.createElement('img');
+        img.src = message.attachment.url;
+        img.alt = message.attachment.name || 'Вложение';
+        img.className = 'img-fluid rounded';
+        link.appendChild(img);
+        bodyEl.appendChild(link);
+      }
+
+      if (!message.body && !message.attachment) {
+        bodyEl.innerText = '[Пустое сообщение]';
+      }
+
+      wrapper.appendChild(bodyEl);
       messagesEl.appendChild(wrapper);
     });
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -117,6 +148,10 @@
       })
       .then(() => {
         form.querySelector('textarea[name="message"]').value = '';
+        const attachmentInput = form.querySelector('input[name="attachment"]');
+        if (attachmentInput) {
+          attachmentInput.value = '';
+        }
         selectThread(activeThreadId);
       })
       .catch(error => {

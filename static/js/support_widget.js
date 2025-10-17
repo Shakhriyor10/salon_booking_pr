@@ -14,6 +14,7 @@
   const errorEl = document.getElementById('support-chat-error');
   const messageField = form.querySelector('textarea[name="message"]');
   const submitButton = form.querySelector('button[type="submit"]');
+  const attachmentInput = form.querySelector('input[name="attachment"]');
 
   let threadId = null;
 
@@ -35,7 +36,28 @@
     wrapper.dataset.messageId = message.id;
     const bubble = document.createElement('div');
     bubble.className = 'support-chat__bubble';
-    bubble.innerText = message.body;
+
+    if (message.body) {
+      const textEl = document.createElement('p');
+      textEl.className = 'support-chat__text';
+      textEl.innerText = message.body;
+      bubble.appendChild(textEl);
+    }
+
+    if (message.attachment) {
+      const attachmentWrapper = document.createElement('div');
+      attachmentWrapper.className = 'support-chat__attachment';
+      const img = document.createElement('img');
+      img.src = message.attachment.url;
+      img.alt = message.attachment.name || 'Вложение';
+      img.loading = 'lazy';
+      attachmentWrapper.appendChild(img);
+      bubble.appendChild(attachmentWrapper);
+    }
+
+    if (!message.body && !message.attachment) {
+      bubble.innerText = '[Пустое сообщение]';
+    }
 
     const meta = document.createElement('div');
     meta.className = 'support-chat__meta';
@@ -65,6 +87,10 @@
           threadTitle.innerText = 'Онлайн-поддержка';
           messageField.disabled = false;
           submitButton.disabled = false;
+          if (attachmentInput) {
+            attachmentInput.disabled = false;
+            attachmentInput.value = '';
+          }
           errorEl.classList.add('d-none');
           nameFieldRow.classList.remove('d-none');
           emailFieldRow.classList.remove('d-none');
@@ -81,11 +107,17 @@
           if (data.thread.is_closed) {
             messageField.disabled = true;
             submitButton.disabled = true;
+            if (attachmentInput) {
+              attachmentInput.disabled = true;
+            }
             errorEl.classList.remove('d-none');
             errorEl.innerText = 'Диалог закрыт. Создайте новое обращение, чтобы продолжить.';
           } else {
             messageField.disabled = false;
             submitButton.disabled = false;
+            if (attachmentInput) {
+              attachmentInput.disabled = false;
+            }
             errorEl.classList.add('d-none');
           }
           if (data.thread.contact_name) {
@@ -123,11 +155,17 @@
         if (data.thread.is_closed) {
           messageField.disabled = true;
           submitButton.disabled = true;
+          if (attachmentInput) {
+            attachmentInput.disabled = true;
+          }
           errorEl.classList.remove('d-none');
           errorEl.innerText = 'Диалог закрыт. Создайте новое обращение, чтобы продолжить.';
         } else {
           messageField.disabled = false;
           submitButton.disabled = false;
+          if (attachmentInput) {
+            attachmentInput.disabled = false;
+          }
           if (!errorEl.classList.contains('d-none') && errorEl.innerText.includes('Диалог закрыт')) {
             errorEl.classList.add('d-none');
           }
@@ -181,6 +219,9 @@
           emailFieldRow.classList.add('d-none');
         }
         form.querySelector('textarea[name="message"]').value = '';
+        if (attachmentInput) {
+          attachmentInput.value = '';
+        }
         renderMessage(data.message);
         messagesEl.scrollTop = messagesEl.scrollHeight;
       })
