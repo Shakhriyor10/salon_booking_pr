@@ -240,8 +240,8 @@
                         <label class="form-check-label" for="{{ payment_card_form.is_active.id_for_label }}">Сделать активной</label>
                     </div>
                 </div>
-                <div class="col-md-1 d-grid">
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                <div class="col-12 col-md-auto d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Сохранить</button>
                 </div>
                 {% if payment_card_form.non_field_errors %}
                     <div class="col-12">

@@ -441,10 +441,21 @@ class SalonPaymentCardForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        allowed_card_types = {'uzcard', 'humo'}
+        card_type_field = self.fields['card_type']
+        card_type_field.choices = [
+            choice
+            for choice in card_type_field.choices
+            if choice[0] in allowed_card_types or choice[0] == ''
+        ]
+
         for field_name, field in self.fields.items():
-            css_class = 'form-control'
             if isinstance(field.widget, forms.CheckboxInput):
                 css_class = 'form-check-input'
+            elif isinstance(field.widget, forms.Select):
+                css_class = 'form-select'
+            else:
+                css_class = 'form-control'
             field.widget.attrs.setdefault('class', css_class)
 
     def clean_card_number(self):
