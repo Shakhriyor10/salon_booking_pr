@@ -33,6 +33,14 @@ class City(models.Model):
         ordering = ['position', 'name']
 
 
+class SalonQuerySet(models.QuerySet):
+    def active(self):
+        today = timezone.localdate()
+        return self.filter(status=True).filter(
+            Q(subscription_expires_at__isnull=True) | Q(subscription_expires_at__gte=today)
+        )
+
+
 class Salon(models.Model):
     GENDER_CHOICES = [
         ('', 'Не указано'),
@@ -62,6 +70,14 @@ class Salon(models.Model):
         verbose_name="Тип салона"
     )
     slug = models.SlugField(max_length=150, blank=True)  # добавили поле slug
+    subscription_expires_at = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Подписка действует до",
+        help_text="Если не указано, салон будет активен без ограничения",
+    )
+
+    objects = SalonQuerySet.as_manager()
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -87,6 +103,16 @@ class Salon(models.Model):
 
     def get_active_payment_card(self):
         return self.payment_cards.filter(is_active=True).order_by('-updated_at').first()
+
+    @property
+    def is_subscription_active(self):
+        if not self.status:
+            return False
+
+        if self.subscription_expires_at is None:
+            return True
+
+        return self.subscription_expires_at >= timezone.localdate()
 
     class Meta:
         ordering = ['-position', 'name']
