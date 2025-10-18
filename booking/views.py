@@ -100,16 +100,20 @@ class HomePageView(ListView):
             return None
 
         profile = getattr(user, 'profile', None)
-        if profile and getattr(profile, 'is_salon_admin', False) and profile.salon:
-            return profile.salon
+        if profile and getattr(profile, 'is_salon_admin', False):
+            salon = getattr(profile, 'salon', None)
+            if salon and salon.is_subscription_active:
+                return salon
 
         try:
             stylist_profile = user.stylist_profile
         except ObjectDoesNotExist:
             stylist_profile = None
 
-        if stylist_profile and getattr(stylist_profile, 'salon', None):
-            return stylist_profile.salon
+        if stylist_profile:
+            salon = getattr(stylist_profile, 'salon', None)
+            if salon and salon.is_subscription_active:
+                return salon
 
         return None
 
@@ -127,7 +131,7 @@ class HomePageView(ListView):
         return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
-        queryset = Salon.objects.filter(status=True).order_by('position')
+        queryset = Salon.objects.active().order_by('position')
         queryset = queryset.annotate(avg_rating=Avg('reviews__rating'))
 
         # Фильтр по типу (male, female, both)
@@ -203,7 +207,7 @@ def autocomplete_search(request):
                 seen_services.add(key)
 
         # Салоны
-        salons = Salon.objects.all().values_list('name', flat=True)
+        salons = Salon.objects.active().values_list('name', flat=True)
         filtered_salons = [s for s in salons if q in s.lower()]
         results += [{"type": "salon", "label": name} for name in filtered_salons]
 
@@ -223,6 +227,10 @@ class SalonDetailView(DetailView):
     model = Salon
     template_name = 'salon_detail.html'
     context_object_name = 'salon'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        return queryset.active()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -373,7 +381,7 @@ def delete_review(request, pk):
 class CategoryServicesView(View):
     def get(self, request, pk):
         salon_id = request.GET.get('salon')
-        salon = get_object_or_404(Salon, id=salon_id)
+        salon = get_object_or_404(Salon.objects.active(), id=salon_id)
         category = get_object_or_404(Category, id=pk)  # исправлено здесь
 
         services = SalonService.objects.filter(
@@ -648,7 +656,7 @@ def service_booking(request):
     if not salon_id:
         return render(request, 'error.html', {"message": "Салон не указан."})
 
-    salon = get_object_or_404(Salon, id=salon_id)
+    salon = get_object_or_404(Salon.objects.active(), id=salon_id)
 
     today = now().date()
     max_date = add_months(today, 2)
@@ -2503,6 +2511,12 @@ def stylist_dayoff_view(request):
 
     stylists = []
     stylists_map = {}
+    profile_salon = getattr(profile, 'salon', None)
+    subscription_expires_at = None
+    subscription_is_active = False
+    if profile_salon:
+        subscription_expires_at = profile_salon.subscription_expires_at
+        subscription_is_active = profile_salon.is_subscription_active
 
     # Для администратора
     if profile.is_salon_admin:
@@ -2862,6 +2876,8 @@ def stylist_dayoff_view(request):
             'payment_cards': payment_cards,
             'payment_card_form': payment_card_form,
             'is_salon_admin': profile.is_salon_admin,
+            'subscription_expires_at': subscription_expires_at,
+            'subscription_is_active': subscription_is_active,
         },
     )
 

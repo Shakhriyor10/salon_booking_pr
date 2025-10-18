@@ -46,7 +46,7 @@ class SalonAdminForm(forms.ModelForm):
 @admin.register(Salon)
 class SalonAdmin(admin.ModelAdmin):
     form = SalonAdminForm
-    list_display = ('name', 'city', 'status', 'position')
+    list_display = ('name', 'city', 'status', 'subscription_expires_at', 'position')
     list_filter = ('city', 'status')
     search_fields = ('name', 'address')
     fieldsets = (
@@ -60,6 +60,7 @@ class SalonAdmin(admin.ModelAdmin):
                 'longitude',
                 'phone',
                 'status',
+                'subscription_expires_at',
                 'position',
                 'type',
             )

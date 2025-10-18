@@ -4,6 +4,17 @@
     <h2 class="mb-4 text-center">Настройка стилистов салона</h2>
 
     {% if request.user.profile.is_salon_admin %}
+    <div class="alert {% if subscription_is_active %}alert-info{% else %}alert-warning{% endif %} mb-4">
+        {% if subscription_expires_at %}
+            {% if subscription_is_active %}
+                Ваша подписка активна до {{ subscription_expires_at|date:"d.m.Y" }}.
+            {% else %}
+                Срок действия подписки истек {{ subscription_expires_at|date:"d.m.Y" }}. Салон скрыт для клиентов до продления подписки.
+            {% endif %}
+        {% else %}
+            У вашего салона нет ограничения по дате подписки.
+        {% endif %}
+    </div>
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Стилисты салона</span>
