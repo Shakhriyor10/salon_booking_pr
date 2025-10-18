@@ -1,5 +1,27 @@
 {% extends 'base3.html' %}
 {% block content %}
+<style>
+    .modal.stylist-modal .modal-dialog {
+        margin: 1.5rem auto;
+    }
+
+    .modal.stylist-modal .modal-content {
+        max-height: calc(100vh - 3rem);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal.stylist-modal .modal-body {
+        overflow-y: auto;
+        flex: 1 1 auto;
+    }
+
+    @media (max-width: 767.98px) {
+        .modal.stylist-modal .modal-content {
+            max-height: calc(100vh - 1.5rem);
+        }
+    }
+</style>
 <div class="container py-4">
     <h2 class="mb-4 text-center">Настройка стилистов салона</h2>
 
@@ -56,8 +78,8 @@
                                     </form>
                                 </div>
                             </div>
-                            <div class="modal fade" id="editStylistModal{{ s.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal fade stylist-modal" id="editStylistModal{{ s.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
                                     <div class="modal-content">
                                         <form method="post" enctype="multipart/form-data">
                                             {% csrf_token %}
@@ -791,7 +813,7 @@
 </div>
 
 {% if request.user.profile.is_salon_admin %}
-<div class="modal fade" id="addStylistModal" tabindex="-1">
+<div class="modal fade stylist-modal" id="addStylistModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="post" enctype="multipart/form-data">
