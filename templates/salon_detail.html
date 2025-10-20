@@ -218,6 +218,7 @@
     box-shadow: 0 18px 35px rgba(12, 28, 31, 0.18);
     background: #0e2023;
     min-height: 180px;
+    transition: transform 0.6s ease, opacity 0.45s ease;
   }
 
   .salon-gallery__item::after {
@@ -250,11 +251,32 @@
     }
 
     .salon-gallery__grid {
-      gap: 0.75rem;
+      display: block;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      min-height: 260px;
     }
 
     .salon-gallery__item {
-      border-radius: 14px;
+      border-radius: 16px;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .salon-gallery__item:first-child {
+      opacity: 1;
+      transform: translateX(0);
+      position: relative;
+    }
+
+    .salon-gallery__item img {
+      height: 100%;
     }
   }
 
@@ -1260,6 +1282,140 @@
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       });
+
+      const gallerySection = document.querySelector('.salon-gallery');
+      const galleryGrid = gallerySection?.querySelector('.salon-gallery__grid');
+      const galleryItems = galleryGrid ? Array.from(galleryGrid.querySelectorAll('.salon-gallery__item')) : [];
+
+      if (galleryGrid && galleryItems.length > 1) {
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        let currentIndex = 0;
+        let autoRotateTimer = null;
+        const AUTO_ROTATE_INTERVAL = 5000;
+
+        const resetDesktopLayout = () => {
+          galleryItems.forEach((item) => {
+            item.style.transform = '';
+            item.style.opacity = '';
+            item.style.pointerEvents = '';
+            item.style.zIndex = '';
+            item.removeAttribute('aria-hidden');
+          });
+        };
+
+        const updateMobileSlides = () => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          galleryItems.forEach((item, index) => {
+            const offset = index - currentIndex;
+            item.style.transform = `translateX(${offset * 100}%)`;
+            item.style.opacity = offset === 0 ? '1' : '0';
+            item.style.pointerEvents = offset === 0 ? 'auto' : 'none';
+            item.style.zIndex = String(galleryItems.length - Math.abs(offset));
+            item.setAttribute('aria-hidden', offset === 0 ? 'false' : 'true');
+          });
+        };
+
+        const syncLayout = () => {
+          if (mediaQuery.matches) {
+            currentIndex = Math.min(currentIndex, galleryItems.length - 1);
+            updateMobileSlides();
+          } else {
+            resetDesktopLayout();
+          }
+        };
+
+        const goToRelativeSlide = (delta, { fromAuto = false } = {}) => {
+          currentIndex = (currentIndex + delta + galleryItems.length) % galleryItems.length;
+          updateMobileSlides();
+
+          if (!fromAuto) {
+            restartAutoRotate();
+          }
+        };
+
+        const stopAutoRotate = () => {
+          if (autoRotateTimer !== null) {
+            window.clearInterval(autoRotateTimer);
+            autoRotateTimer = null;
+          }
+        };
+
+        const startAutoRotate = () => {
+          if (!mediaQuery.matches || autoRotateTimer !== null) {
+            return;
+          }
+
+          autoRotateTimer = window.setInterval(() => {
+            goToRelativeSlide(1, { fromAuto: true });
+          }, AUTO_ROTATE_INTERVAL);
+        };
+
+        const restartAutoRotate = () => {
+          stopAutoRotate();
+          startAutoRotate();
+        };
+
+        let touchStartX = 0;
+        let isSwiping = false;
+
+        galleryGrid.addEventListener('touchstart', (event) => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          touchStartX = event.touches[0]?.clientX ?? 0;
+          isSwiping = true;
+          stopAutoRotate();
+        }, { passive: true });
+
+        galleryGrid.addEventListener('touchmove', (event) => {
+          if (!mediaQuery.matches || !isSwiping) {
+            return;
+          }
+
+          const currentX = event.touches[0]?.clientX ?? 0;
+          const deltaX = currentX - touchStartX;
+
+          if (Math.abs(deltaX) > 50) {
+            isSwiping = false;
+            if (deltaX > 0) {
+              goToRelativeSlide(-1);
+            } else {
+              goToRelativeSlide(1);
+            }
+          }
+        }, { passive: true });
+
+        const stopSwipe = () => {
+          isSwiping = false;
+          restartAutoRotate();
+        };
+
+        galleryGrid.addEventListener('touchend', stopSwipe);
+        galleryGrid.addEventListener('touchcancel', stopSwipe);
+
+        const handleMediaChange = () => {
+          if (mediaQuery.matches) {
+            restartAutoRotate();
+          } else {
+            stopAutoRotate();
+          }
+
+          syncLayout();
+        };
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+          mediaQuery.addEventListener('change', handleMediaChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+          mediaQuery.addListener(handleMediaChange);
+        }
+
+        syncLayout();
+        startAutoRotate();
+      }
     });
   </script>
 
