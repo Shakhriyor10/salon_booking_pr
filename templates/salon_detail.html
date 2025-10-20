@@ -245,10 +245,6 @@
     transform: scale(1.05);
   }
 
-  .salon-gallery__controls {
-    display: none;
-  }
-
   @media (max-width: 768px) {
     .salon-gallery {
       margin-top: 2.5rem;
@@ -281,33 +277,6 @@
 
     .salon-gallery__item img {
       height: 100%;
-    }
-
-    .salon-gallery__controls {
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      margin-top: 1.1rem;
-    }
-
-    .salon-gallery__control {
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(14, 32, 35, 0.88);
-      color: #fff;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 12px 28px rgba(12, 28, 31, 0.35);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    }
-
-    .salon-gallery__control:active {
-      transform: scale(0.95);
-      box-shadow: 0 10px 18px rgba(12, 28, 31, 0.25);
-      background: rgba(14, 32, 35, 0.75);
     }
   }
 
@@ -1119,14 +1088,6 @@
             </figure>
           {% endfor %}
         </div>
-        <div class="salon-gallery__controls" aria-hidden="true">
-          <button type="button" class="salon-gallery__control salon-gallery__control--prev" aria-label="Предыдущее фото">
-            <i class="bi bi-chevron-left"></i>
-          </button>
-          <button type="button" class="salon-gallery__control salon-gallery__control--next" aria-label="Следующее фото">
-            <i class="bi bi-chevron-right"></i>
-          </button>
-        </div>
       </section>
     {% endif %}
   {% endwith %}
@@ -1325,12 +1286,12 @@
       const gallerySection = document.querySelector('.salon-gallery');
       const galleryGrid = gallerySection?.querySelector('.salon-gallery__grid');
       const galleryItems = galleryGrid ? Array.from(galleryGrid.querySelectorAll('.salon-gallery__item')) : [];
-      const prevButton = gallerySection?.querySelector('.salon-gallery__control--prev');
-      const nextButton = gallerySection?.querySelector('.salon-gallery__control--next');
 
       if (galleryGrid && galleryItems.length > 1) {
         const mediaQuery = window.matchMedia('(max-width: 768px)');
         let currentIndex = 0;
+        let autoRotateTimer = null;
+        const AUTO_ROTATE_INTERVAL = 5000;
 
         const resetDesktopLayout = () => {
           galleryItems.forEach((item) => {
@@ -1366,27 +1327,36 @@
           }
         };
 
-        const showPrevious = () => {
-          currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+        const goToRelativeSlide = (delta, { fromAuto = false } = {}) => {
+          currentIndex = (currentIndex + delta + galleryItems.length) % galleryItems.length;
           updateMobileSlides();
+
+          if (!fromAuto) {
+            restartAutoRotate();
+          }
         };
 
-        const showNext = () => {
-          currentIndex = (currentIndex + 1) % galleryItems.length;
-          updateMobileSlides();
+        const stopAutoRotate = () => {
+          if (autoRotateTimer !== null) {
+            window.clearInterval(autoRotateTimer);
+            autoRotateTimer = null;
+          }
         };
 
-        prevButton?.addEventListener('click', () => {
-          if (mediaQuery.matches) {
-            showPrevious();
+        const startAutoRotate = () => {
+          if (!mediaQuery.matches || autoRotateTimer !== null) {
+            return;
           }
-        });
 
-        nextButton?.addEventListener('click', () => {
-          if (mediaQuery.matches) {
-            showNext();
-          }
-        });
+          autoRotateTimer = window.setInterval(() => {
+            goToRelativeSlide(1, { fromAuto: true });
+          }, AUTO_ROTATE_INTERVAL);
+        };
+
+        const restartAutoRotate = () => {
+          stopAutoRotate();
+          startAutoRotate();
+        };
 
         let touchStartX = 0;
         let isSwiping = false;
@@ -1398,6 +1368,7 @@
 
           touchStartX = event.touches[0]?.clientX ?? 0;
           isSwiping = true;
+          stopAutoRotate();
         }, { passive: true });
 
         galleryGrid.addEventListener('touchmove', (event) => {
@@ -1411,21 +1382,30 @@
           if (Math.abs(deltaX) > 50) {
             isSwiping = false;
             if (deltaX > 0) {
-              showPrevious();
+              goToRelativeSlide(-1);
             } else {
-              showNext();
+              goToRelativeSlide(1);
             }
           }
         }, { passive: true });
 
         const stopSwipe = () => {
           isSwiping = false;
+          restartAutoRotate();
         };
 
         galleryGrid.addEventListener('touchend', stopSwipe);
         galleryGrid.addEventListener('touchcancel', stopSwipe);
 
-        const handleMediaChange = () => syncLayout();
+        const handleMediaChange = () => {
+          if (mediaQuery.matches) {
+            restartAutoRotate();
+          } else {
+            stopAutoRotate();
+          }
+
+          syncLayout();
+        };
 
         if (typeof mediaQuery.addEventListener === 'function') {
           mediaQuery.addEventListener('change', handleMediaChange);
@@ -1434,6 +1414,7 @@
         }
 
         syncLayout();
+        startAutoRotate();
       }
     });
   </script>
