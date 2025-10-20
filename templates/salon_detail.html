@@ -218,6 +218,7 @@
     box-shadow: 0 18px 35px rgba(12, 28, 31, 0.18);
     background: #0e2023;
     min-height: 180px;
+    transition: transform 0.6s ease, opacity 0.45s ease;
   }
 
   .salon-gallery__item::after {
@@ -244,17 +245,69 @@
     transform: scale(1.05);
   }
 
+  .salon-gallery__controls {
+    display: none;
+  }
+
   @media (max-width: 768px) {
     .salon-gallery {
       margin-top: 2.5rem;
     }
 
     .salon-gallery__grid {
-      gap: 0.75rem;
+      display: block;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      min-height: 260px;
     }
 
     .salon-gallery__item {
-      border-radius: 14px;
+      border-radius: 16px;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .salon-gallery__item:first-child {
+      opacity: 1;
+      transform: translateX(0);
+      position: relative;
+    }
+
+    .salon-gallery__item img {
+      height: 100%;
+    }
+
+    .salon-gallery__controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.1rem;
+    }
+
+    .salon-gallery__control {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(14, 32, 35, 0.88);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 28px rgba(12, 28, 31, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .salon-gallery__control:active {
+      transform: scale(0.95);
+      box-shadow: 0 10px 18px rgba(12, 28, 31, 0.25);
+      background: rgba(14, 32, 35, 0.75);
     }
   }
 
@@ -1066,6 +1119,14 @@
             </figure>
           {% endfor %}
         </div>
+        <div class="salon-gallery__controls" aria-hidden="true">
+          <button type="button" class="salon-gallery__control salon-gallery__control--prev" aria-label="Предыдущее фото">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button type="button" class="salon-gallery__control salon-gallery__control--next" aria-label="Следующее фото">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
       </section>
     {% endif %}
   {% endwith %}
@@ -1260,6 +1321,120 @@
           targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
       });
+
+      const gallerySection = document.querySelector('.salon-gallery');
+      const galleryGrid = gallerySection?.querySelector('.salon-gallery__grid');
+      const galleryItems = galleryGrid ? Array.from(galleryGrid.querySelectorAll('.salon-gallery__item')) : [];
+      const prevButton = gallerySection?.querySelector('.salon-gallery__control--prev');
+      const nextButton = gallerySection?.querySelector('.salon-gallery__control--next');
+
+      if (galleryGrid && galleryItems.length > 1) {
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        let currentIndex = 0;
+
+        const resetDesktopLayout = () => {
+          galleryItems.forEach((item) => {
+            item.style.transform = '';
+            item.style.opacity = '';
+            item.style.pointerEvents = '';
+            item.style.zIndex = '';
+            item.removeAttribute('aria-hidden');
+          });
+        };
+
+        const updateMobileSlides = () => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          galleryItems.forEach((item, index) => {
+            const offset = index - currentIndex;
+            item.style.transform = `translateX(${offset * 100}%)`;
+            item.style.opacity = offset === 0 ? '1' : '0';
+            item.style.pointerEvents = offset === 0 ? 'auto' : 'none';
+            item.style.zIndex = String(galleryItems.length - Math.abs(offset));
+            item.setAttribute('aria-hidden', offset === 0 ? 'false' : 'true');
+          });
+        };
+
+        const syncLayout = () => {
+          if (mediaQuery.matches) {
+            currentIndex = Math.min(currentIndex, galleryItems.length - 1);
+            updateMobileSlides();
+          } else {
+            resetDesktopLayout();
+          }
+        };
+
+        const showPrevious = () => {
+          currentIndex = (currentIndex - 1 + galleryItems.length) % galleryItems.length;
+          updateMobileSlides();
+        };
+
+        const showNext = () => {
+          currentIndex = (currentIndex + 1) % galleryItems.length;
+          updateMobileSlides();
+        };
+
+        prevButton?.addEventListener('click', () => {
+          if (mediaQuery.matches) {
+            showPrevious();
+          }
+        });
+
+        nextButton?.addEventListener('click', () => {
+          if (mediaQuery.matches) {
+            showNext();
+          }
+        });
+
+        let touchStartX = 0;
+        let isSwiping = false;
+
+        galleryGrid.addEventListener('touchstart', (event) => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          touchStartX = event.touches[0]?.clientX ?? 0;
+          isSwiping = true;
+        }, { passive: true });
+
+        galleryGrid.addEventListener('touchmove', (event) => {
+          if (!mediaQuery.matches || !isSwiping) {
+            return;
+          }
+
+          const currentX = event.touches[0]?.clientX ?? 0;
+          const deltaX = currentX - touchStartX;
+
+          if (Math.abs(deltaX) > 50) {
+            isSwiping = false;
+            if (deltaX > 0) {
+              showPrevious();
+            } else {
+              showNext();
+            }
+          }
+        }, { passive: true });
+
+        const stopSwipe = () => {
+          isSwiping = false;
+        };
+
+        galleryGrid.addEventListener('touchend', stopSwipe);
+        galleryGrid.addEventListener('touchcancel', stopSwipe);
+
+        const handleMediaChange = () => syncLayout();
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+          mediaQuery.addEventListener('change', handleMediaChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+          mediaQuery.addListener(handleMediaChange);
+        }
+
+        syncLayout();
+      }
     });
   </script>
 
