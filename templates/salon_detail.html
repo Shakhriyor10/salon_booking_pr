@@ -1019,8 +1019,8 @@
   <section class="salon-hero">
     <div class="hero-content">
       <div class="hero-info">
-        <div class="hero-info-inner">
-          <span class="hero-eyebrow"><i class="bi bi-stars"></i>Салон красоты</span>
+        <div class="">
+<!--          <span class="hero-eyebrow"><i class="bi bi-stars"></i>Салон красоты</span>-->
           <h1>{{ salon.name }}</h1>
           <div class="salon-meta">
             <div class="meta-chip"><i class="bi bi-geo-alt"></i> {{ salon.address }}</div>
@@ -1039,32 +1039,32 @@
             <a href="#salon-stylists" class="btn btn-theme btn-lg px-4" data-scroll-target="#salon-stylists">
               Выбрать стилиста
             </a>
-            <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>
+<!--            <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>-->
           </div>
         </div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
-            <div>
-              <div class="stat-value">{{ average_rating|floatformat:1 }}</div>
-              <div class="stat-label">Средняя оценка</div>
-            </div>
-          </div>
-          <div class="hero-stat">
-            <div class="stat-icon"><i class="bi bi-people"></i></div>
-            <div>
-              <div class="stat-value">{{ stylists|length }}</div>
-              <div class="stat-label">Мастеров в салоне</div>
-            </div>
-          </div>
-          <div class="hero-stat">
-            <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
-            <div>
-              <div class="stat-value">{{ salon.reviews.count }}</div>
-              <div class="stat-label">Отзывов клиентов</div>
-            </div>
-          </div>
-        </div>
+<!--        <div class="hero-stats">-->
+<!--          <div class="hero-stat">-->
+<!--            <div class="stat-icon"><i class="bi bi-star-fill"></i></div>-->
+<!--            <div>-->
+<!--              <div class="stat-value">{{ average_rating|floatformat:1 }}</div>-->
+<!--              <div class="stat-label">Средняя оценка</div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hero-stat">-->
+<!--            <div class="stat-icon"><i class="bi bi-people"></i></div>-->
+<!--            <div>-->
+<!--              <div class="stat-value">{{ stylists|length }}</div>-->
+<!--              <div class="stat-label">Мастеров в салоне</div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hero-stat">-->
+<!--            <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>-->
+<!--            <div>-->
+<!--              <div class="stat-value">{{ salon.reviews.count }}</div>-->
+<!--              <div class="stat-label">Отзывов клиентов</div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
       </div>
       <div class="hero-image-wrapper">
         {% with photos=salon.get_photos %}
