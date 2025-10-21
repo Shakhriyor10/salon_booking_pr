@@ -247,6 +247,7 @@
 
   @media (max-width: 768px) {
     .salon-gallery {
+      display: none;
       margin-top: 2.5rem;
     }
 
@@ -379,9 +380,9 @@
   }
 
   .salon-hero .hero-image-wrapper {
-    flex: 0 0 260px;
-    max-width: 320px;
-    aspect-ratio: 4 / 5;
+    flex: 0 0 320px;
+    max-width: 380px;
+    aspect-ratio: 3 / 4;
     border-radius: 24px;
     overflow: hidden;
     box-shadow: 0 18px 35px rgba(0, 0, 0, 0.35);
@@ -414,10 +415,34 @@
     opacity: 0.35;
   }
 
-  .salon-hero .hero-image-wrapper img {
+  .hero-image-slider,
+  .salon-hero .hero-image-wrapper > img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-image-slider {
+    overflow: hidden;
+  }
+
+  .salon-hero .hero-image-wrapper > img {
+    object-fit: cover;
+  }
+
+  .hero-image-slide {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .hero-image-slide.is-active {
+    opacity: 1;
   }
 
   .section-heading {
@@ -997,7 +1022,7 @@
 
     .salon-hero .hero-image-wrapper {
       width: 100%;
-      aspect-ratio: 3 / 2;
+      aspect-ratio: 4 / 3;
     }
 
     .floating-cart {
@@ -1069,7 +1094,17 @@
       <div class="hero-image-wrapper">
         {% with photos=salon.get_photos %}
           {% if photos %}
-            <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
+            <div class="hero-image-slider" role="presentation">
+              {% for photo in photos %}
+                <img
+                  src="{{ photo.url }}"
+                  alt="{{ salon.name }} — фото {{ forloop.counter }}"
+                  class="hero-image-slide{% if forloop.first %} is-active{% endif %}"
+                  loading="lazy"
+                  {% if not forloop.first %}aria-hidden="true"{% endif %}
+                >
+              {% endfor %}
+            </div>
           {% else %}
             <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" alt="Salon placeholder">
           {% endif %}
@@ -1095,9 +1130,12 @@
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       const heroSection = document.querySelector(".salon-hero");
-      const heroImage = heroSection?.querySelector(".hero-image-wrapper img");
+      const heroWrapper = heroSection?.querySelector(".hero-image-wrapper");
+      const heroSlider = heroWrapper?.querySelector(".hero-image-slider");
+      const heroSlides = heroSlider ? Array.from(heroSlider.querySelectorAll(".hero-image-slide")) : [];
+      const staticHeroImage = heroSlider ? null : heroWrapper?.querySelector("img");
 
-      if (!heroSection || !heroImage) {
+      if (!heroSection || (!heroSlider && !staticHeroImage)) {
         return;
       }
 
@@ -1230,8 +1268,8 @@
         }
       };
 
-      const prepareImageForSampling = () => {
-        const sampleSource = heroImage.currentSrc || heroImage.src;
+      const prepareImageForSampling = (image) => {
+        const sampleSource = image?.currentSrc || image?.src;
 
         if (!sampleSource) {
           applyGradient(fallbackPrimary, fallbackSecondary);
@@ -1255,11 +1293,164 @@
         }
       };
 
-      if (heroImage.complete && heroImage.naturalWidth) {
-        prepareImageForSampling();
+      const triggerHeroGradient = (image) => {
+        if (!image) {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+          return;
+        }
+
+        if (image.complete && image.naturalWidth) {
+          prepareImageForSampling(image);
+        } else {
+          image.addEventListener("load", () => prepareImageForSampling(image), { once: true });
+          image.addEventListener("error", () => applyGradient(fallbackPrimary, fallbackSecondary), { once: true });
+        }
+      };
+
+      let currentHeroIndex = 0;
+
+      if (heroSlider && heroSlides.length) {
+        const detectedIndex = heroSlides.findIndex((slide) => slide.classList.contains("is-active"));
+        currentHeroIndex = detectedIndex >= 0 ? detectedIndex : 0;
+      }
+
+      const syncHeroSlides = () => {
+        if (!heroSlider) {
+          return;
+        }
+
+        heroSlides.forEach((slide, index) => {
+          const isActive = index === currentHeroIndex;
+          slide.classList.toggle("is-active", isActive);
+          slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+        });
+      };
+
+      const updateGradientForActiveImage = () => {
+        if (heroSlider) {
+          const activeSlide = heroSlider.querySelector(".hero-image-slide.is-active");
+          if (activeSlide) {
+            triggerHeroGradient(activeSlide);
+            return;
+          }
+        }
+
+        if (staticHeroImage) {
+          triggerHeroGradient(staticHeroImage);
+        } else {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+        }
+      };
+
+      if (heroSlider && heroSlides.length > 1) {
+        const mediaQuery = window.matchMedia("(max-width: 768px)");
+        const AUTO_ROTATE_INTERVAL = 5000;
+        let autoRotateTimer = null;
+        let touchStartX = 0;
+        let isSwiping = false;
+
+        const goToRelativeHeroSlide = (delta, options) => {
+          showHeroSlide(currentHeroIndex + delta, options);
+        };
+
+        const stopHeroAutoRotate = () => {
+          if (autoRotateTimer !== null) {
+            window.clearInterval(autoRotateTimer);
+            autoRotateTimer = null;
+          }
+        };
+
+        const startHeroAutoRotate = () => {
+          if (!mediaQuery.matches || autoRotateTimer !== null) {
+            return;
+          }
+
+          autoRotateTimer = window.setInterval(() => {
+            goToRelativeHeroSlide(1, { fromAuto: true });
+          }, AUTO_ROTATE_INTERVAL);
+        };
+
+        const restartHeroAutoRotate = () => {
+          stopHeroAutoRotate();
+          startHeroAutoRotate();
+        };
+
+        const showHeroSlide = (index, { fromAuto = false } = {}) => {
+          if (!heroSlides.length) {
+            return;
+          }
+
+          currentHeroIndex = (index + heroSlides.length) % heroSlides.length;
+          syncHeroSlides();
+          updateGradientForActiveImage();
+
+          if (!fromAuto) {
+            restartHeroAutoRotate();
+          }
+        };
+
+        heroSlider.addEventListener('touchstart', (event) => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          touchStartX = event.touches[0]?.clientX ?? 0;
+          isSwiping = true;
+          stopHeroAutoRotate();
+        }, { passive: true });
+
+        heroSlider.addEventListener('touchmove', (event) => {
+          if (!mediaQuery.matches || !isSwiping) {
+            return;
+          }
+
+          const currentX = event.touches[0]?.clientX ?? 0;
+          const deltaX = currentX - touchStartX;
+
+          if (Math.abs(deltaX) > 50) {
+            isSwiping = false;
+            if (deltaX > 0) {
+              goToRelativeHeroSlide(-1);
+            } else {
+              goToRelativeHeroSlide(1);
+            }
+          }
+        }, { passive: true });
+
+        const endHeroSwipe = () => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          isSwiping = false;
+          restartHeroAutoRotate();
+        };
+
+        heroSlider.addEventListener('touchend', endHeroSwipe);
+        heroSlider.addEventListener('touchcancel', endHeroSwipe);
+
+        const handleHeroMediaChange = () => {
+          if (mediaQuery.matches) {
+            restartHeroAutoRotate();
+          } else {
+            stopHeroAutoRotate();
+          }
+        };
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+          mediaQuery.addEventListener('change', handleHeroMediaChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+          mediaQuery.addListener(handleHeroMediaChange);
+        }
+
+        showHeroSlide(currentHeroIndex, { fromAuto: true });
+        handleHeroMediaChange();
       } else {
-        heroImage.addEventListener("load", prepareImageForSampling, { once: true });
-        heroImage.addEventListener("error", () => applyGradient(fallbackPrimary, fallbackSecondary), { once: true });
+        if (heroSlider && heroSlides.length) {
+          syncHeroSlides();
+        }
+
+        updateGradientForActiveImage();
       }
 
       const scrollTriggers = document.querySelectorAll('[data-scroll-target]');
