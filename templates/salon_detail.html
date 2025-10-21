@@ -1612,50 +1612,6 @@
     });
   </script>
 
-  {% if categories %}
-    <h2 class="section-heading">Категории услуг</h2>
-    <div class="row g-4">
-      {% for category in categories %}
-        <div class="col-lg-4 col-md-6">
-          <div class="card category-card h-100">
-            {% if category.photo %}
-              <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.name }}">
-            {% else %}
-              <img src="https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ category.name }}">
-            {% endif %}
-            <div class="card-body">
-              <h5 class="card-title text-center fw-semibold">{{ category.name }}</h5>
-              <a href="{% url 'category_services' category.id %}?salon={{ salon.id }}" class="btn btn-theme mt-auto">Открыть категорию</a>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-  {% if uncategorized_services %}
-    <h2 class="section-heading">Популярные услуги</h2>
-    <div class="row g-4">
-      {% for salon_service in uncategorized_services %}
-        <div class="col-lg-4 col-md-6">
-          <div class="card service-card h-100">
-            {% if salon_service.service.photo %}
-              <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
-            {% else %}
-              <img src="https://images.unsplash.com/photo-1502786129293-79981df4e689?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ salon_service.service.name }}">
-            {% endif %}
-            <div class="card-body">
-              <h5 class="card-title text-center fw-semibold">{{ salon_service.service.name }}</h5>
-              <button class="btn btn-outline-theme add-to-cart mt-auto" data-service-id="{{ salon_service.service.id }}">
-                ➕ Добавить услугу
-              </button>
-            </div>
-          </div>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
   {% if stylists %}
     <section id="salon-stylists" class="stylists-section">
       <h2 class="section-heading">Наши мастера</h2>
@@ -1745,6 +1701,50 @@
       {% endfor %}
       </div>
     </section>
+  {% endif %}
+
+  {% if uncategorized_services %}
+    <h2 class="section-heading">Популярные услуги</h2>
+    <div class="row g-4">
+      {% for salon_service in uncategorized_services %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card service-card h-100">
+            {% if salon_service.service.photo %}
+              <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1502786129293-79981df4e689?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ salon_service.service.name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title text-center fw-semibold">{{ salon_service.service.name }}</h5>
+              <button class="btn btn-outline-theme add-to-cart mt-auto" data-service-id="{{ salon_service.service.id }}">
+                ➕ Добавить услугу
+              </button>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if categories %}
+    <h2 class="section-heading">Категории услуг</h2>
+    <div class="row g-4">
+      {% for category in categories %}
+        <div class="col-lg-4 col-md-6">
+          <div class="card category-card h-100">
+            {% if category.photo %}
+              <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ category.name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title text-center fw-semibold">{{ category.name }}</h5>
+              <a href="{% url 'category_services' category.id %}?salon={{ salon.id }}" class="btn btn-theme mt-auto">Открыть категорию</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
   {% endif %}
 
   <h2 class="section-heading">Контакты и расположение</h2>
