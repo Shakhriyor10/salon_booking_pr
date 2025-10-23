@@ -1103,23 +1103,7 @@
   </section>
 
   {% if appointments %}
-    <div class="summary-grid">
-      <div class="summary-card total">
-        <div class="summary-icon"><i class="bi bi-calendar-heart"></i></div>
-        <h3>{{ appointments|length }}</h3>
-        <p>Всего записей</p>
-      </div>
 
-      {% for item in status_summary %}
-        <div class="summary-card {{ item.card_class }}">
-          <div class="summary-icon">
-            <i class="{{ item.icon_class }}"></i>
-          </div>
-          <h3>{{ item.count }}</h3>
-          <p>{{ item.label }}</p>
-        </div>
-      {% endfor %}
-    </div>
 
       {% for appointment in appointments %}
       <article class="appointment-card">
