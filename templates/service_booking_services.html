@@ -1,5 +1,6 @@
 {% extends 'base3.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
 <style>
@@ -749,7 +750,7 @@
                             <div class="stylist-meta">
                                 <div class="meta-pill">
                                     <div class="text-muted small">Общая цена</div>
-                                    <div class="fw-semibold">{{ item.price }} сум</div>
+                                    <div class="fw-semibold">{{ item.price|floatformat:0|intcomma }} сум</div>
                                 </div>
                                 <div class="meta-pill">
                                     <div class="text-muted small">Длительность</div>
@@ -876,7 +877,7 @@
                                                 </div>
                                                 <div class="meta-pill">
                                                     <div class="text-muted small">Общая цена</div>
-                                                    <div class="fw-semibold">{{ slot.price }} сум</div>
+                                                    <div class="fw-semibold">{{ slot.price|floatformat:0|intcomma }} сум</div>
                                                 </div>
                                             </div>
 

@@ -1,5 +1,5 @@
 {% extends 'base3.html' %}
-{% load static humanize %}
+{% load static humanize custom_filters %}
 
 {% block content %}
 <style>
@@ -398,7 +398,7 @@
           <h6>Средний чек</h6>
           <p class="metric-value mb-0">
             {% if total_clients %}
-              {% widthratio total_revenue total_clients 1 %} сум
+              {{ total_revenue|divide:total_clients|floatformat:0|intcomma }} сум
             {% else %}
               —
             {% endif %}

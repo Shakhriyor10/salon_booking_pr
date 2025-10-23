@@ -1,5 +1,6 @@
 {% extends 'base3.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
 <style>
@@ -207,7 +208,7 @@
                                                        {% if service_id in selected_service_ids %}checked{% endif %}>
                                                 <label class="form-check-label ms-2 w-100" for="service-{{ service_id }}">
                                                     <span class="fw-semibold">{{ ss.salon_service.service.name }}</span>
-                                                    <span class="d-block text-muted small mt-1">Стоимость: {{ ss.price }} сум</span>
+                                                    <span class="d-block text-muted small mt-1">Стоимость: {{ ss.price|floatformat:0|intcomma }} сум</span>
                                                     <span class="d-block text-muted small">Длительность: {{ ss.salon_service.duration }}</span>
                                                 </label>
                                             </div>
@@ -258,7 +259,7 @@
                                                 <div class="d-flex flex-column flex-sm-row gap-3">
                                                     <div>
                                                         <div class="text-muted small">Общая стоимость</div>
-                                                        <div class="fs-5 fw-semibold">{{ total_price }} сум</div>
+                                                        <div class="fs-5 fw-semibold">{{ total_price|floatformat:0|intcomma }} сум</div>
                                                     </div>
                                                     <div>
                                                         <div class="text-muted small">Общая длительность</div>

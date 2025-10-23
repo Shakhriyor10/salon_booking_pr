@@ -11,6 +11,18 @@ def floatval(value):
         return 0
 
 
+@register.filter
+def divide(value, divisor):
+    """Safely divide two numeric values inside templates."""
+    try:
+        divisor = float(divisor)
+        if divisor == 0:
+            return 0
+        return float(value) / divisor
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+
 @register.simple_tag(takes_context=True)
 def user_salon_url(context):
     request = context.get('request')
