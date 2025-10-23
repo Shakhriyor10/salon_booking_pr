@@ -65,7 +65,7 @@
                 <span class="badge status-badge {{ a.status|status_badge_class }}">{{ a.get_status_display }}</span>
               </td>
               <td data-label="Цена">
-                <div class="price-value">{{ a.services.all|sum_prices }} сум</div>
+                <div class="price-value">{{ a.services.all|sum_prices|floatformat:0|intcomma }} сум</div>
               </td>
               <td data-label="Действия">
                 <div class="d-flex flex-wrap gap-2">

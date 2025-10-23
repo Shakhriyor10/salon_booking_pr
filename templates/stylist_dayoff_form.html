@@ -1,4 +1,5 @@
 {% extends 'base3.html' %}
+{% load humanize %}
 {% block content %}
 <style>
     .modal-dialog-scrollable {
@@ -489,7 +490,7 @@
                                             <div class="flex-grow-1">
                                                 <input type="number" step="0.01" min="0" name="price" value="{{ ss.current_price|default_if_none:'' }}" class="form-control" placeholder="Не задана">
                                                 {% if ss.current_price is not None %}
-                                                    <div class="form-text">Текущая цена: {{ ss.current_price }}</div>
+                                                    <div class="form-text">Текущая цена: {{ ss.current_price|intcomma }}</div>
                                                 {% endif %}
                                             </div>
                                             <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
