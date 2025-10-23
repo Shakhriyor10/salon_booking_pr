@@ -81,77 +81,261 @@
   .modal-content.luxe-celebration .modal-body .text-muted {
     color: #6c757d !important;
   }
+
+  .navbar-luxe {
+    background: linear-gradient(120deg, rgba(37, 28, 54, 0.95) 0%, rgba(15, 15, 23, 0.95) 55%, rgba(0, 0, 0, 0.9) 100%);
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.75rem 1.5rem;
+    margin: 1.5rem auto 2.5rem;
+    max-width: 1200px;
+    backdrop-filter: blur(8px);
+  }
+
+  .navbar-luxe .navbar-brand {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12rem;
+  }
+
+  .navbar-luxe .brand-icon {
+    font-size: 1.75rem;
+  }
+
+  .navbar-luxe .brand-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.2rem;
+  }
+
+  .navbar-luxe .brand-subtitle {
+    font-size: 0.75rem;
+    letter-spacing: 0.12rem;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .navbar-luxe .nav-link {
+    position: relative;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.82);
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem 1.1rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  .navbar-luxe .nav-link span {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .navbar-luxe .nav-link i {
+    font-size: 1rem;
+    opacity: 0.8;
+  }
+
+  .navbar-luxe .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 0.35rem;
+    height: 3px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.65) 50%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .navbar-luxe .nav-link:hover,
+  .navbar-luxe .nav-link:focus {
+    color: #ffffff;
+    transform: translateY(-2px);
+  }
+
+  .navbar-luxe .nav-link:hover::after,
+  .navbar-luxe .nav-link:focus::after {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .navbar-luxe .nav-item + .nav-item {
+    margin-left: 0.25rem;
+  }
+
+  .navbar-luxe .nav-user {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.65rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .navbar-luxe .avatar-placeholder {
+    background: linear-gradient(135deg, #ff86d8, #6c63ff);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #111;
+  }
+
+  .navbar-luxe .user-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08rem;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .navbar-luxe .user-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .navbar-luxe .btn-gradient {
+    background: linear-gradient(135deg, #ff86d8 0%, #8f6bff 50%, #4c52ff 100%);
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 1.4rem;
+    font-weight: 600;
+    color: #0e0b1b;
+    box-shadow: 0 0.5rem 1.5rem rgba(143, 107, 255, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .navbar-luxe .btn-gradient:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.7rem 1.8rem rgba(143, 107, 255, 0.45);
+    color: #0e0b1b;
+  }
+
+  .navbar-luxe .btn-outline-light {
+    border-radius: 999px;
+    border-width: 1.5px;
+    font-weight: 600;
+    padding: 0.55rem 1.4rem;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .navbar-luxe .btn-outline-light:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 991.98px) {
+    .navbar-luxe {
+      margin: 1rem;
+      padding: 1rem 1.25rem;
+    }
+
+    .navbar-luxe .navbar-nav {
+      margin-top: 1rem;
+    }
+
+    .navbar-luxe .nav-link {
+      justify-content: flex-start;
+      border-radius: 12px;
+      padding: 0.7rem 0.95rem;
+    }
+
+    .navbar-luxe .nav-link::after {
+      left: 0.75rem;
+      right: 0.75rem;
+      bottom: 0.5rem;
+    }
+
+    .navbar-luxe .nav-user {
+      width: 100%;
+      justify-content: flex-start;
+      margin-bottom: 0.75rem;
+    }
+
+    .navbar-luxe .btn-gradient,
+    .navbar-luxe .btn-outline-light {
+      width: 100%;
+      text-align: center;
+    }
+  }
 </style>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark navbar-luxe shadow-lg">
   <div class="container">
-    <a class="navbar-brand" href="{% url 'home' %}">GoBeauty</a>
+    <a class="navbar-brand d-flex align-items-center gap-3" href="{% url 'home' %}">
+      <span class="brand-icon">💫</span>
+      <span class="d-flex flex-column lh-1">
+        <span class="brand-title">GoBeauty</span>
+        <small class="brand-subtitle d-none d-md-block">Салон красоты нового уровня</small>
+      </span>
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
       aria-controls="navbarNav" aria-expanded="false" aria-label="Переключить навигацию">
       <span class="navbar-toggler-icon"></span>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
+      <ul class="navbar-nav me-auto align-items-lg-center">
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'home' %}">🏠 Главная</a>
+          <a class="nav-link" href="{% url 'home' %}"><i class="bi bi-house-door"></i><span>Главная</span></a>
         </li>
         {% if user.is_authenticated  %}
           {% if user.is_staff or user.profile.is_salon_admin %}
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'reports' %}">📅 Отчеты</a>
+              <a class="nav-link" href="{% url 'reports' %}"><i class="bi bi-calendar-week"></i><span>Отчеты</span></a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'dashboard' %}">📊 Записи</a>
-          </li>
-
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'manual_appointment' %}">📑 Создать запись</a>
+              <a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-clipboard2-check"></i><span>Записи</span></a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
+              <a class="nav-link" href="{% url 'manual_appointment' %}"><i class="bi bi-plus-circle"></i><span>Создать запись</span></a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-sliders"></i><span>Настройки</span></a>
           </li>
           {% if user.is_staff %}
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'support:inbox' %}">💬 Поддержка</a>
+              <a class="nav-link" href="{% url 'support:inbox' %}"><i class="bi bi-chat-dots"></i><span>Поддержка</span></a>
           </li>
           {% endif %}
           {% endif %}
         {% endif %}
         {% if user.is_authenticated and user.stylist_profile and not user.is_staff and not user.profile.is_salon_admin %}
-          <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_manual_appointment' %}">⚙️ Создать запись</a>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'stylist_manual_appointment' %}"><i class="bi bi-magic"></i><span>Создать запись</span></a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_dashboard' %}">📅 Мои записи</a>
+          <a class="nav-link" href="{% url 'stylist_dashboard' %}"><i class="bi bi-journal-check"></i><span>Мои записи</span></a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_reports' %}">📊 Мои отчеты</a>
+          <a class="nav-link" href="{% url 'stylist_reports' %}"><i class="bi bi-graph-up"></i><span>Мои отчеты</span></a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{% url 'stylist_dayoff' %}">⚙️ Настройки</a>
+          <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-gear"></i><span>Настройки</span></a>
         </li>
         {% endif %}
-          {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
-          <li class="nav-item">
-              <a class="nav-link" href="{% url 'my_appointments' %}">📊 Мои записи</a>
-          </li>
-          {% endif %}
+        {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'my_appointments' %}"><i class="bi bi-calendar2-heart"></i><span>Мои записи</span></a>
+        </li>
+        {% endif %}
       </ul>
 
-      <ul class="navbar-nav ms-auto">
+      <div class="navbar-nav ms-lg-4 align-items-lg-center">
         {% if user.is_authenticated %}
-        <li class="nav-item">
-          <a class="nav-link disabled" href="#">👤 {{ user.username }}</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'logout' %}">🚪 Выйти</a>
-        </li>
+        <div class="nav-item d-flex align-items-center gap-2 nav-user">
+          <div class="avatar-placeholder">{{ user.username|first|upper }}</div>
+          <div class="d-flex flex-column">
+            <span class="user-label">Добро пожаловать</span>
+            <span class="user-name">{{ user.username }}</span>
+          </div>
+        </div>
+        <a class="btn btn-gradient ms-lg-4 mt-3 mt-lg-0" href="{% url 'logout' %}">Выйти</a>
         {% else %}
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'login' %}">🔐 Войти</a>
-        </li>
+        <a class="btn btn-outline-light px-4" href="{% url 'login' %}">Войти</a>
         {% endif %}
-      </ul>
+      </div>
     </div>
   </div>
 </nav>
