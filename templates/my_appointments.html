@@ -614,42 +614,79 @@
 
   @media (max-width: 575.98px) {
     .virtual-card {
-      padding: 18px;
-      gap: 20px;
-      border-radius: 20px;
+      padding: 14px;
+      gap: 16px;
+      border-radius: 18px;
     }
 
     .virtual-card__top,
     .virtual-card__footer {
       flex-direction: column;
       align-items: flex-start;
-      gap: 12px;
+      gap: 10px;
+    }
+
+    .virtual-card__chip {
+      width: 42px;
+      height: 30px;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .virtual-card__brand {
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
     }
 
     .virtual-card__number {
       flex-direction: column;
       align-items: flex-start;
-      gap: 12px;
+      gap: 10px;
     }
 
     .virtual-card__number-groups {
-      font-size: clamp(1rem, 6vw, 1.2rem);
-      gap: 10px;
-      letter-spacing: 0.08em;
+      font-size: clamp(0.9rem, 5vw, 1.05rem);
+      gap: 8px;
+      letter-spacing: 0.06em;
     }
 
     .virtual-card__number-groups span {
-      min-width: auto;
+      min-width: 2.8ch;
+    }
+
+    .virtual-card__number .copy-btn {
+      padding: 6px 12px;
+      gap: 4px;
+      font-size: 0.72rem;
+    }
+
+    .virtual-card__holder {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      gap: 2px;
+    }
+
+    .virtual-card__holder strong {
+      font-size: clamp(0.82rem, 4vw, 0.95rem);
+      letter-spacing: 0.1em;
     }
 
     .virtual-card__amount {
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
+      font-size: clamp(0.9rem, 4.8vw, 1.05rem);
     }
 
     .virtual-card__amount .copy-btn {
-      width: 100%;
-      justify-content: center;
+      width: auto;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      gap: 4px;
+    }
+
+    .copy-btn i {
+      font-size: 0.85rem;
     }
   }
 
