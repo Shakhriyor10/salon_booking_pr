@@ -450,6 +450,8 @@
     box-shadow: 0 22px 45px rgba(15, 23, 42, 0.45);
     border: 1px solid rgba(148, 163, 184, 0.18);
     overflow: hidden;
+    width: 100%;
+    max-width: 100%;
   }
 
   .virtual-card::after {
@@ -608,6 +610,47 @@
     background: rgba(248, 250, 252, 0.2);
     color: #fff;
     transform: translateY(-1px);
+  }
+
+  @media (max-width: 575.98px) {
+    .virtual-card {
+      padding: 18px;
+      gap: 20px;
+      border-radius: 20px;
+    }
+
+    .virtual-card__top,
+    .virtual-card__footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .virtual-card__number {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .virtual-card__number-groups {
+      font-size: clamp(1rem, 6vw, 1.2rem);
+      gap: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .virtual-card__number-groups span {
+      min-width: auto;
+    }
+
+    .virtual-card__amount {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .virtual-card__amount .copy-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 
   .profile-form {
