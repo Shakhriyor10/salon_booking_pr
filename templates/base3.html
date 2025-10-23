@@ -74,17 +74,22 @@
     gap: 0.65rem;
   }
 
-  .navbar-luxe .brand-icon {
+  .navbar-luxe .brand-logo {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #ffd166 0%, #ef476f 100%);
-    color: #0f0f0f;
-    font-size: 1.1rem;
-    box-shadow: 0 8px 18px rgba(239, 71, 111, 0.35);
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.25rem;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+  }
+
+  .navbar-luxe .brand-logo img {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
   .navbar-luxe .nav-link {
@@ -285,10 +290,10 @@
       font-size: 1.05rem;
     }
 
-    .navbar-luxe .brand-icon {
-      width: 1.95rem;
-      height: 1.95rem;
-      font-size: 0.95rem;
+    .navbar-luxe .brand-logo {
+      width: 2.15rem;
+      height: 2.15rem;
+      padding: 0.2rem;
     }
 
     .footer-luxe {
@@ -300,7 +305,9 @@
 <nav class="navbar navbar-expand-lg navbar-dark navbar-luxe sticky-top shadow-lg">
   <div class="container py-2 py-lg-0">
     <a class="navbar-brand" href="{% url 'home' %}">
-      <span class="brand-icon">✦</span>
+      <span class="brand-logo">
+        <img src="{% static 'img/logosalon.png' %}" alt="Логотип GoBeauty">
+      </span>
       <span>GoBeauty</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
