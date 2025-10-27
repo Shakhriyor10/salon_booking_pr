@@ -26,6 +26,31 @@
     }
 </style>
 <div class="container py-4">
+    <style>
+        .salon-settings-modal {
+            top: 0;
+            overflow-y: auto;
+        }
+
+        .modal-open .salon-settings-modal {
+            padding-top: 0;
+        }
+
+        .salon-settings-modal .modal-dialog {
+            margin: 1.5rem auto;
+            max-height: calc(100vh - 3rem);
+        }
+
+        .salon-settings-modal .modal-content {
+            max-height: calc(100vh - 3rem);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .salon-settings-modal .modal-body {
+            overflow-y: auto;
+        }
+    </style>
     <h2 class="mb-4 text-center">Настройка стилистов салона</h2>
 
     {% if request.user.profile.is_salon_admin %}
@@ -81,7 +106,7 @@
                                     </form>
                                 </div>
                             </div>
-                            <div class="modal fade" id="editStylistModal{{ s.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal fade salon-settings-modal" id="editStylistModal{{ s.id }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-lg modal-dialog-scrollable">
                                     <div class="modal-content">
                                         <form method="post" enctype="multipart/form-data">
@@ -390,7 +415,7 @@
                     </table>
                 </div>
                 {% for ss in salon_services %}
-                    <div class="modal fade" id="editSalonServiceModal{{ ss.id }}" tabindex="-1" aria-hidden="true">
+                    <div class="modal fade salon-settings-modal" id="editSalonServiceModal{{ ss.id }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <form method="post">
@@ -543,7 +568,7 @@
                 </td>
             </tr>
 
-            <div class="modal fade" id="editDayOffModal{{ block.id }}" tabindex="-1">
+            <div class="modal fade salon-settings-modal" id="editDayOffModal{{ block.id }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <form method="post">
@@ -647,7 +672,7 @@
                 </td>
             </tr>
 
-            <div class="modal fade" id="editWorkingHourModal{{ wh.id }}" tabindex="-1">
+            <div class="modal fade salon-settings-modal" id="editWorkingHourModal{{ wh.id }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <form method="post">
@@ -688,7 +713,7 @@
                 </div>
             </div>
 
-            <div class="modal fade" id="addBreakModal{{ wh.id }}" tabindex="-1">
+            <div class="modal fade salon-settings-modal" id="addBreakModal{{ wh.id }}" tabindex="-1">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <form method="post">
@@ -739,7 +764,7 @@
     {% endif %}
 </div>
 
-<div class="modal fade" id="addDayOffModal" tabindex="-1">
+<div class="modal fade salon-settings-modal" id="addDayOffModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
@@ -775,7 +800,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="addWorkingHourModal" tabindex="-1">
+<div class="modal fade salon-settings-modal" id="addWorkingHourModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
@@ -816,7 +841,7 @@
 </div>
 
 {% if request.user.profile.is_salon_admin %}
-<div class="modal fade" id="addStylistModal" tabindex="-1">
+<div class="modal fade salon-settings-modal" id="addStylistModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <form method="post" enctype="multipart/form-data">
@@ -871,7 +896,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="addSalonServiceModal" tabindex="-1">
+<div class="modal fade salon-settings-modal" id="addSalonServiceModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <form method="post">
