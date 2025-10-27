@@ -1279,18 +1279,19 @@
 	.modal-body {
 		padding:30px;
 	}
-	.modal {
-		position: fixed;
-		top: 15%;
-		right: 0;
-	  	bottom: 0;
-	  	left: 0;
-	  	z-index: 1050;
-	  	display: none;
-	  	overflow: hidden;
-	  	-webkit-overflow-scrolling: touch;
-	  	outline: 0;
-	}
+        .modal {
+                position: fixed;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                left: 0;
+                z-index: 1050;
+                display: none;
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                outline: 0;
+        }
 	.rating i {
 	    color: #eabe12;
 	}
@@ -1306,13 +1307,11 @@
 		background-color: #242424;
 		border-radius: 0;
 	}
-	.modal-open .modal {
-	    overflow-x: hidden;
-	    overflow-y: auto;
-	    padding-top: 100px;
-	    top: 0;
-	    background-color: rgba(255,255,255,0.8);
-	}
+        .modal-open .modal {
+            overflow-x: hidden;
+            overflow-y: auto;
+            background-color: rgba(255,255,255,0.8);
+        }
 	.modal-content {
 	  	border: 1px solid #f7f8fa;
 	  	border-radius: 0;
