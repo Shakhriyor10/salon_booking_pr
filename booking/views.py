@@ -625,10 +625,15 @@ class AppointmentCreateView(View):
         ) + f" ({phone_txt})"
 
         service_list = ", ".join(ss.salon_service.service.name for ss in stylist_services)
-
+        master_name = stylist.user.get_full_name().strip()
+        if not master_name:
+            master_name = stylist.user.username
+        if stylist.level:
+            master_name += f" ({stylist.level.name})"
         msg = (
             f"<b>📝 Новая запись!</b>\n"
             f"👤 Клиент: {client_repr}\n"
+            f"✂️ Мастер: {master_name}\n"
             f"💇 Услуги: {service_list}\n"
             f"🕒 Время: {start_time.strftime('%d.%m.%Y %H:%M')}"
         )
@@ -1104,6 +1109,8 @@ def dashboard_view(request):
         "calendar_summary_json": json.dumps(calendar_summary),
         "latest_created_iso": latest_created_iso,
         "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
+        "is_salon_admin": True,  # ← Админ салона всегда видит всё
+        "viewer_stylist": None,
     }
 
     return render(request, "dashboard.html", context)
@@ -1118,19 +1125,17 @@ def dashboard_ajax(request):
     user = request.user
     profile = getattr(user, 'profile', None)
 
-    # 🔒 Фильтрация по салону, как в основном dashboard_view
+    # Базовый queryset
     appointments_qs = (
         Appointment.objects
-        .select_related("customer", "stylist")  # оставляем только существующие связи
+        .select_related("customer", "stylist")
         .filter(start_time__date__gte=yesterday)
         .order_by("-start_time")
     )
 
+    # Фильтрация по салону — только если не суперадмин
     if not user.is_superuser:
-        if profile and profile.is_salon_admin and profile.salon:
-            appointments_qs = appointments_qs.filter(stylist__salon=profile.salon)
-        else:
-            return JsonResponse({"html": ""})  # не показываем ничего
+        appointments_qs = appointments_qs.filter(stylist__salon=profile.salon)  # ← БЕЗОПАСНО
 
     appointments = list(appointments_qs)
     grouped_appointments = group_appointments_by_date(appointments)
@@ -1146,6 +1151,8 @@ def dashboard_ajax(request):
         "grouped_appointments": grouped_appointments,
         "csrf_token": get_token(request),
         "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
+        "is_salon_admin": True,      # ← ВСЁ ВИДИТ
+        "viewer_stylist": None,      # ← Нет конкретного стилиста
     }
 
     html = render_to_string("partials/appointments_table_rows.html", context)
@@ -1769,6 +1776,7 @@ def stylist_dashboard(request):
         "latest_created_iso": latest_created_iso,
         "total_cash": cash_today,
         "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
+        "stylist": stylist,
     }
 
     return render(request, "stylist_dashboard.html", context)
@@ -1816,6 +1824,7 @@ def stylist_dashboard_ajax(request):
         "csrf_token": get_token(request),
         "show_stylist_column": False,
         "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
+        "stylist": stylist,
     }
 
     html = render_to_string("partials/appointments_table_rows.html", context)

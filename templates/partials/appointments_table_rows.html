@@ -36,16 +36,34 @@
           {% for a in appointments_on_date %}
             <tr class="appointment-row" data-appointment-row="true" data-status="{{ a.status }}" data-appointment-id="{{ a.id }}" data-date="{{ a.start_time|date:'Y-m-d' }}">
               <td data-label="Клиент">
-                {% if a.customer %}
-                  <div class="client-name">{{ a.customer.first_name|default:a.customer.username }}</div>
-                  {% if a.customer.profile.phone %}
-                    <div class="client-contact"><i class="bi bi-telephone"></i> {{ a.customer.profile.phone }}</div>
-                  {% endif %}
-                {% else %}
-                  <div class="client-name">{{ a.guest_name }}</div>
-                  <div class="client-contact"><i class="bi bi-telephone"></i> {{ a.guest_phone }}</div>
-                {% endif %}
-              </td>
+  {% if a.customer %}
+    <div class="client-name">{{ a.customer.first_name|default:a.customer.username }}</div>
+
+    {% if is_salon_admin or stylist.show_client_phone %}
+      {% if a.customer.profile.phone %}
+        <div class="client-contact"><i class="bi bi-telephone"></i> {{ a.customer.profile.phone }}</div>
+      {% else %}
+        <div class="client-contact text-muted"><i class="bi bi-telephone"></i> Телефон не указан</div>
+      {% endif %}
+    {% else %}
+      <div class="client-contact text-muted"><i class="bi bi-shield-lock"></i> Номер скрыт</div>
+    {% endif %}
+
+  {% else %}
+    <div class="client-name">{{ a.guest_name }}</div>
+
+    {% if is_salon_admin or stylist.show_client_phone %}
+      {% if a.guest_phone %}
+        <div class="client-contact"><i class="bi bi-telephone"></i> {{ a.guest_phone }}</div>
+      {% else %}
+        <div class="client-contact text-muted"><i class="bi bi-telephone"></i> Телефон не указан</div>
+      {% endif %}
+    {% else %}
+      <div class="client-contact text-muted"><i class="bi bi-shield-lock"></i> Номер скрыт</div>
+    {% endif %}
+
+  {% endif %}
+</td>
               <td data-label="Услуга">
                 {% for ap_service in a.services.all %}
                   <span class="service-pill">{{ ap_service.stylist_service.salon_service.service.name }}</span>
@@ -70,24 +88,31 @@
               <td data-label="Действия">
                 <div class="d-flex flex-wrap gap-2">
                   {% if a.status == 'P' %}
-                    <button type="button" class="btn btn-success btn-sm btn-action" data-appointment-action="confirm" data-appointment-id="{{ a.id }}">
-                      <i class="bi bi-check2-circle"></i>
-                      <span>Принять</span>
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm btn-action" data-appointment-action="cancel" data-appointment-id="{{ a.id }}">
-                      <i class="bi bi-x-circle"></i>
-                      <span>Отменить</span>
-                    </button>
-                  {% elif a.status == 'C' %}
-                    <button type="button" class="btn btn-primary btn-sm btn-action" data-appointment-action="done" data-appointment-id="{{ a.id }}">
-                      <i class="bi bi-scissors"></i>
-                      <span>Выполнено</span>
-                    </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm btn-action" data-appointment-action="cancel" data-appointment-id="{{ a.id }}">
-                      <i class="bi bi-x-circle"></i>
-                      <span>Отменить</span>
-                    </button>
-                  {% endif %}
+  <button type="button" class="btn btn-success btn-sm btn-action" data-appointment-action="confirm" data-appointment-id="{{ a.id }}">
+    <i class="bi bi-check2-circle"></i>
+    <span>Принять</span>
+  </button>
+
+  {% if is_salon_admin or stylist.allow_cancel_appointment %}
+    <button type="button" class="btn btn-outline-danger btn-sm btn-action" data-appointment-action="cancel" data-appointment-id="{{ a.id }}">
+      <i class="bi bi-x-circle"></i>
+      <span>Отменить</span>
+    </button>
+  {% endif %}
+
+{% elif a.status == 'C' %}
+  <button type="button" class="btn btn-primary btn-sm btn-action" data-appointment-action="done" data-appointment-id="{{ a.id }}">
+    <i class="bi bi-scissors"></i>
+    <span>Выполнено</span>
+  </button>
+
+  {% if is_salon_admin or stylist.allow_cancel_appointment %}
+    <button type="button" class="btn btn-outline-danger btn-sm btn-action" data-appointment-action="cancel" data-appointment-id="{{ a.id }}">
+      <i class="bi bi-x-circle"></i>
+      <span>Отменить</span>
+    </button>
+  {% endif %}
+{% endif %}
                   {% if a.payment_method == 'card' %}
                     <span class="badge bg-light text-dark">{{ a.get_payment_status_display }}</span>
                     {% if a.payment_receipt %}

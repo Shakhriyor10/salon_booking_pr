@@ -203,6 +203,8 @@ class Stylist(models.Model):
     avatar = models.ImageField('Фото', upload_to='stylists/', blank=True, null=True)
     salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='stylists')
     level = models.ForeignKey(StylistLevel, on_delete=models.SET_NULL, null=True, blank=True)
+    show_client_phone = models.BooleanField(default=True, verbose_name='Показывать номер клиента в дашборде')
+    allow_cancel_appointment = models.BooleanField(default=True, verbose_name='Разрешить отмену записей')
 
     class Meta:
         verbose_name = 'Мастер'

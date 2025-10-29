@@ -173,6 +173,18 @@ class StylistUpdateForm(forms.Form):
         help_text='Фото должно быть квадратным и весить не более 4 МБ.',
     )
 
+    # === НОВЫЕ ПОЛЯ ===
+    show_client_phone = forms.BooleanField(
+        label='Показывать номер клиента в дашборде',
+        required=False,
+        widget=forms.CheckboxInput()
+    )
+    allow_cancel_appointment = forms.BooleanField(
+        label='Разрешить отмену записей',
+        required=False,
+        widget=forms.CheckboxInput()
+    )
+
     def __init__(self, *args, stylist=None, **kwargs):
         self.stylist = stylist
         initial = kwargs.get('initial', {}).copy()
@@ -187,6 +199,8 @@ class StylistUpdateForm(forms.Form):
                 'level': stylist.level,
                 'bio': stylist.bio,
                 'telegram_chat_id': stylist.telegram_chat_id,
+                'show_client_phone': getattr(stylist, 'show_client_phone', True),
+                'allow_cancel_appointment': getattr(stylist, 'allow_cancel_appointment', True),
             })
             kwargs['initial'] = initial
 
@@ -224,7 +238,7 @@ class StylistUpdateForm(forms.Form):
 
     def save(self):
         if not self.stylist:
-            raise ValueError('Стлист не указан для обновления данных.')
+            raise ValueError('Стилист не указан для обновления данных.')
 
         user = self.stylist.user
         user.username = self.cleaned_data['username']
@@ -244,15 +258,17 @@ class StylistUpdateForm(forms.Form):
         self.stylist.bio = self.cleaned_data.get('bio', '')
         self.stylist.telegram_chat_id = self.cleaned_data.get('telegram_chat_id')
 
-        photo = self.cleaned_data.get('photo')
+        # === СОХРАНЕНИЕ НОВЫХ ПОЛЕЙ ===
+        self.stylist.show_client_phone = self.cleaned_data.get('show_client_phone', True)
+        self.stylist.allow_cancel_appointment = self.cleaned_data.get('allow_cancel_appointment', True)
 
+        photo = self.cleaned_data.get('photo')
         if photo:
             if self.stylist.avatar:
                 self.stylist.avatar.delete(save=False)
             self.stylist.avatar = photo
 
-        update_fields = ['level', 'bio', 'telegram_chat_id']
-
+        update_fields = ['level', 'bio', 'telegram_chat_id', 'show_client_phone', 'allow_cancel_appointment']
         if photo:
             update_fields.append('avatar')
 
