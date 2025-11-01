@@ -1064,7 +1064,7 @@ def dashboard_view(request):
     appointments_qs = (
         Appointment.objects
         .select_related("customer", "stylist")  # оставляем только существующие связи
-        .filter(start_time__date__gte=yesterday)
+        .filter()
         .order_by("-start_time")
     )
 
@@ -1129,7 +1129,7 @@ def dashboard_ajax(request):
     appointments_qs = (
         Appointment.objects
         .select_related("customer", "stylist")
-        .filter(start_time__date__gte=yesterday)
+        .filter()
         .order_by("-start_time")
     )
 
@@ -1730,7 +1730,7 @@ def stylist_dashboard(request):
 
     appointments_qs = (
         Appointment.objects
-        .filter(stylist=stylist, start_time__date__gte=yesterday)
+        .filter(stylist=stylist)
         .select_related("customer", "payment_card")
         .prefetch_related(
             Prefetch(
@@ -1796,7 +1796,7 @@ def stylist_dashboard_ajax(request):
 
     appointments_qs = (
         Appointment.objects
-        .filter(stylist=stylist, start_time__date__gte=yesterday)
+        .filter(stylist=stylist)
         .select_related("customer", "payment_card")
         .prefetch_related(
             Prefetch(

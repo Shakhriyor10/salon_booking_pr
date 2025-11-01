@@ -6,6 +6,18 @@
 
 {% block content %}
 <style>
+  .contact-icon {
+  width: 44px;           /* фиксированная ширина */
+  height: 44px;          /* фиксированная высота */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(72, 107, 113, 0.12);
+  color: #486b71;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  flex-shrink: 0;        /* НЕ сжимается при длинном тексте */
+}
   .salon-detail-page {
     color: #2c3e50;
     padding: 3.5rem 0 4rem;
@@ -1791,13 +1803,15 @@
               <h5 class="mb-0">{{ salon.name }}</h5>
             </div>
           </div>
-          <div class="contact-item">
-            <div class="contact-icon"><i class="bi bi-geo"></i></div>
-            <div>
-              <div class="text-muted text-uppercase small">Адрес</div>
-              <p class="mb-0">{{ salon.address }}</p>
-            </div>
-          </div>
+          <div class="contact-item d-flex align-items-start gap-3">
+  <div class="contact-icon flex-shrink-0">
+    <i class="bi bi-geo-alt-fill"></i>
+  </div>
+  <div>
+    <div class="text-muted text-uppercase small">Адрес</div>
+    <p class="mb-0">{{ salon.address }}</p>
+  </div>
+</div>
           {% if salon.phone %}
             <div class="contact-item">
               <div class="contact-icon"><i class="bi bi-telephone"></i></div>
