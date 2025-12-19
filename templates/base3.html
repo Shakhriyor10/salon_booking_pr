@@ -528,51 +528,36 @@
           }
         });
 
-        document.querySelectorAll('.copy-credential').forEach((btn) => {
-          btn.addEventListener('click', (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            const explicitValue = btn.getAttribute('data-credential');
-            const targetSelector = btn.getAttribute('data-target');
-            const target = targetSelector ? document.querySelector(targetSelector) : null;
-            const targetValue = target ? target.getAttribute('data-credential') || target.textContent : '';
-            const parentValue = btn.closest('[data-credential]')?.getAttribute('data-credential') || '';
-            const value = (explicitValue || targetValue || parentValue || '').trim();
+        document.addEventListener('click', (event) => {
+          const btn = event.target.closest('.copy-credential');
+          if (!btn) {
+            return;
+          }
 
-            if (!value) {
-              return;
-            }
+          event.preventDefault();
+          event.stopPropagation();
 
-            const markCopied = () => {
-              btn.textContent = 'Скопировано';
-              setTimeout(() => {
-                btn.textContent = 'Скопировать';
-              }, 1500);
-            };
+          const explicitValue = btn.getAttribute('data-credential') || '';
+          const targetSelector = btn.getAttribute('data-target');
+          const target = targetSelector ? document.querySelector(targetSelector) : null;
+          const targetValue = target ? target.getAttribute('data-credential') || target.textContent || '' : '';
+          const parentValue = btn.closest('[data-credential]')?.getAttribute('data-credential') || '';
+          const value = (explicitValue || targetValue || parentValue || '').trim();
 
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(value).then(markCopied).catch(() => {
-                const textarea = document.createElement('textarea');
-                textarea.value = value;
-                textarea.setAttribute('readonly', '');
-                textarea.style.position = 'absolute';
-                textarea.style.left = '-9999px';
-                document.body.appendChild(textarea);
-                textarea.select();
-                try {
-                  document.execCommand('copy');
-                  markCopied();
-                } catch (e) {
-                  btn.textContent = 'Не удалось скопировать';
-                  setTimeout(() => {
-                    btn.textContent = 'Скопировать';
-                  }, 2000);
-                }
-                document.body.removeChild(textarea);
-              });
-              return;
-            }
+          if (!value) {
+            btn.textContent = 'Нет данных';
+            setTimeout(() => btn.textContent = 'Скопировать', 2000);
+            return;
+          }
 
+          const markCopied = () => {
+            btn.textContent = 'Скопировано';
+            setTimeout(() => {
+              btn.textContent = 'Скопировать';
+            }, 1500);
+          };
+
+          const fallbackCopy = () => {
             const textarea = document.createElement('textarea');
             textarea.value = value;
             textarea.setAttribute('readonly', '');
@@ -580,17 +565,27 @@
             textarea.style.left = '-9999px';
             document.body.appendChild(textarea);
             textarea.select();
+            textarea.setSelectionRange(0, value.length);
             try {
-              document.execCommand('copy');
-              markCopied();
+              const ok = document.execCommand('copy');
+              if (ok) {
+                markCopied();
+              } else {
+                btn.textContent = 'Не удалось скопировать';
+                setTimeout(() => btn.textContent = 'Скопировать', 2000);
+              }
             } catch (e) {
               btn.textContent = 'Не удалось скопировать';
-              setTimeout(() => {
-                btn.textContent = 'Скопировать';
-              }, 2000);
+              setTimeout(() => btn.textContent = 'Скопировать', 2000);
             }
             document.body.removeChild(textarea);
-          });
+          };
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(markCopied).catch(fallbackCopy);
+          } else {
+            fallbackCopy();
+          }
         });
 
       });
