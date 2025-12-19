@@ -2760,6 +2760,15 @@ def stylist_dayoff_view(request):
                     to_time=to_time,
                 )
 
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                blocks = StylistDayOff.objects.filter(stylist=stylist).order_by('-date', '-from_time')
+                blocks_html = render_to_string(
+                    'partials/_dayoff_table.html',
+                    {'blocks': blocks, 'selected_stylist_id': selected_stylist_id},
+                    request=request,
+                )
+                return JsonResponse({'success': True, 'blocks_html': blocks_html})
+
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
         # Изменение блокировки

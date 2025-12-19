@@ -561,90 +561,11 @@
     {% endif %}
 
     <h4>Блокировки</h4>
-    {% if blocks %}
-    <div class="table-responsive">
-        <table class="table table-bordered">
-            <thead>
-            <tr>
-                <th>Дата</th>
-                <th>С</th>
-                <th>До</th>
-                <th class="text-end">Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for block in blocks %}
-            <tr>
-                <td>{{ block.date }}</td>
-                <td>{{ block.from_time|default:"–" }}</td>
-                <td>{{ block.to_time|default:"–" }}</td>
-                <td class="text-end">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editDayOffModal{{ block.id }}">
-                        Изменить
-                    </button>
-                    <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Удалить блокировку?')">
-                            Удалить
-                        </button>
-                    </form>
-                </td>
-            </tr>
+    {% include 'partials/_dayoff_table.html' with blocks=blocks selected_stylist_id=selected_stylist_id %}
 
-            <div class="modal fade" id="editDayOffModal{{ block.id }}" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="form_type" value="dayoff_update">
-                            <input type="hidden" name="dayoff_id" value="{{ block.id }}">
-                            {% if selected_stylist_id %}
-                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-                            {% endif %}
-                            <div class="modal-header">
-                                <h5 class="modal-title">Изменить блокировку</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Дата</label>
-                                    <input type="date" name="date" class="form-control" value="{{ block.date|date:'Y-m-d' }}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">С</label>
-                                    <input type="time" name="from_time" class="form-control" value="{{ block.from_time|default_if_none:'' }}">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">До</label>
-                                    <input type="time" name="to_time" class="form-control" value="{{ block.to_time|default_if_none:'' }}">
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
-                                <button class="btn btn-primary" type="submit">Сохранить</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Нет блокировок</p>
-    {% endif %}
-
-    {% if selected_stylist_id %}
-    <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
+    <button class="btn btn-primary mb-4" id="openAddDayOffModal" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
         Добавить блокировку
     </button>
-    {% else %}
-    <button class="btn btn-primary mb-4" onclick="alert('Сначала выберите специалиста');">
-        Добавить блокировку
-    </button>
-    {% endif %}
 
 <h4>Рабочие интервалы</h4>
 
@@ -683,12 +604,10 @@
 <div class="modal fade" id="addDayOffModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post">
+      <form method="post" id="addDayOffForm">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="dayoff_add">
-        {% if selected_stylist_id %}
-            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-        {% endif %}
+        <input type="hidden" name="stylist_id" id="addDayOffStylistId" value="{{ selected_stylist_id }}">
         <div class="modal-header">
           <h5 class="modal-title">Добавить блокировку</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -929,6 +848,10 @@ if (stylistSelectEl) {
         const modalStylistInput = document.getElementById('modalStylistId');
         if (modalStylistInput) {
             modalStylistInput.value = stylistId;
+        }
+        const addDayOffStylist = document.getElementById('addDayOffStylistId');
+        if (addDayOffStylist) {
+            addDayOffStylist.value = stylistId;
         }
 
         // Загружаем рабочие часы и цены мастера
@@ -1323,6 +1246,43 @@ if (addBreakForm) {
                     showToast('Перерыв добавлен ✅');
                 } else {
                     alert(data.error || 'Не удалось добавить перерыв');
+                }
+            });
+    });
+}
+
+const addDayOffForm = document.getElementById('addDayOffForm');
+const addDayOffModalEl = document.getElementById('addDayOffModal');
+if (addDayOffForm && addDayOffModalEl) {
+    addDayOffForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(addDayOffForm);
+        formData.append('form_type', 'dayoff_add');
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    addDayOffForm.reset();
+                    addDayOffForm.querySelector('#addDayOffStylistId').value = document.getElementById('modalStylistId').value;
+                    bootstrap.Modal.getInstance(addDayOffModalEl).hide();
+                    showToast('Блокировка добавлена ✅');
+                    if (data.blocks_html) {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(data.blocks_html, 'text/html');
+                        const newTable = doc.querySelector('[data-blocks-container]');
+                        const currentTable = document.querySelector('[data-blocks-container]');
+                        if (newTable && currentTable) currentTable.replaceWith(newTable);
+                    }
+                } else {
+                    alert(data.error || 'Не удалось добавить блокировку');
                 }
             });
     });
