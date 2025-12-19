@@ -280,13 +280,11 @@
                         <span class="salon-card__badge">{{ type_display }}</span>
                       {% endif %}
                     {% endwith %}
-                    {% with is_favorite=salon.id in favorite_salon_ids %}
-                      <div class="salon-card__favorite {% if is_favorite %}active{% endif %}"
-                           data-salon-id="{{ salon.id }}"
-                           onclick="toggleFavorite(this)">
-                          <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
-                      </div>
-                    {% endwith %}
+                    <div class="salon-card__favorite {% if salon.is_favorite %}active{% endif %}"
+                         data-salon-id="{{ salon.id }}"
+                         onclick="toggleFavorite(this)">
+                        <i class="bi {% if salon.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    </div>
                 </div>
                 <div class="salon-card__body text-center d-flex flex-column align-items-center">
                     <h5 class="salon-card__title">{{ salon.name }}</h5>

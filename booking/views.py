@@ -166,6 +166,12 @@ class HomePageView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        favorite_salon_ids = set()
+        if self.request.user.is_authenticated:
+            favorite_salon_ids = set(
+                FavoriteSalon.objects.filter(user=self.request.user).values_list('salon_id', flat=True)
+            )
+
         for salon in context['salons']:
             rating = salon.average_rating() or 0
             rounded_rating = round(rating * 2) / 2
@@ -174,17 +180,13 @@ class HomePageView(ListView):
             empty = 5 - full - (1 if half else 0)
             salon.stars = {'full': range(full), 'half': half, 'empty': range(empty)}
             salon.rating_value = round(rating, 1)
+            salon.is_favorite = salon.id in favorite_salon_ids
 
         context['types'] = ['male', 'female', 'both']
         context['selected_type'] = self.request.GET.get('type', '')
         context['selected_rating'] = self.request.GET.get('rating', '')
         context['selected_service'] = self.request.GET.get('service', '')
-        if self.request.user.is_authenticated:
-            context['favorite_salon_ids'] = list(
-                FavoriteSalon.objects.filter(user=self.request.user).values_list('salon_id', flat=True)
-            )
-        else:
-            context['favorite_salon_ids'] = []
+        context['favorite_salon_ids'] = list(favorite_salon_ids)
         return context
 
 
