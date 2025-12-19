@@ -908,8 +908,8 @@ function renderWorkingHours(hours) {
             <td>${h.end}</td>
             <td>${breaksHtml}</td>
             <td class="text-end">
-                <button class="btn btn-outline-secondary btn-sm" onclick="editWorkingHour(${h.id})">Изменить</button>
-                <button class="btn btn-outline-primary btn-sm" onclick="addBreak(${h.id})">Добавить перерыв</button>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="editWorkingHour(${h.id})">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="addBreak(${h.id})">Добавить перерыв</button>
                 <button class="btn btn-outline-danger btn-sm" onclick="deleteWorkingHour(${h.id})">Удалить</button>
             </td>
         </tr>`;
@@ -1017,9 +1017,9 @@ function renderWorkingHours(working_hours) {
             <td>${wh.end}</td>
             <td>${breaks}</td>
             <td class="text-end">
-                <button class="btn btn-sm btn-primary me-1 edit-workinghour" data-id="${wh.id}">Изменить</button>
-                <button class="btn btn-sm btn-success me-1 add-break" data-id="${wh.id}">Добавить перерыв</button>
-                <button class="btn btn-sm btn-danger delete-workinghour" data-id="${wh.id}">Удалить</button>
+                <button class="btn btn-outline-secondary btn-sm me-2 edit-workinghour" data-id="${wh.id}">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm me-2 add-break" data-id="${wh.id}">Добавить перерыв</button>
+                <button class="btn btn-outline-danger btn-sm delete-workinghour" data-id="${wh.id}">Удалить</button>
             </td>
         `;
         tbody.appendChild(row);
