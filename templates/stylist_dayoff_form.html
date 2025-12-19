@@ -384,7 +384,7 @@
         </div>
     </div>
 
-    <div class="card mb-4">
+    <div class="card mb-4" id="salonServicesCard">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Услуги салона</span>
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalonServiceModal">
@@ -405,7 +405,7 @@
                                 <th class="text-end">Действия</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="salonServicesTableBody">
                             {% for ss in salon_services %}
                                 <tr>
                                     <td>{{ ss.service.name }}</td>
@@ -509,7 +509,7 @@
     {% endif %}
 
     {% if request.user.profile.is_salon_admin and selected_stylist %}
-    <div class="card mb-4">
+    <div class="card mb-4" id="stylistPricesCard">
         <div class="card-header">
             Цены для {{ selected_stylist.user.get_full_name|default:selected_stylist.user.username }}
         </div>
@@ -531,7 +531,7 @@
                                     <td>{{ ss.service.name }}</td>
                                     <td>{{ ss.duration_minutes }} мин</td>
                                     <td>
-                                        <form method="post" class="d-flex flex-wrap gap-2 align-items-center">
+                                        <form method="post" class="d-flex flex-wrap gap-2 align-items-center stylist-price-form">
                                             {% csrf_token %}
                                             <input type="hidden" name="form_type" value="stylist_price_update">
                                             <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
@@ -561,90 +561,11 @@
     {% endif %}
 
     <h4>Блокировки</h4>
-    {% if blocks %}
-    <div class="table-responsive">
-        <table class="table table-bordered">
-            <thead>
-            <tr>
-                <th>Дата</th>
-                <th>С</th>
-                <th>До</th>
-                <th class="text-end">Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for block in blocks %}
-            <tr>
-                <td>{{ block.date }}</td>
-                <td>{{ block.from_time|default:"–" }}</td>
-                <td>{{ block.to_time|default:"–" }}</td>
-                <td class="text-end">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editDayOffModal{{ block.id }}">
-                        Изменить
-                    </button>
-                    <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Удалить блокировку?')">
-                            Удалить
-                        </button>
-                    </form>
-                </td>
-            </tr>
+    {% include 'partials/_dayoff_table.html' with blocks=blocks selected_stylist_id=selected_stylist_id %}
 
-            <div class="modal fade" id="editDayOffModal{{ block.id }}" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="form_type" value="dayoff_update">
-                            <input type="hidden" name="dayoff_id" value="{{ block.id }}">
-                            {% if selected_stylist_id %}
-                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-                            {% endif %}
-                            <div class="modal-header">
-                                <h5 class="modal-title">Изменить блокировку</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Дата</label>
-                                    <input type="date" name="date" class="form-control" value="{{ block.date|date:'Y-m-d' }}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">С</label>
-                                    <input type="time" name="from_time" class="form-control" value="{{ block.from_time|default_if_none:'' }}">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">До</label>
-                                    <input type="time" name="to_time" class="form-control" value="{{ block.to_time|default_if_none:'' }}">
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
-                                <button class="btn btn-primary" type="submit">Сохранить</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Нет блокировок</p>
-    {% endif %}
-
-    {% if selected_stylist_id %}
-    <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
+    <button class="btn btn-primary mb-4" id="openAddDayOffModal" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
         Добавить блокировку
     </button>
-    {% else %}
-    <button class="btn btn-primary mb-4" onclick="alert('Сначала выберите специалиста');">
-        Добавить блокировку
-    </button>
-    {% endif %}
 
 <h4>Рабочие интервалы</h4>
 
@@ -683,12 +604,10 @@
 <div class="modal fade" id="addDayOffModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post">
+      <form method="post" id="addDayOffForm">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="dayoff_add">
-        {% if selected_stylist_id %}
-            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-        {% endif %}
+        <input type="hidden" name="stylist_id" id="addDayOffStylistId" value="{{ selected_stylist_id }}">
         <div class="modal-header">
           <h5 class="modal-title">Добавить блокировку</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -813,7 +732,7 @@
 <div class="modal fade" id="addSalonServiceModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post">
+      <form method="post" id="addSalonServiceForm">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="salon_service_add">
         <div class="modal-header">
@@ -856,6 +775,7 @@
 <div class="modal fade" id="editWorkingHourModal" tabindex="-1">
   <div class="modal-dialog">
     <form id="editWorkingHourForm" class="modal-content">
+      {% csrf_token %}
       <div class="modal-header">
         <h5 class="modal-title">Редактировать рабочий интервал</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -890,22 +810,60 @@
     </form>
   </div>
 </div>
+<div class="modal fade" id="addBreakModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="addBreakForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Добавить перерыв</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="workinghour_id" id="addBreakWorkingHourId">
+        <input type="hidden" name="stylist_id" id="addBreakStylistId" value="{{ selected_stylist_id }}">
+        <div class="mb-3">
+          <label class="form-label" for="addBreakStart">Начало</label>
+          <input type="time" class="form-control" id="addBreakStart" name="start_time" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="addBreakEnd">Конец</label>
+          <input type="time" class="form-control" id="addBreakEnd" name="end_time" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
 <script>
-document.getElementById('stylistSelect').addEventListener('change', function () {
-    const stylistId = this.value;
-    if (!stylistId) return;
+const stylistSelectEl = document.getElementById('stylistSelect');
+if (stylistSelectEl) {
+    stylistSelectEl.addEventListener('change', function () {
+        const stylistId = this.value;
+        if (!stylistId) return;
 
-    // Обновляем hidden input для модального окна "Добавить интервал"
-    document.getElementById('modalStylistId').value = stylistId;
+        // Обновляем hidden input для модального окна "Добавить интервал"
+        const modalStylistInput = document.getElementById('modalStylistId');
+        if (modalStylistInput) {
+            modalStylistInput.value = stylistId;
+        }
+        const addDayOffStylist = document.getElementById('addDayOffStylistId');
+        if (addDayOffStylist) {
+            addDayOffStylist.value = stylistId;
+        }
 
-    // Загружаем рабочие часы и цены мастера
-    fetch(`/stylist/ajax/${stylistId}/`)
-        .then(res => res.json())
-        .then(data => {
-            renderPrices(data.services);
-            renderWorkingHours(data.working_hours);
-        });
-});
+        // Загружаем рабочие часы и цены мастера
+        fetch(`/stylist/ajax/${stylistId}/`)
+            .then(res => res.json())
+            .then(data => {
+                renderPrices(data.services);
+                renderWorkingHours(data.working_hours);
+                fetchBlocksForStylist(stylistId);
+            });
+    });
+}
 function renderPrices(services) {
     let html = `<table class="table table-bordered">
         <tr><th>Услуга</th><th>Цена</th><th></th></tr>`;
@@ -950,8 +908,8 @@ function renderWorkingHours(hours) {
             <td>${h.end}</td>
             <td>${breaksHtml}</td>
             <td class="text-end">
-                <button class="btn btn-outline-secondary btn-sm" onclick="editWorkingHour(${h.id})">Изменить</button>
-                <button class="btn btn-outline-primary btn-sm" onclick="addBreak(${h.id})">Добавить перерыв</button>
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="editWorkingHour(${h.id})">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="addBreak(${h.id})">Добавить перерыв</button>
                 <button class="btn btn-outline-danger btn-sm" onclick="deleteWorkingHour(${h.id})">Удалить</button>
             </td>
         </tr>`;
@@ -990,40 +948,48 @@ function showToast(text) {
 }
 </script>
 <script>
-document.getElementById('addWorkingHourForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Останавливаем обычную отправку формы
+const addWorkingHourForm = document.getElementById('addWorkingHourForm');
+if (addWorkingHourForm) {
+    addWorkingHourForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Останавливаем обычную отправку формы
 
-    const form = e.target;
-    const formData = new FormData(form);
+        const form = e.target;
+        const formData = new FormData(form);
 
-    fetch("{% url 'stylist_dayoff' %}", {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        if (data.success) {
-            // Закрываем модалку
-            const modalEl = document.getElementById('addWorkingHourModal');
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            modal.hide();
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модалку
+                const modalEl = document.getElementById('addWorkingHourModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
 
-            // Очистка формы
-            form.reset();
+                // Очистка формы
+                form.reset();
 
-            // Перезагружаем данные мастера (AJAX)
-            const stylistId = document.getElementById('modalStylistId').value;
-            fetch(`/stylist/ajax/${stylistId}/`)
-                .then(res => res.json())
-                .then(data => renderWorkingHours(data.working_hours));
+                // Перезагружаем данные мастера (AJAX)
+                const stylistId = document.getElementById('modalStylistId').value;
+                if (data.working_hours) {
+                    renderWorkingHours(data.working_hours || []);
+                } else if (stylistId) {
+                    fetch(`/stylist/ajax/${stylistId}/`)
+                        .then(res => res.json())
+                        .then(data => renderWorkingHours(data.working_hours));
+                }
 
-            showToast('Интервал добавлен ✅');
-        }
+                showToast('Интервал добавлен ✅');
+            }
+        });
     });
-});
+}
 </script>
 <script>
 let currentWorkingHours = []; // глобально храним рабочие часы
@@ -1051,9 +1017,9 @@ function renderWorkingHours(working_hours) {
             <td>${wh.end}</td>
             <td>${breaks}</td>
             <td class="text-end">
-                <button class="btn btn-sm btn-primary me-1 edit-workinghour" data-id="${wh.id}">Изменить</button>
-                <button class="btn btn-sm btn-success me-1 add-break" data-id="${wh.id}">Добавить перерыв</button>
-                <button class="btn btn-sm btn-danger delete-workinghour" data-id="${wh.id}">Удалить</button>
+                <button class="btn btn-outline-secondary btn-sm me-2 edit-workinghour" data-id="${wh.id}">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm me-2 add-break" data-id="${wh.id}">Добавить перерыв</button>
+                <button class="btn btn-outline-danger btn-sm delete-workinghour" data-id="${wh.id}">Удалить</button>
             </td>
         `;
         tbody.appendChild(row);
@@ -1091,7 +1057,10 @@ function attachWorkingHourEvents() {
 
             fetch("{% url 'stylist_dayoff' %}", {
                 method: 'POST',
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
                 body: new URLSearchParams(formData)
             })
             .then(res => res.json())
@@ -1110,28 +1079,12 @@ function attachWorkingHourEvents() {
     document.querySelectorAll('.add-break').forEach(btn => {
         btn.onclick = function() {
             const whId = this.dataset.id;
-            const start = prompt('Введите время начала (HH:MM)');
-            if (!start) return;
-            const end = prompt('Введите время окончания (HH:MM)');
-            if (!end) return;
-
-            fetch("{% url 'stylist_dayoff' %}", {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `form_type=break_add&workinghour_id=${whId}&start_time=${start}&end_time=${end}&stylist_id=${document.getElementById('modalStylistId').value}`
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    fetch(`/stylist/ajax/${document.getElementById('modalStylistId').value}/`)
-                        .then(res => res.json())
-                        .then(data => renderWorkingHours(data.working_hours));
-                }
-            });
+            document.getElementById('addBreakWorkingHourId').value = whId;
+            document.getElementById('addBreakStylistId').value = document.getElementById('modalStylistId').value;
+            document.getElementById('addBreakStart').value = '';
+            document.getElementById('addBreakEnd').value = '';
+            const modal = new bootstrap.Modal(document.getElementById('addBreakModal'));
+            modal.show();
         };
     });
 
@@ -1155,6 +1108,257 @@ function attachWorkingHourEvents() {
                 if (data.success) renderWorkingHours(data.working_hours);
             });
         };
+    });
+}
+</script>
+<script>
+function getCsrfToken() {
+    const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return tokenInput ? tokenInput.value : '';
+}
+
+function refreshManagementSections() {
+    const currentUrl = new URL(window.location.href);
+    const stylistSelector = document.getElementById('stylistSelect');
+    if (stylistSelector && stylistSelector.value) {
+        currentUrl.searchParams.set('stylist_id', stylistSelector.value);
+    }
+
+    fetch(currentUrl.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(res => res.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const newServices = doc.getElementById('salonServicesCard');
+            const currentServices = document.getElementById('salonServicesCard');
+            if (newServices && currentServices) {
+                currentServices.replaceWith(newServices);
+            }
+
+            const newPrices = doc.getElementById('stylistPricesCard');
+            const currentPrices = document.getElementById('stylistPricesCard');
+            if (newPrices && currentPrices) {
+                currentPrices.replaceWith(newPrices);
+            }
+
+            bindAddSalonServiceForm();
+            bindPriceForms();
+        });
+}
+
+function bindAddSalonServiceForm() {
+    const form = document.getElementById('addSalonServiceForm');
+    if (!form) return;
+    if (form.dataset.bound === '1') return;
+    form.dataset.bound = '1';
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const csrfToken = formData.get('csrfmiddlewaretoken') || getCsrfToken();
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addSalonServiceModal')).hide();
+                    form.reset();
+                    showToast('Услуга добавлена ✅');
+                    refreshManagementSections();
+                } else if (data.errors) {
+                    alert('Исправьте ошибки: ' + Object.values(data.errors).flat().join('\\n'));
+                } else {
+                    alert('Не удалось добавить услугу');
+                }
+            });
+    });
+}
+
+function bindPriceForms() {
+    document.querySelectorAll('.stylist-price-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const csrfToken = formData.get('csrfmiddlewaretoken') || getCsrfToken();
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const helper = form.querySelector('.form-text');
+                        if (helper) {
+                            if (data.price) {
+                                helper.textContent = `Текущая цена: ${data.price}`;
+                                helper.classList.remove('d-none');
+                            } else {
+                                helper.textContent = '';
+                                helper.classList.add('d-none');
+                            }
+                        }
+                        showToast(data.price ? 'Цена сохранена ✅' : 'Цена очищена ✅');
+                    } else {
+                        alert(data.error || 'Не удалось сохранить цену');
+                    }
+                });
+        });
+    });
+}
+
+bindAddSalonServiceForm();
+bindPriceForms();
+
+const addBreakForm = document.getElementById('addBreakForm');
+if (addBreakForm) {
+    addBreakForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(addBreakForm);
+        formData.append('form_type', 'break_add');
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: new URLSearchParams(formData)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderWorkingHours(data.working_hours);
+                    bootstrap.Modal.getInstance(document.getElementById('addBreakModal')).hide();
+                    showToast('Перерыв добавлен ✅');
+                } else {
+                    alert(data.error || 'Не удалось добавить перерыв');
+                }
+            });
+    });
+}
+
+function replaceBlocksContainer(blocksHtml) {
+    if (!blocksHtml) return;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(blocksHtml, 'text/html');
+    const fresh = doc.querySelector('[data-blocks-container]');
+    const current = document.querySelector('[data-blocks-container]');
+    if (fresh && current) {
+        current.replaceWith(fresh);
+        bindDayoffForms();
+    }
+}
+
+function fetchBlocksForStylist(stylistId) {
+    if (!stylistId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('stylist_id', stylistId);
+    url.searchParams.set('partial', 'blocks');
+    fetch(url.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(res => res.json())
+        .then(data => replaceBlocksContainer(data.blocks_html));
+}
+
+function bindDayoffForms() {
+    document.querySelectorAll('.dayoff-edit-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('form_type', 'dayoff_update');
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        replaceBlocksContainer(data.blocks_html);
+                        bootstrap.Modal.getInstance(form.closest('.modal')).hide();
+                        showToast('Блокировка обновлена ✅');
+                    } else {
+                        alert(data.error || 'Не удалось сохранить блокировку');
+                    }
+                });
+        });
+    });
+
+    document.querySelectorAll('.dayoff-delete-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!confirm('Удалить блокировку?')) return;
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken') || getCsrfToken()
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        replaceBlocksContainer(data.blocks_html);
+                        showToast('Блокировка удалена ✅');
+                    }
+                });
+        });
+    });
+}
+
+bindDayoffForms();
+
+const addDayOffForm = document.getElementById('addDayOffForm');
+const addDayOffModalEl = document.getElementById('addDayOffModal');
+if (addDayOffForm && addDayOffModalEl) {
+    addDayOffForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(addDayOffForm);
+        formData.append('form_type', 'dayoff_add');
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    addDayOffForm.reset();
+                    addDayOffForm.querySelector('#addDayOffStylistId').value = document.getElementById('modalStylistId').value;
+                    bootstrap.Modal.getInstance(addDayOffModalEl).hide();
+                    showToast('Блокировка добавлена ✅');
+                    replaceBlocksContainer(data.blocks_html);
+                } else {
+                    alert(data.error || 'Не удалось добавить блокировку');
+                }
+            });
     });
 }
 </script>
