@@ -189,6 +189,21 @@ class SalonService(models.Model):
         return f"{self.salon.name} — {self.service.name}"
 
 
+class FavoriteSalon(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_salons')
+    salon = models.ForeignKey(Salon, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'salon')
+        ordering = ['-created_at']
+        verbose_name = 'Избранный салон'
+        verbose_name_plural = 'Избранные салоны'
+
+    def __str__(self):
+        return f"{self.user} → {self.salon}"
+
+
 class Stylist(models.Model):
     """Парикмахер/стилист – отдельный пользователь Django."""
     user = models.OneToOneField(

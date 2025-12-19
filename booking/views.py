@@ -20,7 +20,7 @@ from .form import (
     AppointmentRefundCompleteForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
-    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard
+    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard, FavoriteSalon
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.utils.timezone import make_aware
@@ -166,6 +166,12 @@ class HomePageView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        favorite_salon_ids = set()
+        if self.request.user.is_authenticated:
+            favorite_salon_ids = set(
+                FavoriteSalon.objects.filter(user=self.request.user).values_list('salon_id', flat=True)
+            )
+
         for salon in context['salons']:
             rating = salon.average_rating() or 0
             rounded_rating = round(rating * 2) / 2
@@ -174,11 +180,13 @@ class HomePageView(ListView):
             empty = 5 - full - (1 if half else 0)
             salon.stars = {'full': range(full), 'half': half, 'empty': range(empty)}
             salon.rating_value = round(rating, 1)
+            salon.is_favorite = salon.id in favorite_salon_ids
 
         context['types'] = ['male', 'female', 'both']
         context['selected_type'] = self.request.GET.get('type', '')
         context['selected_rating'] = self.request.GET.get('rating', '')
         context['selected_service'] = self.request.GET.get('service', '')
+        context['favorite_salon_ids'] = list(favorite_salon_ids)
         return context
 
 
@@ -212,6 +220,29 @@ def autocomplete_search(request):
         results += [{"type": "salon", "label": name} for name in filtered_salons]
 
     return JsonResponse(results[:30], safe=False)
+
+
+@login_required
+@require_POST
+def toggle_favorite_salon(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Некорректные данные"}, status=400)
+
+    salon_id = payload.get('salon_id')
+    if not salon_id:
+        return JsonResponse({"error": "Не указан салон"}, status=400)
+
+    salon = get_object_or_404(Salon.objects.active(), id=salon_id)
+    favorite, created = FavoriteSalon.objects.get_or_create(user=request.user, salon=salon)
+    if created:
+        is_favorite = True
+    else:
+        favorite.delete()
+        is_favorite = False
+
+    return JsonResponse({"is_favorite": is_favorite})
 
 # class ServiceSearchView(View):
 #     def get(self, request):
@@ -1689,6 +1720,14 @@ def my_appointments(request):
             "icon_class": icon_class,
         })
 
+    favorite_salons = [
+        favorite.salon
+        for favorite in FavoriteSalon.objects.select_related('salon', 'salon__city').filter(user=request.user)
+    ]
+    for salon in favorite_salons:
+        rating = salon.average_rating() or 0
+        salon.rating_value = round(rating, 1)
+
     return render(request, "my_appointments.html", {
         "appointments": appointments,
         "now": now(),
@@ -1697,6 +1736,7 @@ def my_appointments(request):
         "payment_method_choices": Appointment.PaymentMethod.choices,
         "card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
         "status_summary": status_summary,
+        "favorite_salons": favorite_salons,
     })
 
 @login_required
