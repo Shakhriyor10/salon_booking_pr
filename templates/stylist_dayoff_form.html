@@ -856,6 +856,7 @@
 <div class="modal fade" id="editWorkingHourModal" tabindex="-1">
   <div class="modal-dialog">
     <form id="editWorkingHourForm" class="modal-content">
+      {% csrf_token %}
       <div class="modal-header">
         <h5 class="modal-title">Редактировать рабочий интервал</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -1007,7 +1008,8 @@ if (addWorkingHourForm) {
         fetch("{% url 'stylist_dayoff' %}", {
             method: 'POST',
             headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
             },
             body: formData
         })
@@ -1104,7 +1106,10 @@ function attachWorkingHourEvents() {
 
             fetch("{% url 'stylist_dayoff' %}", {
                 method: 'POST',
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
                 body: new URLSearchParams(formData)
             })
             .then(res => res.json())
