@@ -2795,7 +2795,19 @@ def stylist_dayoff_view(request):
                 block.save()
                 messages.success(request, 'Блокировка обновлена.')
             except (ValueError, TypeError):
-                messages.error(request, 'Неверный формат даты или времени.')
+                error_msg = 'Неверный формат даты или времени.'
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': error_msg})
+                messages.error(request, error_msg)
+            else:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    blocks = StylistDayOff.objects.filter(stylist=stylist).order_by('-date', '-from_time')
+                    blocks_html = render_to_string(
+                        'partials/_dayoff_table.html',
+                        {'blocks': blocks, 'selected_stylist_id': selected_stylist_id},
+                        request=request,
+                    )
+                    return JsonResponse({'success': True, 'blocks_html': blocks_html})
 
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
@@ -2964,26 +2976,32 @@ def stylist_dayoff_view(request):
                 )
             service.duration_minutes = int(service.duration.total_seconds() // 60)
 
-    return render(
-        request,
-        'stylist_dayoff_form.html',
-        {
-            'blocks': blocks,
-            'working_hours': working_hours,
-            'stylists': stylists,
-            'selected_stylist_id': selected_stylist_id,
-            'selected_stylist': stylist,
-            'WEEKDAYS': WEEKDAYS,
-            'stylist_creation_form': stylist_creation_form,
-            'salon_service_form': salon_service_form,
-            'salon_services': salon_services,
-            'payment_cards': payment_cards,
-            'payment_card_form': payment_card_form,
-            'is_salon_admin': profile.is_salon_admin,
-            'subscription_expires_at': subscription_expires_at,
-            'subscription_is_active': subscription_is_active,
-        },
-    )
+    context = {
+        'blocks': blocks,
+        'working_hours': working_hours,
+        'stylists': stylists,
+        'selected_stylist_id': selected_stylist_id,
+        'selected_stylist': stylist,
+        'WEEKDAYS': WEEKDAYS,
+        'stylist_creation_form': stylist_creation_form,
+        'salon_service_form': salon_service_form,
+        'salon_services': salon_services,
+        'payment_cards': payment_cards,
+        'payment_card_form': payment_card_form,
+        'is_salon_admin': profile.is_salon_admin,
+        'subscription_expires_at': subscription_expires_at,
+        'subscription_is_active': subscription_is_active,
+    }
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest' and request.GET.get('partial') == 'blocks':
+        blocks_html = render_to_string(
+            'partials/_dayoff_table.html',
+            {'blocks': blocks, 'selected_stylist_id': selected_stylist_id},
+            request=request,
+        )
+        return JsonResponse({'blocks_html': blocks_html})
+
+    return render(request, 'stylist_dayoff_form.html', context)
 
 @login_required
 def delete_dayoff(request, pk):
@@ -2997,6 +3015,15 @@ def delete_dayoff(request, pk):
         request.user.profile.is_salon_admin and request.user.profile.salon == block.stylist.salon
     ):
         block.delete()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        blocks = StylistDayOff.objects.filter(stylist_id=stylist_id).order_by('-date', '-from_time')
+        blocks_html = render_to_string(
+            'partials/_dayoff_table.html',
+            {'blocks': blocks, 'selected_stylist_id': stylist_id},
+            request=request,
+        )
+        return JsonResponse({'success': True, 'blocks_html': blocks_html})
 
     return redirect(f'{reverse("stylist_dayoff")}?stylist_id={stylist_id}')
 

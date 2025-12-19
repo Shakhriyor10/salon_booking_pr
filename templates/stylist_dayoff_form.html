@@ -860,6 +860,7 @@ if (stylistSelectEl) {
             .then(data => {
                 renderPrices(data.services);
                 renderWorkingHours(data.working_hours);
+                fetchBlocksForStylist(stylistId);
             });
     });
 }
@@ -1251,6 +1252,85 @@ if (addBreakForm) {
     });
 }
 
+function replaceBlocksContainer(blocksHtml) {
+    if (!blocksHtml) return;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(blocksHtml, 'text/html');
+    const fresh = doc.querySelector('[data-blocks-container]');
+    const current = document.querySelector('[data-blocks-container]');
+    if (fresh && current) {
+        current.replaceWith(fresh);
+        bindDayoffForms();
+    }
+}
+
+function fetchBlocksForStylist(stylistId) {
+    if (!stylistId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('stylist_id', stylistId);
+    url.searchParams.set('partial', 'blocks');
+    fetch(url.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(res => res.json())
+        .then(data => replaceBlocksContainer(data.blocks_html));
+}
+
+function bindDayoffForms() {
+    document.querySelectorAll('.dayoff-edit-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('form_type', 'dayoff_update');
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        replaceBlocksContainer(data.blocks_html);
+                        bootstrap.Modal.getInstance(form.closest('.modal')).hide();
+                        showToast('Блокировка обновлена ✅');
+                    } else {
+                        alert(data.error || 'Не удалось сохранить блокировку');
+                    }
+                });
+        });
+    });
+
+    document.querySelectorAll('.dayoff-delete-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!confirm('Удалить блокировку?')) return;
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken') || getCsrfToken()
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        replaceBlocksContainer(data.blocks_html);
+                        showToast('Блокировка удалена ✅');
+                    }
+                });
+        });
+    });
+}
+
+bindDayoffForms();
+
 const addDayOffForm = document.getElementById('addDayOffForm');
 const addDayOffModalEl = document.getElementById('addDayOffModal');
 if (addDayOffForm && addDayOffModalEl) {
@@ -1274,13 +1354,7 @@ if (addDayOffForm && addDayOffModalEl) {
                     addDayOffForm.querySelector('#addDayOffStylistId').value = document.getElementById('modalStylistId').value;
                     bootstrap.Modal.getInstance(addDayOffModalEl).hide();
                     showToast('Блокировка добавлена ✅');
-                    if (data.blocks_html) {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(data.blocks_html, 'text/html');
-                        const newTable = doc.querySelector('[data-blocks-container]');
-                        const currentTable = document.querySelector('[data-blocks-container]');
-                        if (newTable && currentTable) currentTable.replaceWith(newTable);
-                    }
+                    replaceBlocksContainer(data.blocks_html);
                 } else {
                     alert(data.error || 'Не удалось добавить блокировку');
                 }

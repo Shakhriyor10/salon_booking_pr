@@ -19,7 +19,7 @@
                 <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editDayOffModal{{ block.id }}">
                     Изменить
                 </button>
-                <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline">
+                <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline dayoff-delete-form">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-danger btn-sm"
                             onclick="return confirm('Удалить блокировку?')">
@@ -31,7 +31,7 @@
         <div class="modal fade" id="editDayOffModal{{ block.id }}" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <form method="post">
+                    <form method="post" class="dayoff-edit-form">
                         {% csrf_token %}
                         <input type="hidden" name="form_type" value="dayoff_update">
                         <input type="hidden" name="dayoff_id" value="{{ block.id }}">
