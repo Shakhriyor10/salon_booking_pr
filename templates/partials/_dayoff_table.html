@@ -21,8 +21,7 @@
                 </button>
                 <form method="post" action="{% url 'delete_dayoff' block.id %}" class="d-inline dayoff-delete-form">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-outline-danger btn-sm"
-                            onclick="return confirm('Удалить блокировку?')">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
                         Удалить
                     </button>
                 </form>
