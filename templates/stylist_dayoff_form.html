@@ -384,6 +384,140 @@
         </div>
     </div>
 
+    <div class="card mb-4" id="salonProductsCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Товары салона</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                Добавить товар
+            </button>
+        </div>
+        <div class="card-body">
+            {% if salon_products %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Фото</th>
+                                <th>Название</th>
+                                <th>Цена</th>
+                                <th>Количество</th>
+                                <th>Статус</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in salon_products %}
+                                <tr>
+                                    <td>
+                                        {% if product.photo %}
+                                            <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-width: 110px;">
+                                        {% else %}
+                                            <div class="text-muted small">Нет фото</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ product.name }}</div>
+                                        {% if product.description %}
+                                            <div class="text-muted small mt-1">{{ product.description }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ product.get_final_price|intcomma }} сум</div>
+                                        {% if product.get_display_old_price %}
+                                            <div class="text-muted text-decoration-line-through small">{{ product.get_display_old_price|intcomma }} сум</div>
+                                        {% endif %}
+                                        {% if product.discount_percent %}
+                                            <span class="badge bg-success-subtle text-success border mt-1">-{{ product.discount_percent }}%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ product.quantity }}</td>
+                                    <td>
+                                        {% if product.is_active %}
+                                            <span class="badge bg-success">Активен</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Выключен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editProductModal{{ product.id }}">
+                                                Изменить
+                                            </button>
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="product_toggle">
+                                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                <button type="submit" class="btn btn-sm {% if product.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                                                    {% if product.is_active %}Выключить{% else %}Включить{% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="post" onsubmit="return confirm('Удалить товар?');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="product_delete">
+                                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% for product in salon_products %}
+                    <div class="modal fade" id="editProductModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <form method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="product_update">
+                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Изменить товар «{{ product.name }}»</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% for field in product.update_form %}
+                                            <div class="mb-3">
+                                                {% if field.field.widget.input_type == 'checkbox' %}
+                                                    <div class="form-check">
+                                                        {{ field }}
+                                                        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    </div>
+                                                {% else %}
+                                                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    {{ field }}
+                                                {% endif %}
+                                                {% if field.help_text %}
+                                                    <div class="form-text">{{ field.help_text }}</div>
+                                                {% endif %}
+                                                {% for error in field.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                        {% if product.photo %}
+                                            <div class="alert alert-light border small">
+                                                <div class="fw-semibold mb-1">Текущее фото</div>
+                                                <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-width: 160px;">
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">Товары ещё не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+
     <div class="card mb-4" id="salonServicesCard">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>Услуги салона</span>
@@ -723,6 +857,57 @@
         <div class="modal-footer">
           <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
           <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addProductModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="product_add">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить товар</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if product_form and product_form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in product_form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% if product_form %}
+            <div class="row g-3">
+              {% for field in product_form %}
+                <div class="col-md-6">
+                  {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="form-check mt-4">
+                      {{ field }}
+                      <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    </div>
+                  {% else %}
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                  {% endif %}
+                  {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
         </div>
       </form>
     </div>

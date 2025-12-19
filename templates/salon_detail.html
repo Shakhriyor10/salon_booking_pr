@@ -3,6 +3,7 @@
 {% load form_tags %}
 {% load widget_tweaks %}
 {% load custom_filters %}
+{% load humanize %}
 
 {% block content %}
 <style>
@@ -255,6 +256,118 @@
 
   .salon-gallery__item:hover img {
     transform: scale(1.05);
+  }
+
+  .salon-products {
+    margin-top: 3rem;
+  }
+
+  .product-card {
+    border: 1px solid rgba(15, 32, 35, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 16px 36px rgba(15, 32, 35, 0.12);
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 44px rgba(15, 32, 35, 0.18);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    background: #0e2023;
+  }
+
+  .product-body {
+    padding: 1.1rem 1.2rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .product-price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #102326;
+  }
+
+  .product-old-price {
+    color: #94a3b8;
+    text-decoration: line-through;
+    margin-left: 0.5rem;
+  }
+
+  .product-meta {
+    font-size: 0.95rem;
+    color: #6b7b84;
+  }
+
+  .discount-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(22, 163, 74, 0.12);
+    color: #15803d;
+    border: 1px solid rgba(22, 163, 74, 0.22);
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .cart-card {
+    border: 1px solid rgba(15, 32, 35, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 16px 32px rgba(15, 32, 35, 0.1);
+    background: #fff;
+  }
+
+  .cart-item-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(15, 32, 35, 0.06);
+  }
+
+  .cart-item-row:last-child {
+    border-bottom: none;
+  }
+
+  .cart-total {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0f2023;
+  }
+
+  .product-eta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+    background: rgba(72, 107, 113, 0.08);
+    color: #1f3438;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .payment-badge {
+    background: rgba(10, 151, 90, 0.1);
+    border: 1px solid rgba(10, 151, 90, 0.25);
+    color: #0a995a;
+    padding: 0.25rem 0.6rem;
+    border-radius: 10px;
+    font-weight: 600;
   }
 
   @media (max-width: 768px) {
@@ -1775,6 +1888,161 @@
     </div>
   {% endif %}
 
+  <section class="salon-products">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+      <div>
+        <div class="hero-eyebrow text-dark bg-light border">{{ salon.name }} • Товары салона</div>
+        <h2 class="section-heading mb-1">Возьмите с собой любимые продукты</h2>
+        <p class="text-muted mb-0">Доставка в течение {{ delivery_eta_days }} дней после оформления заказа.</p>
+      </div>
+      <div class="d-flex flex-column align-items-md-end gap-2">
+        {% if product_payment_methods and product_payment_methods.0 == 'card' %}
+          <span class="payment-badge"><i class="bi bi-credit-card me-1"></i>Оплата картой или наличными</span>
+        {% else %}
+          <span class="badge bg-secondary-subtle text-dark border"><i class="bi bi-cash-stack me-1"></i>Оплата наличными при получении</span>
+        {% endif %}
+        <span class="product-eta"><i class="bi bi-truck"></i> Доставка {{ delivery_eta_days }} дня</span>
+      </div>
+    </div>
+    <div id="product-cart-alert" class="alert alert-info d-none mt-3" role="alert"></div>
+
+    {% if salon_products %}
+      <div class="row g-4 mt-2">
+        {% for product in salon_products %}
+          <div class="col-xl-4 col-lg-4 col-md-6">
+            <div class="product-card">
+              {% if product.photo %}
+                <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
+              {% else %}
+                <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80" alt="{{ product.name }}" class="product-image">
+              {% endif %}
+              <div class="product-body">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                  <div>
+                    <div class="h5 mb-1">{{ product.name }}</div>
+                    {% if product.description %}
+                      <div class="product-meta">{{ product.description }}</div>
+                    {% endif %}
+                  </div>
+                  {% if product.discount_percent %}
+                    <span class="discount-chip"><i class="bi bi-fire"></i> -{{ product.discount_percent }}%</span>
+                  {% endif %}
+                </div>
+                <div class="d-flex flex-wrap align-items-baseline gap-2">
+                  <span class="product-price">{{ product.get_final_price|intcomma }} сум</span>
+                  {% if product.get_display_old_price %}
+                    <span class="product-old-price">{{ product.get_display_old_price|intcomma }} сум</span>
+                  {% endif %}
+                </div>
+                <div class="product-meta">В наличии: {{ product.quantity }} шт.</div>
+                <form method="post" action="{% url 'add_product_to_cart' salon.id %}" class="mt-auto" data-product-add-form>
+                  {% csrf_token %}
+                  <input type="hidden" name="product_id" value="{{ product.id }}">
+                  <div class="d-flex align-items-center gap-2">
+                    <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" class="form-control form-control-sm" style="max-width: 120px;">
+                    <button type="submit" class="btn btn-theme flex-grow-1">В корзину</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border mt-3 mb-0">
+        <div class="fw-semibold mb-1">Товары появятся скоро</div>
+        <p class="mb-0 text-muted">Администратор салона готовит подборку товаров для продажи.</p>
+      </div>
+    {% endif %}
+
+    <div class="card cart-card mt-4" data-product-cart data-cart-update-url="{% url 'update_product_cart_item' salon.id %}">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Корзина товаров салона</span>
+        <span class="text-muted small">Оплата выбирается при оформлении заказа</span>
+      </div>
+      <div class="card-body">
+        <div class="cart-items" data-cart-items>
+          {% if product_cart_items %}
+            {% for item in product_cart_items %}
+              <form method="post" action="{% url 'update_product_cart_item' salon.id %}" class="cart-item-row" data-cart-update-form>
+                {% csrf_token %}
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                <div>
+                  <div class="fw-semibold">{{ item.name }}</div>
+                  <div class="text-muted small">Доступно: {{ item.available }} шт.</div>
+                </div>
+                <div>
+                  <div class="product-price mb-1">{{ item.final_price|intcomma }} сум</div>
+                  {% if item.old_price %}
+                    <div class="product-old-price">{{ item.old_price|intcomma }} сум</div>
+                  {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" name="quantity" class="form-control form-control-sm" min="1" max="{{ item.available }}" value="{{ item.quantity }}">
+                  <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+                </div>
+                <div class="text-end">
+                  <div class="fw-semibold">{{ item.subtotal|intcomma }} сум</div>
+                  <button type="submit" name="action" value="remove" class="btn btn-link text-danger btn-sm p-0 mt-1">Удалить</button>
+                </div>
+              </form>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <p class="text-muted mb-0 {% if product_cart_items %}d-none{% endif %}" data-cart-empty>Корзина пуста. Добавьте товары, чтобы оформить доставку.</p>
+        <div class="{% if not product_cart_items %}d-none{% endif %}" data-cart-summary>
+          <hr>
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="cart-total" data-cart-total>Итого: <span data-cart-total-value>{{ product_cart_total|intcomma }}</span> сум</div>
+            <div class="text-muted small">Курьер доставит заказ в течение {{ delivery_eta_days }} дней.</div>
+          </div>
+          <form method="post" action="{% url 'checkout_salon_products' salon.id %}" class="mt-3" data-cart-checkout-form>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Контактное имя</label>
+                <input type="text" name="guest_name" class="form-control" value="{{ prefill_guest_name }}" placeholder="Ваше имя" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Телефон для доставки</label>
+                <input type="text" name="guest_phone" class="form-control" value="{{ prefill_guest_phone }}" placeholder="93-123-45-67" required>
+                <div class="form-text">Мы создадим профиль для отслеживания заказа, если вы ещё не зарегистрированы.</div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="id_is_pickup" name="is_pickup">
+                  <label class="form-check-label" for="id_is_pickup">Сам заберу из салона</label>
+                </div>
+                <label class="form-label">Адрес доставки</label>
+                <textarea name="address" rows="2" class="form-control" placeholder="Укажите улицу, дом, подъезд, ориентиры"></textarea>
+                <div class="form-text">Оставьте пустым только если выбрали самовывоз.</div>
+              </div>
+            </div>
+            {% if product_order_form %}
+              <div class="mb-3">
+                <label class="form-label">Способ оплаты</label>
+                <div class="d-flex flex-wrap gap-3">
+                  {% for radio in product_order_form.payment_method %}
+                    <div class="form-check">
+                      {{ radio.tag }}
+                      <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if product_payment_methods and product_payment_methods.0 == 'card' %}
+                  <div class="form-text">Оплата доступна на карту салона или наличными при получении заказа.</div>
+                {% else %}
+                  <div class="form-text">Оплата доступна только наличными при получении заказа курьером.</div>
+                {% endif %}
+              </div>
+            {% endif %}
+            <button type="submit" class="btn btn-theme" data-cart-submit {% if not product_cart_items %}disabled{% endif %}>Оформить заказ</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <h2 class="section-heading">Контакты и расположение</h2>
   <div class="row g-4 align-items-stretch">
     <div class="col-lg-7">
@@ -2206,6 +2474,222 @@
 </div>
 
 {{ service_stylists_map|json_script:"service-stylists-map" }}
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const productCartCard = document.querySelector('[data-product-cart]');
+    const addProductForms = document.querySelectorAll('[data-product-add-form]');
+
+    if (!productCartCard) {
+      return;
+    }
+
+    const cartItemsContainer = productCartCard.querySelector('[data-cart-items]');
+    const emptyState = productCartCard.querySelector('[data-cart-empty]');
+    const summaryBlock = productCartCard.querySelector('[data-cart-summary]');
+    const totalValueEl = productCartCard.querySelector('[data-cart-total-value]');
+    const checkoutButton = productCartCard.querySelector('[data-cart-submit]');
+    const alertBox = document.getElementById('product-cart-alert');
+    const updateUrl = productCartCard.dataset.cartUpdateUrl;
+
+    function getCsrfToken() {
+      const cookie = document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith('csrftoken='));
+      if (cookie) {
+        return decodeURIComponent(cookie.split('=')[1]);
+      }
+      const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input ? input.value : '';
+    }
+
+    function showAlert(message, type = 'info') {
+      if (!alertBox) return;
+      alertBox.textContent = message;
+      alertBox.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger');
+      alertBox.classList.add(`alert-${type}`);
+    }
+
+    function formatCurrency(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return value || '0';
+      }
+      return num.toLocaleString('ru-RU');
+    }
+
+    function toggleSummary(hasItems) {
+      if (summaryBlock) {
+        summaryBlock.classList.toggle('d-none', !hasItems);
+      }
+      if (emptyState) {
+        emptyState.classList.toggle('d-none', hasItems);
+      }
+      if (checkoutButton) {
+        checkoutButton.disabled = !hasItems;
+      }
+    }
+
+    function buildCartItem(item) {
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = updateUrl;
+      form.className = 'cart-item-row';
+      form.setAttribute('data-cart-update-form', '');
+
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = getCsrfToken();
+      form.appendChild(csrfInput);
+
+      const idInput = document.createElement('input');
+      idInput.type = 'hidden';
+      idInput.name = 'item_id';
+      idInput.value = item.id;
+      form.appendChild(idInput);
+
+      const infoCol = document.createElement('div');
+      infoCol.innerHTML = `<div class="fw-semibold">${item.name}</div><div class="text-muted small">Доступно: ${item.available} шт.</div>`;
+      form.appendChild(infoCol);
+
+      const priceCol = document.createElement('div');
+      priceCol.className = 'd-flex flex-column';
+      priceCol.innerHTML = `<div class="product-price mb-1">${formatCurrency(item.final_price)} сум</div>`;
+      if (item.old_price) {
+        const oldPrice = document.createElement('div');
+        oldPrice.className = 'product-old-price';
+        oldPrice.textContent = `${formatCurrency(item.old_price)} сум`;
+        priceCol.appendChild(oldPrice);
+      }
+      form.appendChild(priceCol);
+
+      const quantityCol = document.createElement('div');
+      quantityCol.className = 'd-flex align-items-center gap-2';
+      quantityCol.innerHTML = `
+        <input type="number" name="quantity" class="form-control form-control-sm" min="1" max="${item.available}" value="${item.quantity}">
+        <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+      `;
+      form.appendChild(quantityCol);
+
+      const actionsCol = document.createElement('div');
+      actionsCol.className = 'text-end';
+      actionsCol.innerHTML = `
+        <div class="fw-semibold">${formatCurrency(item.subtotal)} сум</div>
+        <button type="submit" name="action" value="remove" class="btn btn-link text-danger btn-sm p-0 mt-1">Удалить</button>
+      `;
+      form.appendChild(actionsCol);
+
+      return form;
+    }
+
+    function refreshCart(cart) {
+      const items = Array.isArray(cart?.items) ? cart.items : [];
+      cartItemsContainer.innerHTML = '';
+
+      if (!items.length) {
+        toggleSummary(false);
+        return;
+      }
+
+      items.forEach((item) => {
+        cartItemsContainer.appendChild(buildCartItem(item));
+      });
+
+      if (totalValueEl) {
+        totalValueEl.textContent = formatCurrency(cart.total || 0);
+      }
+
+      toggleSummary(true);
+    }
+
+    function handleResponse(response) {
+      return response
+        .json()
+        .catch(() => ({}))
+        .then((data) => ({ ok: response.ok, status: response.status, data }));
+    }
+
+    function submitWithFetch(url, formData, pendingElement) {
+      if (pendingElement) {
+        pendingElement.disabled = true;
+      }
+
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: formData,
+      })
+        .then(handleResponse)
+        .finally(() => {
+          if (pendingElement) {
+            pendingElement.disabled = false;
+          }
+        });
+    }
+
+    addProductForms.forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const submitter = event.submitter || form.querySelector('button[type="submit"]');
+        const formData = new FormData(form);
+
+        submitWithFetch(form.action, formData, submitter).then(({ ok, data }) => {
+          if (!ok || !data?.success) {
+            showAlert(data?.error || 'Не удалось добавить товар. Попробуйте снова.', 'danger');
+            return;
+          }
+          refreshCart(data.cart);
+          showAlert('Товар добавлен в корзину.', 'success');
+        }).catch(() => {
+          showAlert('Произошла ошибка. Попробуйте позже.', 'danger');
+        });
+      });
+    });
+
+    cartItemsContainer.addEventListener('submit', (event) => {
+      const form = event.target;
+      if (!form.matches('[data-cart-update-form]')) {
+        return;
+      }
+
+      event.preventDefault();
+      const submitter = event.submitter || form.querySelector('button[type="submit"]');
+      const formData = new FormData(form);
+      if (submitter && submitter.name) {
+        formData.append(submitter.name, submitter.value);
+      }
+
+      submitWithFetch(updateUrl, formData, submitter).then(({ ok, data }) => {
+        if (!ok || !data?.success) {
+          showAlert(data?.error || 'Не удалось обновить корзину.', 'danger');
+          return;
+        }
+        refreshCart(data.cart);
+        showAlert('Корзина обновлена.', 'success');
+      }).catch(() => {
+        showAlert('Произошла ошибка при обновлении корзины.', 'danger');
+      });
+    });
+
+    const pickupCheckbox = document.getElementById('id_is_pickup');
+    const addressField = productCartCard.querySelector('textarea[name="address"]');
+
+    function toggleAddressRequirement() {
+      const isPickup = pickupCheckbox && pickupCheckbox.checked;
+      if (addressField) {
+        addressField.required = !isPickup;
+        addressField.disabled = isPickup;
+      }
+    }
+
+    if (pickupCheckbox) {
+      pickupCheckbox.addEventListener('change', toggleAddressRequirement);
+      toggleAddressRequirement();
+    }
+  });
+</script>
 
 <script>
   const stars = document.querySelectorAll('#star-rating i');
