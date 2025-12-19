@@ -530,9 +530,7 @@
 
         document.addEventListener('click', (event) => {
           const btn = event.target.closest('.copy-credential');
-          if (!btn) {
-            return;
-          }
+          if (!btn) return;
 
           event.preventDefault();
           event.stopPropagation();
@@ -540,9 +538,10 @@
           const explicitValue = btn.getAttribute('data-credential') || '';
           const targetSelector = btn.getAttribute('data-target');
           const target = targetSelector ? document.querySelector(targetSelector) : null;
-          const targetValue = target ? target.getAttribute('data-credential') || target.textContent || '' : '';
+          const targetValue = target ? (target.getAttribute('data-credential') || target.textContent || '') : '';
           const parentValue = btn.closest('[data-credential]')?.getAttribute('data-credential') || '';
-          const value = (explicitValue || targetValue || parentValue || '').trim();
+          const fallbackValue = btn.closest('.booking-success-credentials')?.innerText || '';
+          const value = (explicitValue || targetValue || parentValue || fallbackValue || '').trim();
 
           if (!value) {
             btn.textContent = 'Нет данных';
@@ -552,9 +551,7 @@
 
           const markCopied = () => {
             btn.textContent = 'Скопировано';
-            setTimeout(() => {
-              btn.textContent = 'Скопировать';
-            }, 1500);
+            setTimeout(() => btn.textContent = 'Скопировать', 1500);
           };
 
           const fallbackCopy = () => {
@@ -567,12 +564,10 @@
             textarea.select();
             textarea.setSelectionRange(0, value.length);
             try {
-              const ok = document.execCommand('copy');
-              if (ok) {
+              if (document.execCommand('copy')) {
                 markCopied();
               } else {
-                btn.textContent = 'Не удалось скопировать';
-                setTimeout(() => btn.textContent = 'Скопировать', 2000);
+                throw new Error('copy failed');
               }
             } catch (e) {
               btn.textContent = 'Не удалось скопировать';
