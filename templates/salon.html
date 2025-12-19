@@ -13,7 +13,8 @@
   }
 
   .salon-grid {
-    --bs-gutter-y: 2.5rem;
+    --bs-gutter-y: 1.0rem;
+    --bs-gutter-x: 1.0rem;
   }
 
   .salon-card {
@@ -61,6 +62,43 @@
   .salon-card__body {
     padding: 1.75rem 1.75rem 1.9rem;
   }
+
+
+.salon-card__favorite {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(72, 107, 113, 0.18);
+  transition: transform 0.25s ease, background 0.25s ease;
+  z-index: 5;
+}
+
+.salon-card__favorite:hover {
+  transform: scale(1.08);
+}
+
+.salon-card__favorite i {
+  font-size: 1.25rem;
+  color: #8a999c;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.salon-card__favorite.active {
+  background: var(--salon-accent-soft);
+}
+
+.salon-card__favorite.active i {
+  color: #e63946;
+  transform: scale(1.15);
+}
 
   .salon-card__title {
     font-size: 1.2rem;
@@ -124,6 +162,15 @@
       font-size: 1.05rem;
     }
   }
+@media (max-width: 576px) {
+  .salon-card__badge {
+    bottom: 0.6rem;
+    left: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+  }
+}
 </style>
 <!--<form method="get" class="row gy-2 gx-3 align-items-center mb-4">-->
 <!--  &lt;!&ndash; Тип салона &ndash;&gt;-->
@@ -212,7 +259,7 @@
   </div>
 </form>
 <h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 salon-grid">
+<div class="row row-cols-2 row-cols-md-2 row-cols-xl-3 salon-grid">
     {% for salon in salons %}
         <div
           class="col"
@@ -233,6 +280,11 @@
                         <span class="salon-card__badge">{{ type_display }}</span>
                       {% endif %}
                     {% endwith %}
+                    <div class="salon-card__favorite"
+                         data-salon-id="{{ salon.id }}"
+                         onclick="toggleFavorite(this)">
+                        <i class="bi bi-heart"></i>
+                    </div>
                 </div>
                 <div class="salon-card__body text-center d-flex flex-column align-items-center">
                     <h5 class="salon-card__title">{{ salon.name }}</h5>

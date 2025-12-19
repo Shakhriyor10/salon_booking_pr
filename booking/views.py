@@ -2767,6 +2767,11 @@ def stylist_dayoff_view(request):
                 end_time=end_time,
             )
 
+            # ✅ ЕСЛИ AJAX — возвращаем JSON
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+
+            # ⬇️ fallback (если вдруг обычная отправка)
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
         # Обновление рабочего интервала
@@ -2780,34 +2785,101 @@ def stylist_dayoff_view(request):
                 wh.end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
                 wh.full_clean()
                 wh.save()
-                messages.success(request, 'Рабочий интервал обновлён.')
             except (ValueError, TypeError):
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': 'Неверный формат времени'})
                 messages.error(request, 'Неверный формат времени.')
             except ValidationError as exc:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': exc.messages[0]})
                 messages.error(request, exc.messages[0])
 
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                # возвращаем обновлённый список рабочих часов для JS
+                working_hours = [
+                    {
+                        'id': w.id,
+                        'weekday': w.weekday,
+                        'start': w.start_time.strftime('%H:%M'),
+                        'end': w.end_time.strftime('%H:%M'),
+                        'breaks': [
+                            {'start': b.start_time.strftime('%H:%M'), 'end': b.end_time.strftime('%H:%M')}
+                            for b in w.breaks.all()
+                        ]
+                    } for w in WorkingHour.objects.filter(stylist=stylist).prefetch_related('breaks')
+                ]
+                return JsonResponse({'success': True, 'working_hours': working_hours})
+
+            # fallback для обычного POST
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
+
+
         elif form_type == 'break_add':
+
             wh_id = request.POST.get('workinghour_id')
+
             wh = get_object_or_404(WorkingHour, id=wh_id, stylist=stylist)
 
             start_time = datetime.strptime(request.POST.get('start_time'), '%H:%M').time()
+
             end_time = datetime.strptime(request.POST.get('end_time'), '%H:%M').time()
 
             BreakPeriod.objects.create(
+
                 working_hour=wh,
+
                 start_time=start_time,
+
                 end_time=end_time,
+
             )
 
-            return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                working_hours = [
+
+                    {
+
+                        'id': w.id,
+
+                        'weekday': w.weekday,
+
+                        'start': w.start_time.strftime('%H:%M'),
+
+                        'end': w.end_time.strftime('%H:%M'),
+
+                        'breaks': [{'start': b.start_time.strftime('%H:%M'), 'end': b.end_time.strftime('%H:%M')} for b
+                                   in w.breaks.all()]
+
+                    } for w in WorkingHour.objects.filter(stylist=stylist).prefetch_related('breaks')
+
+                ]
+
+                return JsonResponse({'success': True, 'working_hours': working_hours})
 
         # Удаление рабочего интервала
         elif form_type == 'workinghour_delete':
             wh_id = request.POST.get('workinghour_id')
             wh = get_object_or_404(WorkingHour, id=wh_id, stylist=stylist)
             wh.delete()
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                # Возвращаем обновлённый список рабочих часов
+                working_hours = [
+                    {
+                        'id': w.id,
+                        'weekday': w.weekday,
+                        'start': w.start_time.strftime('%H:%M'),
+                        'end': w.end_time.strftime('%H:%M'),
+                        'breaks': [
+                            {'start': b.start_time.strftime('%H:%M'), 'end': b.end_time.strftime('%H:%M')}
+                            for b in w.breaks.all()
+                        ]
+                    } for w in WorkingHour.objects.filter(stylist=stylist).prefetch_related('breaks')
+                ]
+                return JsonResponse({'success': True, 'working_hours': working_hours})
+
+            # fallback для обычного POST
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
 
         elif profile.is_salon_admin and form_type == 'stylist_price_update':
@@ -2840,6 +2912,7 @@ def stylist_dayoff_view(request):
                 messages.success(request, 'Цена сохранена.')
 
             return redirect(f'{reverse("stylist_dayoff")}?stylist_id={selected_stylist_id}')
+
 
     # Получение данных для отображения
     if stylist:
@@ -2904,3 +2977,66 @@ def delete_dayoff(request, pk):
         block.delete()
 
     return redirect(f'{reverse("stylist_dayoff")}?stylist_id={stylist_id}')
+
+@login_required
+def ajax_stylist_data(request, stylist_id):
+    stylist = get_object_or_404(
+        Stylist, id=stylist_id, salon=request.user.profile.salon
+    )
+
+    services = []
+    for ss in SalonService.objects.filter(salon=stylist.salon):
+        price = StylistService.objects.filter(
+            stylist=stylist, salon_service=ss
+        ).values_list('price', flat=True).first()
+
+        services.append({
+            'id': ss.id,
+            'name': ss.service.name,
+            'duration': int(ss.duration.total_seconds() // 60),
+            'price': price
+        })
+
+    working_hours = []
+    for wh in WorkingHour.objects.filter(stylist=stylist).prefetch_related('breaks'):
+        working_hours.append({
+            'id': wh.id,
+            'weekday': wh.weekday,  # ✅ число 0–6
+            'start': wh.start_time.strftime('%H:%M'),
+            'end': wh.end_time.strftime('%H:%M'),
+            'breaks': [
+                {
+                    'start': b.start_time.strftime('%H:%M'),
+                    'end': b.end_time.strftime('%H:%M')
+                } for b in wh.breaks.all()
+            ]
+        })
+
+    return JsonResponse({
+        'services': services,
+        'working_hours': working_hours
+    })
+
+@login_required
+@require_POST
+def ajax_update_price(request):
+    stylist = get_object_or_404(
+        Stylist, id=request.POST['stylist_id'],
+        salon=request.user.profile.salon
+    )
+
+    price = request.POST.get('price')
+    salon_service_id = request.POST['salon_service_id']
+
+    if price == '':
+        StylistService.objects.filter(
+            stylist=stylist, salon_service_id=salon_service_id
+        ).delete()
+    else:
+        StylistService.objects.update_or_create(
+            stylist=stylist,
+            salon_service_id=salon_service_id,
+            defaults={'price': Decimal(price)}
+        )
+
+    return JsonResponse({'status': 'ok'})

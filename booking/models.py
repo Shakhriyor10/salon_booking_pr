@@ -158,7 +158,7 @@ class Category(models.Model):
 
 
 class Service(models.Model):
-    name = models.CharField('Название', max_length=120, unique=True)
+    name = models.CharField('Название', max_length=120)
     description = models.TextField('Описание', blank=True)
     photo = models.ImageField('Фото услуги', upload_to='service_photos/', blank=True, null=True)
     is_active = models.BooleanField(default=True)

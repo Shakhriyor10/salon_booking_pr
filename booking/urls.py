@@ -41,5 +41,6 @@ urlpatterns = [
     path('stylist/dayoff/', views.stylist_dayoff_view, name='stylist_dayoff'),
     path('delete-dayoff/<int:pk>/', views.delete_dayoff, name='delete_dayoff'),
     path('reviews/<int:pk>/delete/', delete_review, name='delete_review'),
-
+    path('stylist/ajax/<int:stylist_id>/', views.ajax_stylist_data, name='ajax_stylist_data'),
+    path('stylist/ajax/price/', views.ajax_update_price, name='ajax_update_price'),
 ]

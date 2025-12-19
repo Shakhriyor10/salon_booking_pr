@@ -253,12 +253,17 @@
                                                         <img src="{{ s.avatar.url }}" alt="{{ s.user.get_full_name|default:s.user.username }}" class="img-thumbnail" style="max-width: 160px;">
                                                     </div>
                                                 {% endif %}
-
+                                                <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-end mb-5">
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Отмена
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                                </div>
                                             </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                                <button type="submit" class="btn btn-primary">Сохранить</button>
-                                            </div>
+<!--                                            <div class="modal-footer">-->
+<!--                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>-->
+<!--                                                <button type="submit" class="btn btn-primary">Сохранить</button>-->
+<!--                                            </div>-->
                                         </form>
                                     </div>
                                 </div>
@@ -491,15 +496,16 @@
     {% if stylists %}
     <form method="get" class="mb-4">
         <label class="form-label">Выберите мастера для управления расписанием и ценами</label>
-        <select name="stylist_id" class="form-select" onchange="this.form.submit()">
-            <option value="">-- Выберите стилиста --</option>
-            {% for s in stylists %}
-                <option value="{{ s.id }}" {% if s.id|stringformat:"s" == selected_stylist_id|stringformat:"s" %}selected{% endif %}>
-                    {{ s.user.get_full_name|default:s.user.username }}
-                </option>
-            {% endfor %}
-        </select>
+<select id="stylistSelect" class="form-select">
+    <option value="">-- Выберите стилиста --</option>
+    {% for s in stylists %}
+        <option value="{{ s.id }}">
+            {{ s.user.get_full_name|default:s.user.username }}
+        </option>
+    {% endfor %}
+</select>
     </form>
+    <div id="stylistPrices"></div>
     {% endif %}
 
     {% if request.user.profile.is_salon_admin and selected_stylist %}
@@ -640,146 +646,38 @@
     </button>
     {% endif %}
 
-    <h4>Рабочие интервалы</h4>
-    {% if working_hours %}
-    <div class="table-responsive">
-        <table class="table table-bordered">
-            <thead>
-            <tr>
-                <th>День</th>
-                <th>С</th>
-                <th>До</th>
-                <th>Перерывы</th>
-                <th class="text-end">Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            {% for wh in working_hours %}
-            <tr>
-                <td>{{ wh.get_weekday_display }}</td>
-                <td>{{ wh.start_time }}</td>
-                <td>{{ wh.end_time }}</td>
-                <td>
-                    {% if wh.breaks.all %}
-                        {% for br in wh.breaks.all %}
-                            {{ br.start_time }}–{{ br.end_time }}<br>
-                        {% endfor %}
-                    {% else %}
-                        <span class="text-muted">Нет</span>
-                    {% endif %}
-                </td>
-                <td class="text-end">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editWorkingHourModal{{ wh.id }}">
-                        Изменить
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBreakModal{{ wh.id }}">
-                        Добавить перерыв
-                    </button>
-                    <form method="post" class="d-inline">
-                        {% csrf_token %}
-                        <input type="hidden" name="form_type" value="workinghour_delete">
-                        <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
-                        {% if selected_stylist_id %}
-                            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-                        {% endif %}
-                        <button type="submit" class="btn btn-outline-danger btn-sm"
-                                onclick="return confirm('Удалить интервал?.')">
-                            Удалить
-                        </button>
-                    </form>
-                </td>
-            </tr>
+<h4>Рабочие интервалы</h4>
 
-            <div class="modal fade" id="editWorkingHourModal{{ wh.id }}" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="form_type" value="workinghour_update">
-                            <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
-                            {% if selected_stylist_id %}
-                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-                            {% endif %}
-                            <div class="modal-header">
-                                <h5 class="modal-title">Изменить рабочий интервал</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">День недели</label>
-                                    <select name="weekday" class="form-select">
-                                        {% for num, name in WEEKDAYS %}
-                                            <option value="{{ num }}" {% if num == wh.weekday %}selected{% endif %}>{{ name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">С</label>
-                                    <input type="time" name="start_time" class="form-control" value="{{ wh.start_time|time:'H:i' }}" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">До</label>
-                                    <input type="time" name="end_time" class="form-control" value="{{ wh.end_time|time:'H:i' }}" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
-                                <button class="btn btn-primary" type="submit">Сохранить</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+<div id="stylistWorkingHoursContainer">
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>День</th>
+          <th>С</th>
+          <th>До</th>
+          <th>Перерывы</th>
+          <th class="text-end">Действия</th>
+        </tr>
+      </thead>
 
-            <div class="modal fade" id="addBreakModal{{ wh.id }}" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="form_type" value="break_add">
-                            <input type="hidden" name="workinghour_id" value="{{ wh.id }}">
-                            {% if selected_stylist_id %}
-                                <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-                            {% endif %}
-                            <div class="modal-header">
-                                <h5 class="modal-title">Добавить перерыв</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Начало перерыва</label>
-                                    <input type="time" name="start_time" class="form-control" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Конец перерыва</label>
-                                    <input type="time" name="end_time" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                                <button type="submit" class="btn btn-primary">Сохранить</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <p class="text-muted">Нет рабочих интервалов</p>
-    {% endif %}
+      <!-- ✅ ВАЖНО: tbody ВНУТРИ table -->
+      <tbody id="stylistWorkingHours">
+        <tr>
+          <td colspan="5" class="text-muted text-center">
+            Выберите стилиста
+          </td>
+        </tr>
+      </tbody>
 
-    {% if selected_stylist_id %}
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkingHourModal">
-        Добавить интервал
-    </button>
-    {% else %}
-    <button class="btn btn-primary" onclick="alert('Сначала выберите специалиста');">
-        Добавить интервал
-    </button>
-    {% endif %}
+    </table>
+  </div>
+</div>
+
+<!-- Кнопка добавления рабочего интервала -->
+<button id="addWorkingHourBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkingHourModal">
+    Добавить интервал
+</button>
 </div>
 
 <div class="modal fade" id="addDayOffModal" tabindex="-1">
@@ -821,12 +719,10 @@
 <div class="modal fade" id="addWorkingHourModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form method="post">
+      <form method="post" id="addWorkingHourForm">
         {% csrf_token %}
         <input type="hidden" name="form_type" value="workinghour_add">
-        {% if selected_stylist_id %}
-            <input type="hidden" name="stylist_id" value="{{ selected_stylist_id }}">
-        {% endif %}
+        <input type="hidden" id="modalStylistId" name="stylist_id" value="{{ selected_stylist_id }}">
         <div class="modal-header">
           <h5 class="modal-title">Добавить рабочий интервал</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -957,4 +853,309 @@
   </div>
 </div>
 {% endif %}
+<div class="modal fade" id="editWorkingHourModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="editWorkingHourForm" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Редактировать рабочий интервал</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editWhId" name="workinghour_id">
+        <div class="mb-3">
+          <label>День недели</label>
+<select id="editWhWeekday" name="weekday" class="form-select">
+  <option value="0">Понедельник</option>
+  <option value="1">Вторник</option>
+  <option value="2">Среда</option>
+  <option value="3">Четверг</option>
+  <option value="4">Пятница</option>
+  <option value="5">Суббота</option>
+  <option value="6">Воскресенье</option>
+</select>
+        </div>
+        <div class="mb-3">
+          <label>С</label>
+          <input type="time" id="editWhStart" name="start_time" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label>До</label>
+          <input type="time" id="editWhEnd" name="end_time" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+document.getElementById('stylistSelect').addEventListener('change', function () {
+    const stylistId = this.value;
+    if (!stylistId) return;
+
+    // Обновляем hidden input для модального окна "Добавить интервал"
+    document.getElementById('modalStylistId').value = stylistId;
+
+    // Загружаем рабочие часы и цены мастера
+    fetch(`/stylist/ajax/${stylistId}/`)
+        .then(res => res.json())
+        .then(data => {
+            renderPrices(data.services);
+            renderWorkingHours(data.working_hours);
+        });
+});
+function renderPrices(services) {
+    let html = `<table class="table table-bordered">
+        <tr><th>Услуга</th><th>Цена</th><th></th></tr>`;
+
+    services.forEach(s => {
+        html += `
+        <tr>
+            <td>${s.name} (${s.duration} мин)</td>
+            <td>
+                <input type="number" id="price-${s.id}" value="${s.price ?? ''}" class="form-control">
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary"
+                    onclick="savePrice(${s.id})">Сохранить</button>
+            </td>
+        </tr>`;
+    });
+
+    html += '</table>';
+    document.getElementById('stylistPrices').innerHTML = html;
+}
+
+const WEEKDAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+
+function renderWorkingHours(hours) {
+    const tbody = document.getElementById('stylistWorkingHours');
+    if (!hours || !hours.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Нет рабочих интервалов</td></tr>';
+        return;
+    }
+
+    let html = '';
+    hours.forEach(h => {
+        let breaksHtml = h.breaks && h.breaks.length
+            ? h.breaks.map(b => `${b.start}–${b.end}`).join('<br>')
+            : '<span class="text-muted">Нет</span>';
+
+        html += `
+        <tr>
+            <td>${WEEKDAYS[h.weekday]}</td>
+            <td>${h.start}</td>
+            <td>${h.end}</td>
+            <td>${breaksHtml}</td>
+            <td class="text-end">
+                <button class="btn btn-outline-secondary btn-sm" onclick="editWorkingHour(${h.id})">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm" onclick="addBreak(${h.id})">Добавить перерыв</button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteWorkingHour(${h.id})">Удалить</button>
+            </td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+}
+</script>
+<script>
+function savePrice(serviceId) {
+    const price = document.getElementById(`price-${serviceId}`).value;
+    const stylistId = document.getElementById('stylistSelect').value;
+
+    fetch('/stylist/ajax/price/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            stylist_id: stylistId,
+            salon_service_id: serviceId,
+            price: price
+        })
+    }).then(() => {
+        showToast('Сохранено ✅');
+    });
+}
+
+function showToast(text) {
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+    toast.innerText = text;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+</script>
+<script>
+document.getElementById('addWorkingHourForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Останавливаем обычную отправку формы
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    fetch("{% url 'stylist_dayoff' %}", {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем модалку
+            const modalEl = document.getElementById('addWorkingHourModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+
+            // Очистка формы
+            form.reset();
+
+            // Перезагружаем данные мастера (AJAX)
+            const stylistId = document.getElementById('modalStylistId').value;
+            fetch(`/stylist/ajax/${stylistId}/`)
+                .then(res => res.json())
+                .then(data => renderWorkingHours(data.working_hours));
+
+            showToast('Интервал добавлен ✅');
+        }
+    });
+});
+</script>
+<script>
+let currentWorkingHours = []; // глобально храним рабочие часы
+
+function renderWorkingHours(working_hours) {
+    currentWorkingHours = working_hours;
+
+    const tbody = document.getElementById('stylistWorkingHours');
+    tbody.innerHTML = '';
+
+    if (!working_hours || !working_hours.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Нет рабочих интервалов</td></tr>`;
+        return;
+    }
+
+    working_hours.forEach(wh => {
+        const breaks = wh.breaks && wh.breaks.length
+            ? wh.breaks.map(b => `${b.start}–${b.end}`).join('<br>')
+            : '<span class="text-muted">Нет</span>';
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${WEEKDAYS[wh.weekday]}</td>
+            <td>${wh.start}</td>
+            <td>${wh.end}</td>
+            <td>${breaks}</td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-primary me-1 edit-workinghour" data-id="${wh.id}">Изменить</button>
+                <button class="btn btn-sm btn-success me-1 add-break" data-id="${wh.id}">Добавить перерыв</button>
+                <button class="btn btn-sm btn-danger delete-workinghour" data-id="${wh.id}">Удалить</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    attachWorkingHourEvents();
+}
+
+function attachWorkingHourEvents() {
+    // Изменить рабочий интервал
+    document.querySelectorAll('.edit-workinghour').forEach(btn => {
+        btn.onclick = function() {
+            const whId = this.dataset.id;
+            const wh = currentWorkingHours.find(w => w.id == whId);
+            if (!wh) return;
+
+            document.getElementById('editWhId').value = wh.id;
+            document.getElementById('editWhWeekday').value = wh.weekday;
+            document.getElementById('editWhStart').value = wh.start;
+            document.getElementById('editWhEnd').value = wh.end;
+
+            const modal = new bootstrap.Modal(document.getElementById('editWorkingHourModal'));
+            modal.show();
+        };
+    });
+
+    // Submit формы редактирования
+    const editForm = document.getElementById('editWorkingHourForm');
+    if (editForm) {
+        editForm.onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('form_type', 'workinghour_update');
+            formData.append('stylist_id', document.getElementById('modalStylistId').value);
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                body: new URLSearchParams(formData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderWorkingHours(data.working_hours);
+                    bootstrap.Modal.getInstance(document.getElementById('editWorkingHourModal')).hide();
+                } else {
+                    alert(data.error || 'Ошибка при сохранении');
+                }
+            });
+        };
+    }
+
+    // Добавить перерыв
+    document.querySelectorAll('.add-break').forEach(btn => {
+        btn.onclick = function() {
+            const whId = this.dataset.id;
+            const start = prompt('Введите время начала (HH:MM)');
+            if (!start) return;
+            const end = prompt('Введите время окончания (HH:MM)');
+            if (!end) return;
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `form_type=break_add&workinghour_id=${whId}&start_time=${start}&end_time=${end}&stylist_id=${document.getElementById('modalStylistId').value}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    fetch(`/stylist/ajax/${document.getElementById('modalStylistId').value}/`)
+                        .then(res => res.json())
+                        .then(data => renderWorkingHours(data.working_hours));
+                }
+            });
+        };
+    });
+
+    // Удалить рабочий интервал
+    document.querySelectorAll('.delete-workinghour').forEach(btn => {
+        btn.onclick = function() {
+            const id = this.dataset.id;
+            if (!confirm('Удалить интервал?')) return;
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `form_type=workinghour_delete&workinghour_id=${id}&stylist_id=${document.getElementById('modalStylistId').value}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) renderWorkingHours(data.working_hours);
+            });
+        };
+    });
+}
+</script>
 {% endblock %}
