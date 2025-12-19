@@ -1,4 +1,4 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.paginator import Paginator
@@ -95,12 +95,19 @@ def transliterate_to_latin(name: str) -> str:
 def build_username(name: str, phone_digits: str) -> str:
     base = transliterate_to_latin(name)
     last_digits = (phone_digits or '')[-4:] or secrets.token_hex(2)
-    candidate = f"{base}{last_digits}"
+    base_candidate = f"{base}{last_digits}"
+    base_candidate = base_candidate[:140]
+    candidate = base_candidate
     suffix = 1
 
     while User.objects.filter(username__iexact=candidate).exists():
-        candidate = f"{base}{last_digits}{suffix}"
+        candidate = f"{base_candidate}{suffix}"
         suffix += 1
+
+        if suffix % 25 == 0:
+            candidate = f"{base_candidate}{secrets.token_hex(1)}{suffix}"
+
+        candidate = candidate[:150]
 
     return candidate
 
@@ -602,6 +609,7 @@ class AppointmentCreateView(View):
         service_ids = request.POST.getlist('service_ids')  # список ID услуг из корзины
         time_str = request.POST.get('slot')
         credentials_data = None
+        auto_login_user = None
 
         if not (stylist_id and service_ids and time_str):
             messages.error(request, 'Не хватает данных для записи.')
@@ -697,6 +705,7 @@ class AppointmentCreateView(View):
 
             guest_phone = normalize_uzbek_phone(guest_phone_input)
             customer, credentials_data = ensure_guest_account(guest_name, guest_phone)
+            auto_login_user = customer
 
         # Создаём запись
         appointment = Appointment.objects.create(
@@ -770,9 +779,11 @@ class AppointmentCreateView(View):
                 'Запись успешно создана! ✂️',
                 extra_tags='booking-success-modal',
             )
-        if request.user.is_authenticated:
-            return redirect('my_appointments')
-        return redirect(self.success_url)
+
+        if auto_login_user:
+            login(request, auto_login_user, backend='django.contrib.auth.backends.ModelBackend')
+
+        return redirect('my_appointments')
 
 
 def service_booking(request):
