@@ -486,47 +486,46 @@
             keyboard: true,
           });
           modal.show();
-          return;
+        } else {
+          successModalEl.classList.remove('fade');
+          successModalEl.classList.add('show', 'd-block');
+          successModalEl.removeAttribute('aria-hidden');
+          successModalEl.setAttribute('aria-modal', 'true');
+          document.body.classList.add('modal-open');
+
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop show';
+          document.body.appendChild(backdrop);
+
+          const closeModal = () => {
+            successModalEl.classList.remove('show', 'd-block');
+            successModalEl.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            if (backdrop.parentNode) {
+              backdrop.parentNode.removeChild(backdrop);
+            }
+            document.removeEventListener('keydown', handleEsc);
+          };
+
+          const handleEsc = (event) => {
+            if (event.key === 'Escape') {
+              closeModal();
+            }
+          };
+
+          document.addEventListener('keydown', handleEsc);
+
+          const closeButtons = successModalEl.querySelectorAll('[data-dismiss="modal"], [data-bs-dismiss="modal"]');
+          closeButtons.forEach((button) => {
+            button.addEventListener('click', closeModal);
+          });
+
+          successModalEl.addEventListener('click', (event) => {
+            if (event.target === successModalEl) {
+              closeModal();
+            }
+          });
         }
-
-        successModalEl.classList.remove('fade');
-        successModalEl.classList.add('show', 'd-block');
-        successModalEl.removeAttribute('aria-hidden');
-        successModalEl.setAttribute('aria-modal', 'true');
-        document.body.classList.add('modal-open');
-
-        const backdrop = document.createElement('div');
-        backdrop.className = 'modal-backdrop show';
-        document.body.appendChild(backdrop);
-
-        const closeModal = () => {
-          successModalEl.classList.remove('show', 'd-block');
-          successModalEl.setAttribute('aria-hidden', 'true');
-          document.body.classList.remove('modal-open');
-          if (backdrop.parentNode) {
-            backdrop.parentNode.removeChild(backdrop);
-          }
-          document.removeEventListener('keydown', handleEsc);
-        };
-
-        const handleEsc = (event) => {
-          if (event.key === 'Escape') {
-            closeModal();
-          }
-        };
-
-        document.addEventListener('keydown', handleEsc);
-
-        const closeButtons = successModalEl.querySelectorAll('[data-dismiss="modal"], [data-bs-dismiss="modal"]');
-        closeButtons.forEach((button) => {
-          button.addEventListener('click', closeModal);
-        });
-
-        successModalEl.addEventListener('click', (event) => {
-          if (event.target === successModalEl) {
-            closeModal();
-          }
-        });
 
         document.addEventListener('click', (event) => {
           const btn = event.target.closest('.copy-credential');
