@@ -394,7 +394,9 @@
                     <div class="modal-body text-center p-5 bg-white">
                       <div class="display-6 mb-3">✂️</div>
                       <h5 class="fw-bold mb-2">Запись успешно создана</h5>
-<!--                      <p class="text-muted mb-4">{{ message }}</p>-->
+                      {% if message %}
+                        <div class="text-muted mb-4 modal-message text-start text-break">{{ message|safe }}</div>
+                      {% endif %}
                       <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
@@ -524,6 +526,27 @@
           if (event.target === successModalEl) {
             closeModal();
           }
+        });
+
+        document.querySelectorAll('.copy-credential').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const targetSelector = btn.getAttribute('data-target');
+            const target = document.querySelector(targetSelector);
+            const value = target ? target.getAttribute('data-credential') || target.textContent : '';
+
+            if (!value) {
+              return;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(value.trim()).then(() => {
+                btn.textContent = 'Скопировано';
+                setTimeout(() => {
+                  btn.textContent = 'Скопировать';
+                }, 1500);
+              });
+            }
+          });
         });
 
       });

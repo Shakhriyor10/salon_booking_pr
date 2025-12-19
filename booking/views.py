@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.paginator import Paginator
@@ -6,6 +7,7 @@ from django.views import View
 from django.views.generic import ListView, DetailView, CreateView, TemplateView, UpdateView
 from django.urls import reverse_lazy, reverse
 from django.middleware.csrf import get_token
+from django.utils.html import format_html
 from users.models import Profile
 from .form import (
     ReviewForm,
@@ -21,18 +23,16 @@ from .form import (
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
     SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard, FavoriteSalon
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
-from django.utils.timezone import make_aware
+from django.utils.timezone import make_aware, now, localtime, timedelta
 from django.contrib import messages
 from booking.telebot import send_telegram
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from django.template.loader import render_to_string
-from django.views.decorators.http import require_GET
-from django.utils.timezone import now
+from django.views.decorators.http import require_GET, require_POST
 from django.template.context_processors import csrf
-from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max
+from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max, Avg, Q
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
 from calendar import monthrange
@@ -40,20 +40,17 @@ from collections import defaultdict, Counter
 import json
 from decimal import Decimal, InvalidOperation
 import datetime as dt
+import secrets
 import time
-from django.views import View
-from django.shortcuts import render
 from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
 import re
-from django.utils.timezone import now, localtime, make_aware, timedelta
 from django.utils.dateparse import parse_datetime
-from django.views.decorators.http import require_POST
-from django.http import HttpResponseForbidden
 import pytz
-from django.db.models import Avg, Q
 from django.db.models.deletion import ProtectedError
 from users.forms import ProfileUpdateForm
+
+User = get_user_model()
 
 PHONE_INPUT_RE = re.compile(r'^\d{2}-\d{3}-\d{2}-\d{2}$')
 
@@ -71,6 +68,74 @@ def normalize_uzbek_phone(phone_value: str) -> str:
     """Convert a masked Uzbek phone (xx-xxx-xx-xx) to +998XXXXXXXXX format."""
     digits = re.sub(r"\D", "", phone_value or "")
     return f"+998{digits}" if digits else ""
+
+
+def transliterate_to_latin(name: str) -> str:
+    """Convert Cyrillic/Uzbek characters to a readable Latin variant."""
+    mapping = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'j',
+        'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm', 'н': 'n', 'о': 'o',
+        'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u', 'ф': 'f', 'х': 'x', 'ц': 's',
+        'ч': 'ch', 'ш': 'sh', 'щ': 'sh', 'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu',
+        'я': 'ya', 'қ': 'q', 'ғ': 'g', 'ў': 'o', 'ҳ': 'h', 'ң': 'ng',
+    }
+
+    result = []
+    for ch in (name or '').strip():
+        lower = ch.lower()
+        latin = mapping.get(lower, ch)
+        if ch.isupper():
+            latin = latin.capitalize()
+        result.append(latin)
+
+    sanitized = ''.join(result)
+    return re.sub(r'[^A-Za-z0-9]', '', sanitized) or 'user'
+
+
+def build_username(name: str, phone_digits: str) -> str:
+    base = transliterate_to_latin(name)
+    last_digits = (phone_digits or '')[-4:] or secrets.token_hex(2)
+    candidate = f"{base}{last_digits}"
+    suffix = 1
+
+    while User.objects.filter(username__iexact=candidate).exists():
+        candidate = f"{base}{last_digits}{suffix}"
+        suffix += 1
+
+    return candidate
+
+
+def build_password(phone_digits: str) -> str:
+    return (phone_digits or '')[-7:] or secrets.token_hex(4)
+
+
+def ensure_guest_account(full_name: str, normalized_phone: str):
+    """Return (user, credentials dict or None) for a guest booking."""
+    if not normalized_phone:
+        return None, None
+
+    existing = User.objects.filter(profile__phone=normalized_phone).first()
+    if existing:
+        if not existing.first_name and full_name:
+            existing.first_name = full_name
+            existing.save(update_fields=['first_name'])
+        return existing, None
+
+    phone_digits = re.sub(r"\D", "", normalized_phone)
+    username = build_username(full_name, phone_digits)
+    password = build_password(phone_digits)
+
+    user = User.objects.create_user(
+        username=username,
+        password=password,
+        first_name=full_name,
+    )
+
+    profile, _ = Profile.objects.get_or_create(user=user)
+    profile.phone = normalized_phone
+    profile.save(update_fields=['phone'])
+
+    return user, {'username': username, 'password': password}
 
 
 def format_duration(duration):
@@ -536,6 +601,7 @@ class AppointmentCreateView(View):
         stylist_id = request.POST.get('stylist_id')
         service_ids = request.POST.getlist('service_ids')  # список ID услуг из корзины
         time_str = request.POST.get('slot')
+        credentials_data = None
 
         if not (stylist_id and service_ids and time_str):
             messages.error(request, 'Не хватает данных для записи.')
@@ -630,12 +696,13 @@ class AppointmentCreateView(View):
                 return redirect('home')
 
             guest_phone = normalize_uzbek_phone(guest_phone_input)
+            customer, credentials_data = ensure_guest_account(guest_name, guest_phone)
 
         # Создаём запись
         appointment = Appointment.objects.create(
             customer=customer,
-            guest_name=guest_name,
-            guest_phone=guest_phone,
+            guest_name='' if customer else guest_name,
+            guest_phone='' if customer else guest_phone,
             stylist=stylist,
             start_time=start_time,
             end_time=end_time
@@ -674,11 +741,35 @@ class AppointmentCreateView(View):
             text=msg
         )
 
-        messages.success(
-            request,
-            'Запись успешно создана! ✂️',
-            extra_tags='booking-success-modal',
-        )
+        if credentials_data:
+            message_html = format_html(
+                'Запись успешно создана! ✂️<div class="mt-3 text-start">'
+                '<div class="fw-semibold mb-2">Ваш аккаунт создан автоматически</div>'
+                '<div class="d-flex flex-column gap-2">'
+                '<div class="d-flex flex-wrap align-items-center gap-2">'
+                '<span class="badge bg-light text-dark border" id="booking-login" data-credential="{0}">Логин: {0}</span>'
+                '<button type="button" class="btn btn-sm btn-outline-secondary copy-credential" data-target="#booking-login">Скопировать</button>'
+                '</div>'
+                '<div class="d-flex flex-wrap align-items-center gap-2">'
+                '<span class="badge bg-light text-dark border" id="booking-password" data-credential="{1}">Пароль: {1}</span>'
+                '<button type="button" class="btn btn-sm btn-outline-secondary copy-credential" data-target="#booking-password">Скопировать</button>'
+                '</div>'
+                '</div>'
+                '</div>',
+                credentials_data['username'],
+                credentials_data['password'],
+            )
+            messages.success(
+                request,
+                message_html,
+                extra_tags='booking-success-modal booking-credentials',
+            )
+        else:
+            messages.success(
+                request,
+                'Запись успешно создана! ✂️',
+                extra_tags='booking-success-modal',
+            )
         if request.user.is_authenticated:
             return redirect('my_appointments')
         return redirect(self.success_url)
