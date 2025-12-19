@@ -280,11 +280,13 @@
                         <span class="salon-card__badge">{{ type_display }}</span>
                       {% endif %}
                     {% endwith %}
-                    <div class="salon-card__favorite"
-                         data-salon-id="{{ salon.id }}"
-                         onclick="toggleFavorite(this)">
-                        <i class="bi bi-heart"></i>
-                    </div>
+                    {% with is_favorite=salon.id in favorite_salon_ids %}
+                      <div class="salon-card__favorite {% if is_favorite %}active{% endif %}"
+                           data-salon-id="{{ salon.id }}"
+                           onclick="toggleFavorite(this)">
+                          <i class="bi {% if is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                      </div>
+                    {% endwith %}
                 </div>
                 <div class="salon-card__body text-center d-flex flex-column align-items-center">
                     <h5 class="salon-card__title">{{ salon.name }}</h5>
@@ -312,6 +314,23 @@
     {% empty %}
         <p>Салоны не найдены.</p>
     {% endfor %}
+</div>
+<div class="modal fade" id="favoriteAuthModal" tabindex="-1" aria-labelledby="favoriteAuthModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="favoriteAuthModalLabel">Войдите, чтобы добавить в избранное</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Чтобы салон появился в избранных, войдите в систему или зарегистрируйтесь.</p>
+      </div>
+      <div class="modal-footer d-flex gap-2 justify-content-between flex-wrap">
+        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100 w-md-auto">Войти</a>
+        <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-dark w-100 w-md-auto">Зарегистрироваться</a>
+      </div>
+    </div>
+  </div>
 </div>
 <!--<script>-->
 <!--document.getElementById('serviceSearch').addEventListener('input', function () {-->
@@ -345,6 +364,88 @@ document.addEventListener("DOMContentLoaded", function () {
   const salonGrid = document.querySelector(".salon-grid");
   const salonColumns = salonGrid ? Array.from(salonGrid.querySelectorAll(".col[data-lat][data-lng]")) : [];
   let suggestions = [];
+  const favoriteModalElement = document.getElementById("favoriteAuthModal");
+  const favoriteAuthModal = favoriteModalElement && typeof bootstrap !== "undefined"
+    ? new bootstrap.Modal(favoriteModalElement)
+    : null;
+  const isAuthenticated = {{ request.user.is_authenticated|yesno:'true,false' }};
+  const favoriteToggleUrl = "{% url 'toggle_favorite' %}";
+
+  function getCsrfToken(name = "csrftoken") {
+    const cookies = document.cookie ? document.cookie.split("; ") : [];
+    for (const cookie of cookies) {
+      const [key, ...rest] = cookie.split("=");
+      if (key === name) {
+        return decodeURIComponent(rest.join("="));
+      }
+    }
+    return "";
+  }
+
+  function setFavoriteState(button, isFavorite) {
+    if (!button) {
+      return;
+    }
+    const icon = button.querySelector("i");
+    button.classList.toggle("active", isFavorite);
+    if (icon) {
+      icon.classList.toggle("bi-heart-fill", isFavorite);
+      icon.classList.toggle("bi-heart", !isFavorite);
+    }
+  }
+
+  window.toggleFavorite = function (button) {
+    if (!button) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      if (favoriteAuthModal) {
+        favoriteAuthModal.show();
+      }
+      return;
+    }
+
+    const salonId = button.dataset.salonId;
+    if (!salonId) {
+      return;
+    }
+
+    button.classList.add("pe-none", "opacity-75");
+
+    fetch(favoriteToggleUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken(),
+      },
+      body: JSON.stringify({ salon_id: salonId }),
+    })
+      .then(response => {
+        if (response.status === 403) {
+          if (favoriteAuthModal) {
+            favoriteAuthModal.show();
+          }
+          return null;
+        }
+        if (!response.ok) {
+          throw new Error("Ошибка при обновлении избранного");
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (!data) {
+          return;
+        }
+        setFavoriteState(button, Boolean(data.is_favorite));
+      })
+      .catch(error => {
+        console.error("Favorite toggle error:", error);
+      })
+      .finally(() => {
+        button.classList.remove("pe-none", "opacity-75");
+      });
+  };
 
   if (input) {
     input.addEventListener("input", function () {

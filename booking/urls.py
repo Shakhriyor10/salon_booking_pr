@@ -4,7 +4,7 @@ from .views import StylistDetailView, StylistListView, ServiceListView, Appointm
     dashboard_ajax, ReportView, my_appointments, cancel_appointment, ManualAppointmentCreateView, \
     get_stylists_by_service, get_available_times, StylistManualAppointmentCreateView, get_available_times_for_stylist, \
     stylist_reports, SalonDetailView, HomePageView, CategoryServicesView, autocomplete_search, service_booking, \
-    stylist_dayoff_view, delete_review
+    stylist_dayoff_view, delete_review, toggle_favorite_salon
 
 urlpatterns = [
     # path('', ServiceListView.as_view(), name='home'),
@@ -43,4 +43,5 @@ urlpatterns = [
     path('reviews/<int:pk>/delete/', delete_review, name='delete_review'),
     path('stylist/ajax/<int:stylist_id>/', views.ajax_stylist_data, name='ajax_stylist_data'),
     path('stylist/ajax/price/', views.ajax_update_price, name='ajax_update_price'),
+    path('favorites/toggle/', toggle_favorite_salon, name='toggle_favorite'),
 ]
