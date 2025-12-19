@@ -893,20 +893,34 @@
     color: #b91c1c;
   }
 
-  .timeline {
-    position: relative;
-    z-index: 1;
-    padding-left: 24px;
+  .appointments-section {
+    margin-top: clamp(30px, 4vw, 48px);
   }
 
-  .timeline::before {
-    content: "";
-    position: absolute;
-    left: 12px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(180deg, rgba(129, 140, 248, 0.35), rgba(14, 165, 233, 0));
+  .appointments-section__head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .appointments-section__title {
+    margin: 0;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .appointments-section__hint {
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .appointments-grid {
+    display: grid;
+    gap: clamp(16px, 3vw, 22px);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   }
 
   .appointment-card {
@@ -914,43 +928,67 @@
     background: #ffffff;
     border-radius: 22px;
     padding: clamp(22px, 3vw, 28px);
-
-    margin-bottom: 24px;
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    box-shadow: 0 24px 44px rgba(148, 163, 184, 0.25);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 24px 44px rgba(148, 163, 184, 0.2);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
   }
 
   .appointment-card::before {
+    content: "";
     position: absolute;
-    left: -32px;
-    top: 32px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    border: 4px solid rgba(99, 102, 241, 0.4);
-    box-shadow: 0 0 0 6px rgba(129, 140, 248, 0.12);
+    inset: 0;
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.08), rgba(232, 121, 249, 0.08));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .appointment-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #6366f1, #ec4899);
+  }
+
+  .appointment-card > * {
+    position: relative;
+    z-index: 1;
   }
 
   .appointment-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 30px 55px rgba(15, 23, 42, 0.16);
+    box-shadow: 0 32px 55px rgba(15, 23, 42, 0.16);
+  }
+
+  .appointment-card:hover::before {
+    opacity: 1;
   }
 
   .appointment-header {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 14px;
+    margin-bottom: 16px;
   }
 
   .appointment-header .salon-name {
     font-weight: 700;
     color: #111827;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+
+  .appointment-subtitle {
+    color: #6b7280;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .status-chip {
@@ -1022,6 +1060,31 @@
     background: rgba(15, 23, 42, 0.08);
     color: #1f2937;
     border-radius: 999px;
+  }
+
+  .appointment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 12px 0;
+  }
+
+  .appointment-meta__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.05);
+    color: #374151;
+    font-weight: 600;
+  }
+
+  .appointment-divider {
+    border: 0;
+    border-top: 1px dashed rgba(148, 163, 184, 0.5);
+    margin: 18px 0;
   }
 
   .aftercare {
@@ -1097,17 +1160,12 @@
       padding: 24px 18px;
     }
 
-    .timeline {
-      padding-left: 0;
-    }
-
-    .timeline::before,
-    .appointment-card::before {
-      display: none;
+    .appointments-grid {
+      grid-template-columns: 1fr;
     }
 
     .appointment-card {
-      margin-left: 0;
+      padding: 18px;
     }
 
     .profile-card {
@@ -1259,298 +1317,323 @@
           <div class="favorite-empty__icon">❤️</div>
           <div>Добавляйте салоны в избранное на странице каталога, чтобы они появлялись здесь.</div>
         </div>
-        <a href="{% url 'home' %}" class="btn btn-dark btn-sm">Перейти к каталогу</a>
       </div>
     {% endif %}
   </section>
 
   {% if appointments %}
+  <section class="appointments-section">
+    <div class="appointments-section__head">
+      <div>
+        <h4 class="appointments-section__title">Записи</h4>
+        <p class="appointments-section__hint mb-0">Все визиты разбиты на аккуратные карточки с оплатой, чеками и действиями.</p>
+      </div>
+      <span class="badge bg-dark d-flex align-items-center gap-2 px-3 py-2">
+        <i class="bi bi-journal-check"></i> {{ appointments|length }} шт.
+      </span>
+    </div>
 
-
+    <div class="appointments-grid">
       {% for appointment in appointments %}
-      <article class="appointment-card">
-        <header class="appointment-header">
-          <div>
-            <div class="salon-name">
-              {{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
-            </div>
-            {% with first_service=appointment.services.all|first %}
-              <div class="text-muted small">
-                {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
-                  {{ first_service.stylist_service.salon_service.salon.name }}
-                {% else %}
-                  {% if appointment.stylist.salon %}
-                    {{ appointment.stylist.salon.name }}
-                  {% else %}
-                    Салон уточняется
-                  {% endif %}
-                {% endif %}
-              </div>
-            {% endwith %}
-          </div>
-          <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'X' %}status-canceled{% endif %}">
-            {% if appointment.status == 'P' %}
-              <i class="bi bi-hourglass-split"></i> Ожидает
-            {% elif appointment.status == 'C' %}
-              <i class="bi bi-check2-circle"></i> Принято
-            {% elif appointment.status == 'D' %}
-              <i class="bi bi-stars"></i> Выполнено
-            {% elif appointment.status == 'X' %}
-              <i class="bi bi-x-octagon"></i> Отменено
-            {% endif %}
-          </span>
-        </header>
-
-        <section>
-          <h6 class="fw-semibold text-uppercase text-secondary mb-3">Услуги</h6>
-          <ul class="services-list">
-            {% for service in appointment.services.all %}
-              {% if service.stylist_service and service.stylist_service.salon_service %}
-                <li>{{ service.stylist_service.salon_service.service.name }}</li>
-              {% else %}
-                <li class="bg-light text-muted">Услуга уточняется</li>
-              {% endif %}
-            {% empty %}
-              <li class="bg-light text-muted">Услуги не указаны</li>
-            {% endfor %}
-          </ul>
-        </section>
-
-        <section class="mt-4">
-          <div class="payment-section">
-            <div class="payment-summary">
-              <h6 class="fw-semibold text-uppercase text-secondary mb-2">Оплата</h6>
-              <div class="payment-summary-badges">
-                <span class="badge bg-dark text-uppercase">{{ appointment.get_payment_method_display }}</span>
-                <span class="badge {% if appointment.payment_status == 'paid' %}bg-success{% elif appointment.payment_status == 'awaiting_payment' %}bg-warning text-dark{% elif appointment.payment_status == 'awaiting_confirmation' %}bg-info text-dark{% elif appointment.payment_status == 'refund_requested' %}bg-danger{% else %}bg-secondary{% endif %}">
-                  {{ appointment.get_payment_status_display }}
+        <article class="appointment-card">
+          <header class="appointment-header">
+            <div>
+              <div class="appointment-meta">
+                <span class="appointment-meta__item">
+                  <i class="bi bi-calendar-event"></i> {{ appointment.start_time|date:"d E" }}
+                </span>
+                <span class="appointment-meta__item">
+                  <i class="bi bi-clock"></i> {{ appointment.start_time|date:"H:i" }}
+                </span>
+                <span class="appointment-meta__item">
+                  <i class="bi bi-wallet2"></i> {{ appointment.get_payment_method_display }}
                 </span>
               </div>
+              <div class="salon-name">
+                {{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
+              </div>
+              {% with first_service=appointment.services.all|first %}
+                <p class="appointment-subtitle">
+                  <i class="bi bi-geo-alt"></i>
+                  {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                    {{ first_service.stylist_service.salon_service.salon.name }}
+                  {% else %}
+                    {% if appointment.stylist.salon %}
+                      {{ appointment.stylist.salon.name }}
+                    {% else %}
+                      Салон уточняется
+                    {% endif %}
+                  {% endif %}
+                </p>
+              {% endwith %}
             </div>
-            {% if appointment.can_change_payment_method %}
-            <form method="post" class="payment-method-form">
-              {% csrf_token %}
-              <input type="hidden" name="payment_action" value="change_method">
-              <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-              <div class="payment-method-card">
-                <div class="payment-method-card__inner">
-                  <div class="payment-method-card__header">
-                    <div class="payment-method-card__heading">
-                      <div class="payment-method-card__icon">
-                        <i class="bi bi-credit-card-2-front"></i>
-                      </div>
-                      <div>
-                        <span class="payment-method-card__label">Способ оплаты</span>
-                        <label for="payment-method-{{ appointment.id }}" class="payment-method-card__title">Обновить способ оплаты</label>
-                        <p class="payment-method-card__helper">Можно менять до отправки чека или подтверждения перевода.</p>
-                      </div>
-                    </div>
-                    <span class="payment-method-card__badge">
-                      <i class="bi bi-shield-check"></i>
-                      Гибкие варианты
-                    </span>
-                  </div>
-                  <div class="payment-method-card__body">
-                    <div class="payment-method-card__control">
-                      <i class="bi bi-wallet2"></i>
-                      <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
-                        {% for value, label in appointment.payment_method_choices %}
-                          <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                    <button type="submit" class="btn-gradient btn-sm">
-                      <i class="bi bi-arrow-repeat"></i>
-                      <span>Обновить</span>
-                    </button>
-                  </div>
+            <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'X' %}status-canceled{% endif %}">
+              {% if appointment.status == 'P' %}
+                <i class="bi bi-hourglass-split"></i> Ожидает
+              {% elif appointment.status == 'C' %}
+                <i class="bi bi-check2-circle"></i> Принято
+              {% elif appointment.status == 'D' %}
+                <i class="bi bi-stars"></i> Выполнено
+              {% elif appointment.status == 'X' %}
+                <i class="bi bi-x-octagon"></i> Отменено
+              {% endif %}
+            </span>
+          </header>
+
+          <section>
+            <h6 class="fw-semibold text-uppercase text-secondary mb-3">Услуги</h6>
+            <ul class="services-list">
+              {% for service in appointment.services.all %}
+                {% if service.stylist_service and service.stylist_service.salon_service %}
+                  <li>{{ service.stylist_service.salon_service.service.name }}</li>
+                {% else %}
+                  <li class="bg-light text-muted">Услуга уточняется</li>
+                {% endif %}
+              {% empty %}
+                <li class="bg-light text-muted">Услуги не указаны</li>
+              {% endfor %}
+            </ul>
+          </section>
+
+          <hr class="appointment-divider">
+
+          <section>
+            <div class="payment-section">
+              <div class="payment-summary">
+                <h6 class="fw-semibold text-uppercase text-secondary mb-2">Оплата</h6>
+                <div class="payment-summary-badges">
+                  <span class="badge bg-dark text-uppercase">{{ appointment.get_payment_method_display }}</span>
+                  <span class="badge {% if appointment.payment_status == 'paid' %}bg-success{% elif appointment.payment_status == 'awaiting_payment' %}bg-warning text-dark{% elif appointment.payment_status == 'awaiting_confirmation' %}bg-info text-dark{% elif appointment.payment_status == 'refund_requested' %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {{ appointment.get_payment_status_display }}
+                  </span>
                 </div>
               </div>
-            </form>
-            {% elif appointment.payment_receipt %}
-            <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
-            {% endif %}
-          </div>
-
-          {% if appointment.payment_method == 'card' %}
-            {% if appointment.show_card_details %}
-              <div class="payment-details-card mt-3 mb-0">
-                <div class="payment-details-card__head">
-                  <div>
-                    <div class="payment-details-card__title">Реквизиты салона для перевода</div>
-                    <p class="payment-details-card__hint mb-0">После перевода загрузите чек, чтобы мастер быстрее подтвердил оплату.</p>
-                  </div>
-                  <div class="payment-details-card__badge">
-                    <i class="bi bi-shield-lock"></i>
-                    Безопасный перевод
-                  </div>
-                </div>
-                <div class="virtual-card mt-4">
-                  <div class="virtual-card__top">
-                    <div class="virtual-card__chip">
-                      <i class="bi bi-credit-card-2-front"></i>
-                    </div>
-                    <div class="virtual-card__brand">
-                      <i class="bi bi-bank"></i>
-                      {{ appointment.active_payment_card.get_card_type_display|default:"Карта" }}
-                    </div>
-                  </div>
-                  {% with card_number=appointment.active_payment_card.card_number|default_if_none:''|cut:' '|cut:'-' %}
-                    {% with group_one=card_number|slice:":4" group_two=card_number|slice:"4:8" group_three=card_number|slice:"8:12" group_four=card_number|slice:"12:16" %}
-                      <div class="virtual-card__number">
-                        <div class="virtual-card__number-groups">
-                          <span>{{ group_one|default:"••••" }}</span>
-                          <span>{{ group_two|default:"••••" }}</span>
-                          <span>{{ group_three|default:"••••" }}</span>
-                          <span>{{ group_four|default:"••••" }}</span>
-                          {% if card_number|length > 16 %}
-                            <span>{{ card_number|slice:"16:20"|default:"••••" }}</span>
-                          {% endif %}
+              {% if appointment.can_change_payment_method %}
+                <form method="post" class="payment-method-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="payment_action" value="change_method">
+                  <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                  <div class="payment-method-card">
+                    <div class="payment-method-card__inner">
+                      <div class="payment-method-card__header">
+                        <div class="payment-method-card__heading">
+                          <div class="payment-method-card__icon">
+                            <i class="bi bi-credit-card-2-front"></i>
+                          </div>
+                          <div>
+                            <span class="payment-method-card__label">Способ оплаты</span>
+                            <label for="payment-method-{{ appointment.id }}" class="payment-method-card__title">Обновить способ оплаты</label>
+                            <p class="payment-method-card__helper">Можно менять до отправки чека или подтверждения перевода.</p>
+                          </div>
                         </div>
-                        <button type="button" class="copy-btn" data-copy="{{ card_number }}" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                        <span class="payment-method-card__badge">
+                          <i class="bi bi-shield-check"></i>
+                          Гибкие варианты
+                        </span>
+                      </div>
+                      <div class="payment-method-card__body">
+                        <div class="payment-method-card__control">
+                          <i class="bi bi-wallet2"></i>
+                          <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
+                            {% for value, label in appointment.payment_method_choices %}
+                              <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <button type="submit" class="btn-gradient btn-sm">
+                          <i class="bi bi-arrow-repeat"></i>
+                          <span>Обновить</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              {% elif appointment.payment_receipt %}
+                <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
+              {% endif %}
+            </div>
+
+            {% if appointment.payment_method == 'card' %}
+              {% if appointment.show_card_details %}
+                <div class="payment-details-card mt-3 mb-0">
+                  <div class="payment-details-card__head">
+                    <div>
+                      <div class="payment-details-card__title">Реквизиты салона для перевода</div>
+                      <p class="payment-details-card__hint mb-0">После перевода загрузите чек, чтобы мастер быстрее подтвердил оплату.</p>
+                    </div>
+                    <div class="payment-details-card__badge">
+                      <i class="bi bi-shield-lock"></i>
+                      Безопасный перевод
+                    </div>
+                  </div>
+                  <div class="virtual-card mt-4">
+                    <div class="virtual-card__top">
+                      <div class="virtual-card__chip">
+                        <i class="bi bi-credit-card-2-front"></i>
+                      </div>
+                      <div class="virtual-card__brand">
+                        <i class="bi bi-bank"></i>
+                        {{ appointment.active_payment_card.get_card_type_display|default:"Карта" }}
+                      </div>
+                    </div>
+                    {% with card_number=appointment.active_payment_card.card_number|default_if_none:''|cut:' '|cut:'-' %}
+                      {% with group_one=card_number|slice:":4" group_two=card_number|slice:"4:8" group_three=card_number|slice:"8:12" group_four=card_number|slice:"12:16" %}
+                        <div class="virtual-card__number">
+                          <div class="virtual-card__number-groups">
+                            <span>{{ group_one|default:"••••" }}</span>
+                            <span>{{ group_two|default:"••••" }}</span>
+                            <span>{{ group_three|default:"••••" }}</span>
+                            <span>{{ group_four|default:"••••" }}</span>
+                            {% if card_number|length > 16 %}
+                              <span>{{ card_number|slice:"16:20"|default:"••••" }}</span>
+                            {% endif %}
+                          </div>
+                          <button type="button" class="copy-btn" data-copy="{{ card_number }}" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                            <i class="bi bi-clipboard"></i>
+                            <span class="copy-btn__text">Копировать</span>
+                          </button>
+                        </div>
+                      {% endwith %}
+                    {% endwith %}
+                    <div class="virtual-card__holder">
+                      <span>Владелец карты</span>
+                      <strong>{{ appointment.active_payment_card.cardholder_name|default:"—" }}</strong>
+                    </div>
+                    <div class="virtual-card__footer">
+                      <div class="virtual-card__helper">Сумма перевода</div>
+                      <div class="virtual-card__amount">
+                        <span>{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
+                        <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать" data-copy-success="Скопировано!">
                           <i class="bi bi-clipboard"></i>
                           <span class="copy-btn__text">Копировать</span>
                         </button>
                       </div>
-                    {% endwith %}
-                  {% endwith %}
-                  <div class="virtual-card__holder">
-                    <span>Владелец карты</span>
-                    <strong>{{ appointment.active_payment_card.cardholder_name|default:"—" }}</strong>
-                  </div>
-                  <div class="virtual-card__footer">
-                    <div class="virtual-card__helper">Сумма перевода</div>
-                    <div class="virtual-card__amount">
-                      <span>{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
-                      <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать" data-copy-success="Скопировано!">
-                        <i class="bi bi-clipboard"></i>
-                        <span class="copy-btn__text">Копировать</span>
-                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            {% elif not appointment.active_payment_card and appointment.status != 'X' %}
-              <div class="alert alert-warning mt-3 mb-0">
-                Реквизиты салона временно недоступны. Пожалуйста, уточните возможность оплаты картой у администратора.
-              </div>
-            {% endif %}
-
-            {% if appointment.can_upload_receipt %}
-              <form method="post" enctype="multipart/form-data" class="mt-3">
-                {% csrf_token %}
-                <input type="hidden" name="payment_action" value="upload_receipt">
-                <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-                <div class="row g-2 align-items-end">
-                  <div class="col-md-8">
-                    <label class="form-label small text-uppercase text-muted">Загрузить чек</label>
-                    <input type="file" name="receipt" class="form-control form-control-sm" accept="image/*" required>
-                  </div>
-                  <div class="col-md-4 d-grid d-md-flex justify-content-md-end">
-                    <button type="submit" class="btn btn-success btn-sm">Отправить чек</button>
-                  </div>
-                </div>
-              </form>
-            {% elif appointment.payment_receipt %}
-              <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
-                <a href="{{ appointment.payment_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Просмотреть загруженный чек</a>
-                {% if appointment.payment_status == 'awaiting_confirmation' %}
-                  <span class="text-muted small">Чек отправлен и ожидает подтверждения мастером.</span>
-                {% endif %}
-              </div>
-            {% endif %}
-
-            {% if appointment.status == 'X' and appointment.payment_method == 'card' %}
-              {% if appointment.refund_card_number %}
-                <div class="alert alert-secondary mt-3 mb-0">
-                  <div class="small text-uppercase text-muted">Карта для возврата</div>
-                  <div class="fw-semibold mt-1">{{ appointment.refund_cardholder_name }}</div>
-                  <div class="text-muted">
-                    {% for value, label in card_type_choices %}
-                      {% if value == appointment.refund_card_type %}
-                        {{ label }}
-                      {% endif %}
-                    {% endfor %}
-                    • <code>{{ appointment.refund_card_number }}</code>
-                  </div>
+              {% elif not appointment.active_payment_card and appointment.status != 'X' %}
+                <div class="alert alert-warning mt-3 mb-0">
+                  Реквизиты салона временно недоступны. Пожалуйста, уточните возможность оплаты картой у администратора.
                 </div>
               {% endif %}
 
-              {% if appointment.can_edit_refund_details %}
-                <form method="post" class="mt-3">
+              {% if appointment.can_upload_receipt %}
+                <form method="post" enctype="multipart/form-data" class="mt-3">
                   {% csrf_token %}
-                  <input type="hidden" name="payment_action" value="provide_refund">
+                  <input type="hidden" name="payment_action" value="upload_receipt">
                   <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-                  <div class="row g-2">
-                    <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Тип карты</label>
-                      <select name="refund_card_type" class="form-select form-select-sm" required>
-                        {% for value, label in card_type_choices %}
-                          <option value="{{ value }}" {% if value == appointment.refund_card_type %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                      </select>
+                  <div class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                      <label class="form-label small text-uppercase text-muted">Загрузить чек</label>
+                      <input type="file" name="receipt" class="form-control form-control-sm" accept="image/*" required>
                     </div>
-                    <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Имя владельца</label>
-                      <input type="text" name="refund_cardholder_name" class="form-control form-control-sm" value="{{ appointment.refund_cardholder_name|default_if_none:'' }}" required>
-                    </div>
-                    <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Номер карты</label>
-                      <input type="text" name="refund_card_number" class="form-control form-control-sm" value="{{ appointment.refund_card_number|default_if_none:'' }}" required>
-                    </div>
-                    <div class="col-12 d-flex justify-content-between align-items-center">
-                      <div class="text-muted small">
-                        {% if appointment.refund_card_number %}
-                          Можно обновлять данные до выполнения возврата.
-                        {% else %}
-                          Укажите реквизиты карты, чтобы мы могли вернуть оплату.
-                        {% endif %}
-                      </div>
-                      <button type="submit" class="btn btn-outline-primary btn-sm">
-                        {% if appointment.refund_card_number %}
-                          Обновить данные для возврата
-                        {% else %}
-                          Отправить данные для возврата
-                        {% endif %}
-                      </button>
+                    <div class="col-md-4 d-grid d-md-flex justify-content-md-end">
+                      <button type="submit" class="btn btn-success btn-sm">Отправить чек</button>
                     </div>
                   </div>
                 </form>
-              {% elif not appointment.refund_card_number %}
-                <div class="alert alert-warning mt-3 mb-0">
-                  Для возврата средств укажите реквизиты карты. Обратитесь к администратору, если нужна помощь.
-                </div>
-              {% endif %}
-
-              {% if appointment.refund_receipt %}
+              {% elif appointment.payment_receipt %}
                 <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
-                  <a href="{{ appointment.refund_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Посмотреть чек возврата</a>
+                  <a href="{{ appointment.payment_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Просмотреть загруженный чек</a>
+                  {% if appointment.payment_status == 'awaiting_confirmation' %}
+                    <span class="text-muted small">Чек отправлен и ожидает подтверждения мастером.</span>
+                  {% endif %}
                 </div>
               {% endif %}
-            {% endif %}
-          {% endif %}
-        </section>
 
-        <footer class="appointment-footer">
-          <div class="time-block">
-            <span class="badge px-3 py-2 fw-semibold"><i class="bi bi-clock"></i> {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}</span>
-            <span class="text-muted">{{ appointment.start_time|date:"l"|capfirst }}</span>
-          </div>
-          <div class="actions">
-            {% if appointment.status == 'P' or appointment.status == 'C' %}
-            <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-danger btn-sm px-4" onclick="return confirm('Точно отменить запись?')">
-                Отменить запись
-              </button>
-            </form>
-            {% else %}
-            <span class="text-muted fst-italic">Действия недоступны</span>
+              {% if appointment.status == 'X' and appointment.payment_method == 'card' %}
+                {% if appointment.refund_card_number %}
+                  <div class="alert alert-secondary mt-3 mb-0">
+                    <div class="small text-uppercase text-muted">Карта для возврата</div>
+                    <div class="fw-semibold mt-1">{{ appointment.refund_cardholder_name }}</div>
+                    <div class="text-muted">
+                      {% for value, label in card_type_choices %}
+                        {% if value == appointment.refund_card_type %}
+                          {{ label }}
+                        {% endif %}
+                      {% endfor %}
+                      • <code>{{ appointment.refund_card_number }}</code>
+                    </div>
+                  </div>
+                {% endif %}
+
+                {% if appointment.can_edit_refund_details %}
+                  <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="payment_action" value="provide_refund">
+                    <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <label class="form-label small text-uppercase text-muted">Тип карты</label>
+                        <select name="refund_card_type" class="form-select form-select-sm" required>
+                          {% for value, label in card_type_choices %}
+                            <option value="{{ value }}" {% if value == appointment.refund_card_type %}selected{% endif %}>{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small text-uppercase text-muted">Имя владельца</label>
+                        <input type="text" name="refund_cardholder_name" class="form-control form-control-sm" value="{{ appointment.refund_cardholder_name|default_if_none:'' }}" required>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small text-uppercase text-muted">Номер карты</label>
+                        <input type="text" name="refund_card_number" class="form-control form-control-sm" value="{{ appointment.refund_card_number|default_if_none:'' }}" required>
+                      </div>
+                      <div class="col-12 d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                          {% if appointment.refund_card_number %}
+                            Можно обновлять данные до выполнения возврата.
+                          {% else %}
+                            Укажите реквизиты карты, чтобы мы могли вернуть оплату.
+                          {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                          {% if appointment.refund_card_number %}
+                            Обновить данные для возврата
+                          {% else %}
+                            Отправить данные для возврата
+                          {% endif %}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                {% elif not appointment.refund_card_number %}
+                  <div class="alert alert-warning mt-3 mb-0">
+                    Для возврата средств укажите реквизиты карты. Обратитесь к администратору, если нужна помощь.
+                  </div>
+                {% endif %}
+
+                {% if appointment.refund_receipt %}
+                  <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                    <a href="{{ appointment.refund_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Посмотреть чек возврата</a>
+                  </div>
+                {% endif %}
+              {% endif %}
             {% endif %}
-          </div>
-        </footer>
-      </article>
+          </section>
+
+          <footer class="appointment-footer">
+            <div class="time-block">
+              <span class="badge px-3 py-2 fw-semibold"><i class="bi bi-clock"></i> {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}</span>
+              <span class="text-muted">{{ appointment.start_time|date:"l"|capfirst }}</span>
+            </div>
+            <div class="actions">
+              {% if appointment.status == 'P' or appointment.status == 'C' %}
+                <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm px-4" onclick="return confirm('Точно отменить запись?')">
+                    Отменить запись
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-muted fst-italic">Действия недоступны</span>
+              {% endif %}
+            </div>
+          </footer>
+        </article>
       {% endfor %}
+    </div>
+  </section>
   {% else %}
     <div class="empty-state">
       <div class="emoji">💫</div>
