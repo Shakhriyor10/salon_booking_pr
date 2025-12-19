@@ -394,7 +394,9 @@
                     <div class="modal-body text-center p-5 bg-white">
                       <div class="display-6 mb-3">✂️</div>
                       <h5 class="fw-bold mb-2">Запись успешно создана</h5>
-<!--                      <p class="text-muted mb-4">{{ message }}</p>-->
+                      {% if message %}
+                        <div class="text-muted mb-4 modal-message text-start text-break">{{ message|safe }}</div>
+                      {% endif %}
                       <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
@@ -523,6 +525,61 @@
         successModalEl.addEventListener('click', (event) => {
           if (event.target === successModalEl) {
             closeModal();
+          }
+        });
+
+        document.addEventListener('click', (event) => {
+          const btn = event.target.closest('.copy-credential');
+          if (!btn) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          const explicitValue = btn.getAttribute('data-credential') || '';
+          const targetSelector = btn.getAttribute('data-target');
+          const target = targetSelector ? document.querySelector(targetSelector) : null;
+          const targetValue = target ? (target.getAttribute('data-credential') || target.textContent || '') : '';
+          const parentValue = btn.closest('[data-credential]')?.getAttribute('data-credential') || '';
+          const fallbackValue = btn.closest('.booking-success-credentials')?.innerText || '';
+          const value = (explicitValue || targetValue || parentValue || fallbackValue || '').trim();
+
+          if (!value) {
+            btn.textContent = 'Нет данных';
+            setTimeout(() => btn.textContent = 'Скопировать', 2000);
+            return;
+          }
+
+          const markCopied = () => {
+            btn.textContent = 'Скопировано';
+            setTimeout(() => btn.textContent = 'Скопировать', 1500);
+          };
+
+          const fallbackCopy = () => {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            textarea.setSelectionRange(0, value.length);
+            try {
+              if (document.execCommand('copy')) {
+                markCopied();
+              } else {
+                throw new Error('copy failed');
+              }
+            } catch (e) {
+              btn.textContent = 'Не удалось скопировать';
+              setTimeout(() => btn.textContent = 'Скопировать', 2000);
+            }
+            document.body.removeChild(textarea);
+          };
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(markCopied).catch(fallbackCopy);
+          } else {
+            fallbackCopy();
           }
         });
 
