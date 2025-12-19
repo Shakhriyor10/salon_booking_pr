@@ -94,9 +94,9 @@ class ProductOrderItemInline(admin.TabularInline):
 
 @admin.register(ProductOrder)
 class ProductOrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'salon', 'user', 'total_amount', 'payment_method', 'status', 'created_at')
-    list_filter = ('salon', 'payment_method', 'status')
-    search_fields = ('salon__name', 'user__username')
+    list_display = ('id', 'salon', 'user', 'contact_name', 'contact_phone', 'total_amount', 'payment_method', 'status', 'is_pickup', 'created_at')
+    list_filter = ('salon', 'payment_method', 'status', 'is_pickup')
+    search_fields = ('salon__name', 'user__username', 'contact_name', 'contact_phone', 'address')
     inlines = [ProductOrderItemInline]
 
 

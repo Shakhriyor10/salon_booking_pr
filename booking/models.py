@@ -228,6 +228,9 @@ class ProductCartItem(models.Model):
 class ProductOrder(models.Model):
     class Status(models.TextChoices):
         CREATED = 'created', 'Создан'
+        ACCEPTED = 'accepted', 'Принят'
+        IN_DELIVERY = 'in_delivery', 'В доставке'
+        DELIVERED = 'delivered', 'Доставлен'
         CANCELLED = 'cancelled', 'Отменён'
         PAID = 'paid', 'Оплачен'
 
@@ -237,6 +240,10 @@ class ProductOrder(models.Model):
 
     salon = models.ForeignKey(Salon, related_name='product_orders', on_delete=models.CASCADE)
     user = models.ForeignKey(User, related_name='product_orders', on_delete=models.SET_NULL, null=True, blank=True)
+    contact_name = models.CharField(max_length=255, blank=True)
+    contact_phone = models.CharField(max_length=32, blank=True)
+    address = models.TextField(blank=True)
+    is_pickup = models.BooleanField(default=False)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.CREATED)
     payment_method = models.CharField(max_length=16, choices=PaymentMethod.choices, default=PaymentMethod.CASH)

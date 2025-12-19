@@ -2008,6 +2008,15 @@
                 <input type="text" name="guest_phone" class="form-control" value="{{ prefill_guest_phone }}" placeholder="93-123-45-67" required>
                 <div class="form-text">Мы создадим профиль для отслеживания заказа, если вы ещё не зарегистрированы.</div>
               </div>
+              <div class="col-md-12">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="id_is_pickup" name="is_pickup">
+                  <label class="form-check-label" for="id_is_pickup">Сам заберу из салона</label>
+                </div>
+                <label class="form-label">Адрес доставки</label>
+                <textarea name="address" rows="2" class="form-control" placeholder="Укажите улицу, дом, подъезд, ориентиры"></textarea>
+                <div class="form-text">Оставьте пустым только если выбрали самовывоз.</div>
+              </div>
             </div>
             {% if product_order_form %}
               <div class="mb-3">
@@ -2663,6 +2672,22 @@
         showAlert('Произошла ошибка при обновлении корзины.', 'danger');
       });
     });
+
+    const pickupCheckbox = document.getElementById('id_is_pickup');
+    const addressField = productCartCard.querySelector('textarea[name="address"]');
+
+    function toggleAddressRequirement() {
+      const isPickup = pickupCheckbox && pickupCheckbox.checked;
+      if (addressField) {
+        addressField.required = !isPickup;
+        addressField.disabled = isPickup;
+      }
+    }
+
+    if (pickupCheckbox) {
+      pickupCheckbox.addEventListener('change', toggleAddressRequirement);
+      toggleAddressRequirement();
+    }
   });
 </script>
 

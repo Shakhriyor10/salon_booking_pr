@@ -701,9 +701,18 @@ def checkout_salon_products(request, pk):
         if not payment_card:
             return _error_response('У салона нет активной карты для оплаты.')
 
+    is_pickup = request.POST.get('is_pickup') == 'on'
+    address_value = (request.POST.get('address') or '').strip()
+    if not is_pickup and not address_value:
+        return _error_response('Укажите адрес доставки или отметьте самовывоз.')
+
     order = ProductOrder.objects.create(
         salon=salon,
         user=customer,
+        contact_name=guest_name,
+        contact_phone=normalized_phone,
+        address=address_value,
+        is_pickup=is_pickup,
         total_amount=total,
         payment_method=payment_method,
         payment_card=payment_card,
@@ -751,6 +760,53 @@ def checkout_salon_products(request, pk):
     if is_ajax:
         return JsonResponse({'success': True})
     return redirect(salon.get_absolute_url())
+
+
+@login_required
+def my_product_orders(request):
+    orders = (
+        ProductOrder.objects.filter(user=request.user)
+        .prefetch_related('items')
+        .order_by('-created_at')
+    )
+    return render(request, 'my_product_orders.html', {'orders': orders})
+
+
+@login_required
+def salon_product_orders_admin(request):
+    profile = getattr(request.user, 'profile', None)
+    if not profile or not getattr(profile, 'is_salon_admin', False) or not profile.salon:
+        return HttpResponseForbidden("Недостаточно прав")
+
+    orders = (
+        ProductOrder.objects.filter(salon=profile.salon)
+        .select_related('user')
+        .prefetch_related('items')
+        .order_by('-created_at')
+    )
+
+    if request.method == 'POST':
+        order_id = request.POST.get('order_id')
+        status = request.POST.get('status')
+        order = get_object_or_404(ProductOrder, id=order_id, salon=profile.salon)
+        valid_statuses = {choice[0] for choice in ProductOrder.Status.choices}
+        if status in valid_statuses:
+            order.status = status
+            order.save(update_fields=['status'])
+            messages.success(request, 'Статус заказа обновлён.')
+        else:
+            messages.error(request, 'Неверный статус заказа.')
+        return redirect('salon_product_orders_admin')
+
+    status_choices = ProductOrder.Status.choices
+    return render(
+        request,
+        'salon_product_orders_admin.html',
+        {
+            'orders': orders,
+            'status_choices': status_choices,
+        }
+    )
 
 
 @login_required
