@@ -747,8 +747,8 @@ class AppointmentCreateView(View):
             message_html = format_html(
                 'Запись успешно создана! ✂️<div class="mt-3 text-start">'
                 '<div class="fw-semibold mb-2">Ваш аккаунт создан автоматически</div>'
-                '<div class="d-flex flex-wrap align-items-center gap-3">'
-                '<span class="badge bg-light text-dark border small mb-0">Ваш логин: {0}, Ваш пароль: {1}</span>'
+                '<div class="d-flex flex-wrap align-items-center gap-3" data-credential="Ваш логин: {0}, Ваш пароль: {1}">'
+                '<span class="badge bg-light text-dark border small mb-0" data-credential="Ваш логин: {0}, Ваш пароль: {1}">Ваш логин: {0}, Ваш пароль: {1}</span>'
                 '<button type="button" class="btn btn-sm btn-outline-secondary copy-credential" data-credential="Ваш логин: {0}, Ваш пароль: {1}">Скопировать</button>'
                 '</div>'
                 '</div>',

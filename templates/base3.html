@@ -536,7 +536,8 @@
             const targetSelector = btn.getAttribute('data-target');
             const target = targetSelector ? document.querySelector(targetSelector) : null;
             const targetValue = target ? target.getAttribute('data-credential') || target.textContent : '';
-            const value = (explicitValue || targetValue || '').trim();
+            const parentValue = btn.closest('[data-credential]')?.getAttribute('data-credential') || '';
+            const value = (explicitValue || targetValue || parentValue || '').trim();
 
             if (!value) {
               return;
