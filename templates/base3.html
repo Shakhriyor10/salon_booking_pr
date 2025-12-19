@@ -529,7 +529,9 @@
         });
 
         document.querySelectorAll('.copy-credential').forEach((btn) => {
-          btn.addEventListener('click', () => {
+          btn.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             const explicitValue = btn.getAttribute('data-credential');
             const targetSelector = btn.getAttribute('data-target');
             const target = targetSelector ? document.querySelector(targetSelector) : null;
