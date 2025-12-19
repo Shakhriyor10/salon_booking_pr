@@ -536,6 +536,11 @@ class SalonDetailView(DetailView):
         context['product_order_form'] = ProductOrderForm(available_methods=available_methods)
         context['product_payment_methods'] = available_methods
         context['delivery_eta_days'] = 2
+        profile = getattr(self.request.user, 'profile', None)
+        context['prefill_guest_name'] = (
+            self.request.user.get_full_name() or self.request.user.username if self.request.user.is_authenticated else ''
+        )
+        context['prefill_guest_phone'] = profile.phone if profile and profile.phone else ''
         return context
 
     def post(self, request, *args, **kwargs):
@@ -567,7 +572,10 @@ def add_product_to_cart(request, pk):
 
     product = get_object_or_404(SalonProduct, id=product_id, salon=salon)
     if not product.is_active or product.quantity <= 0:
-        messages.error(request, 'Этот товар недоступен для заказа.')
+        error_message = 'Этот товар недоступен для заказа.'
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': error_message}, status=400)
+        messages.error(request, error_message)
         return redirect(salon.get_absolute_url())
 
     cart = _get_product_cart_for_request(request, salon)
@@ -616,16 +624,21 @@ def update_product_cart_item(request, pk):
     return redirect(salon.get_absolute_url())
 
 
-@login_required
 @require_POST
 def checkout_salon_products(request, pk):
     salon = get_object_or_404(Salon.objects.active(), id=pk)
     cart = _get_product_cart_for_request(request, salon)
     cart_items = list(cart.items.select_related('product'))
+    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    def _error_response(message: str):
+        if is_ajax:
+            return JsonResponse({'success': False, 'error': message}, status=400)
+        messages.error(request, message)
+        return redirect(salon.get_absolute_url())
 
     if not cart_items:
-        messages.error(request, 'Добавьте товары в корзину, чтобы оформить заказ.')
-        return redirect(salon.get_absolute_url())
+        return _error_response('Добавьте товары в корзину, чтобы оформить заказ.')
 
     available_methods = _available_product_payment_methods(salon)
     order_form = ProductOrderForm(request.POST, available_methods=available_methods)
@@ -633,8 +646,32 @@ def checkout_salon_products(request, pk):
         errors = []
         for error_list in order_form.errors.values():
             errors.extend([str(err) for err in error_list])
-        messages.error(request, '; '.join(errors) or 'Проверьте форму заказа.')
-        return redirect(salon.get_absolute_url())
+        return _error_response('; '.join(errors) or 'Проверьте форму заказа.')
+
+    guest_name = request.POST.get('guest_name', '').strip()
+    guest_phone_input = request.POST.get('guest_phone', '').strip()
+    customer = request.user if request.user.is_authenticated else None
+    credentials_data = None
+
+    if customer:
+        if not guest_name:
+            guest_name = customer.get_full_name() or customer.username
+        if not guest_phone_input:
+            profile_phone = getattr(getattr(customer, 'profile', None), 'phone', '')
+            guest_phone_input = profile_phone
+
+        if not guest_phone_input or not PHONE_INPUT_RE.match(guest_phone_input):
+            return _error_response('Введите телефон в формате 93-123-45-67 для доставки.')
+
+        normalized_phone = normalize_uzbek_phone(guest_phone_input)
+        profile, _ = Profile.objects.get_or_create(user=customer)
+        profile.phone = normalized_phone
+        profile.save(update_fields=['phone'])
+    else:
+        if not guest_name or not PHONE_INPUT_RE.match(guest_phone_input):
+            return _error_response('Укажите имя и телефон в формате 93-123-45-67 для оформления заказа.')
+        normalized_phone = normalize_uzbek_phone(guest_phone_input)
+        customer, credentials_data = ensure_guest_account(guest_name, normalized_phone)
 
     cleaned_items = []
     for item in cart_items:
@@ -651,8 +688,7 @@ def checkout_salon_products(request, pk):
 
     if not cleaned_items:
         cart.items.all().delete()
-        messages.error(request, 'Выбранные товары сейчас недоступны.')
-        return redirect(salon.get_absolute_url())
+        return _error_response('Выбранные товары сейчас недоступны.')
 
     total = Decimal('0')
     for item in cleaned_items:
@@ -663,12 +699,11 @@ def checkout_salon_products(request, pk):
     if payment_method == ProductOrder.PaymentMethod.CARD:
         payment_card = salon.get_active_payment_card()
         if not payment_card:
-            messages.error(request, 'У салона нет активной карты для оплаты.')
-            return redirect(salon.get_absolute_url())
+            return _error_response('У салона нет активной карты для оплаты.')
 
     order = ProductOrder.objects.create(
         salon=salon,
-        user=request.user,
+        user=customer,
         total_amount=total,
         payment_method=payment_method,
         payment_card=payment_card,
@@ -690,10 +725,31 @@ def checkout_salon_products(request, pk):
         product.save(update_fields=['quantity', 'is_active', 'updated_at'])
 
     cart.items.all().delete()
-    messages.success(
-        request,
-        'Заказ оформлен! Курьер доставит товары в течение 2 дней.',
-    )
+    if credentials_data:
+        message_html = format_html(
+            '<div class="d-flex flex-wrap align-items-center gap-3 booking-success-credentials" data-credential="Ваш логин: {0}, Ваш пароль: {1}">'
+            '<span class="badge bg-light text-dark border small mb-0" data-credential="Ваш логин: {0}, Ваш пароль: {1}">Ваш логин: {0}, Ваш пароль: {1}</span>'
+            '<button type="button" class="btn btn-sm btn-outline-secondary copy-credential" data-credential="Ваш логин: {0}, Ваш пароль: {1}">Скопировать</button>'
+            '</div>',
+            credentials_data['username'],
+            credentials_data['password'],
+        )
+        messages.success(
+            request,
+            format_html(
+                'Заказ оформлен! Курьер доставит товары в течение 2 дней.<br>{}',
+                message_html,
+            ),
+        )
+        login(request, customer, backend='django.contrib.auth.backends.ModelBackend')
+    else:
+        messages.success(
+            request,
+            'Заказ оформлен! Курьер доставит товары в течение 2 дней.',
+        )
+
+    if is_ajax:
+        return JsonResponse({'success': True})
     return redirect(salon.get_absolute_url())
 
 

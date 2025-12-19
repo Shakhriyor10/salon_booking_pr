@@ -1904,6 +1904,7 @@
         <span class="product-eta"><i class="bi bi-truck"></i> Доставка {{ delivery_eta_days }} дня</span>
       </div>
     </div>
+    <div id="product-cart-alert" class="alert alert-info d-none mt-3" role="alert"></div>
 
     {% if salon_products %}
       <div class="row g-4 mt-2">
@@ -1934,7 +1935,7 @@
                   {% endif %}
                 </div>
                 <div class="product-meta">В наличии: {{ product.quantity }} шт.</div>
-                <form method="post" action="{% url 'add_product_to_cart' salon.id %}" class="mt-auto">
+                <form method="post" action="{% url 'add_product_to_cart' salon.id %}" class="mt-auto" data-product-add-form>
                   {% csrf_token %}
                   <input type="hidden" name="product_id" value="{{ product.id }}">
                   <div class="d-flex align-items-center gap-2">
@@ -1954,16 +1955,16 @@
       </div>
     {% endif %}
 
-    <div class="card cart-card mt-4">
+    <div class="card cart-card mt-4" data-product-cart data-cart-update-url="{% url 'update_product_cart_item' salon.id %}">
       <div class="card-header d-flex justify-content-between align-items-center">
         <span class="fw-semibold">Корзина товаров салона</span>
         <span class="text-muted small">Оплата выбирается при оформлении заказа</span>
       </div>
       <div class="card-body">
-        {% if product_cart_items %}
-          <div class="cart-items">
+        <div class="cart-items" data-cart-items>
+          {% if product_cart_items %}
             {% for item in product_cart_items %}
-              <form method="post" action="{% url 'update_product_cart_item' salon.id %}" class="cart-item-row">
+              <form method="post" action="{% url 'update_product_cart_item' salon.id %}" class="cart-item-row" data-cart-update-form>
                 {% csrf_token %}
                 <input type="hidden" name="item_id" value="{{ item.id }}">
                 <div>
@@ -1986,14 +1987,28 @@
                 </div>
               </form>
             {% endfor %}
-          </div>
+          {% endif %}
+        </div>
+        <p class="text-muted mb-0 {% if product_cart_items %}d-none{% endif %}" data-cart-empty>Корзина пуста. Добавьте товары, чтобы оформить доставку.</p>
+        <div class="{% if not product_cart_items %}d-none{% endif %}" data-cart-summary>
           <hr>
           <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div class="cart-total">Итого: {{ product_cart_total|intcomma }} сум</div>
+            <div class="cart-total" data-cart-total>Итого: <span data-cart-total-value>{{ product_cart_total|intcomma }}</span> сум</div>
             <div class="text-muted small">Курьер доставит заказ в течение {{ delivery_eta_days }} дней.</div>
           </div>
-          <form method="post" action="{% url 'checkout_salon_products' salon.id %}" class="mt-3">
+          <form method="post" action="{% url 'checkout_salon_products' salon.id %}" class="mt-3" data-cart-checkout-form>
             {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Контактное имя</label>
+                <input type="text" name="guest_name" class="form-control" value="{{ prefill_guest_name }}" placeholder="Ваше имя" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Телефон для доставки</label>
+                <input type="text" name="guest_phone" class="form-control" value="{{ prefill_guest_phone }}" placeholder="93-123-45-67" required>
+                <div class="form-text">Мы создадим профиль для отслеживания заказа, если вы ещё не зарегистрированы.</div>
+              </div>
+            </div>
             {% if product_order_form %}
               <div class="mb-3">
                 <label class="form-label">Способ оплаты</label>
@@ -2012,11 +2027,9 @@
                 {% endif %}
               </div>
             {% endif %}
-            <button type="submit" class="btn btn-theme">Оформить заказ</button>
+            <button type="submit" class="btn btn-theme" data-cart-submit {% if not product_cart_items %}disabled{% endif %}>Оформить заказ</button>
           </form>
-        {% else %}
-          <p class="text-muted mb-0">Корзина пуста. Добавьте товары, чтобы оформить доставку.</p>
-        {% endif %}
+        </div>
       </div>
     </div>
   </section>
@@ -2452,6 +2465,206 @@
 </div>
 
 {{ service_stylists_map|json_script:"service-stylists-map" }}
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const productCartCard = document.querySelector('[data-product-cart]');
+    const addProductForms = document.querySelectorAll('[data-product-add-form]');
+
+    if (!productCartCard) {
+      return;
+    }
+
+    const cartItemsContainer = productCartCard.querySelector('[data-cart-items]');
+    const emptyState = productCartCard.querySelector('[data-cart-empty]');
+    const summaryBlock = productCartCard.querySelector('[data-cart-summary]');
+    const totalValueEl = productCartCard.querySelector('[data-cart-total-value]');
+    const checkoutButton = productCartCard.querySelector('[data-cart-submit]');
+    const alertBox = document.getElementById('product-cart-alert');
+    const updateUrl = productCartCard.dataset.cartUpdateUrl;
+
+    function getCsrfToken() {
+      const cookie = document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith('csrftoken='));
+      if (cookie) {
+        return decodeURIComponent(cookie.split('=')[1]);
+      }
+      const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input ? input.value : '';
+    }
+
+    function showAlert(message, type = 'info') {
+      if (!alertBox) return;
+      alertBox.textContent = message;
+      alertBox.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger');
+      alertBox.classList.add(`alert-${type}`);
+    }
+
+    function formatCurrency(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return value || '0';
+      }
+      return num.toLocaleString('ru-RU');
+    }
+
+    function toggleSummary(hasItems) {
+      if (summaryBlock) {
+        summaryBlock.classList.toggle('d-none', !hasItems);
+      }
+      if (emptyState) {
+        emptyState.classList.toggle('d-none', hasItems);
+      }
+      if (checkoutButton) {
+        checkoutButton.disabled = !hasItems;
+      }
+    }
+
+    function buildCartItem(item) {
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = updateUrl;
+      form.className = 'cart-item-row';
+      form.setAttribute('data-cart-update-form', '');
+
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = getCsrfToken();
+      form.appendChild(csrfInput);
+
+      const idInput = document.createElement('input');
+      idInput.type = 'hidden';
+      idInput.name = 'item_id';
+      idInput.value = item.id;
+      form.appendChild(idInput);
+
+      const infoCol = document.createElement('div');
+      infoCol.innerHTML = `<div class="fw-semibold">${item.name}</div><div class="text-muted small">Доступно: ${item.available} шт.</div>`;
+      form.appendChild(infoCol);
+
+      const priceCol = document.createElement('div');
+      priceCol.className = 'd-flex flex-column';
+      priceCol.innerHTML = `<div class="product-price mb-1">${formatCurrency(item.final_price)} сум</div>`;
+      if (item.old_price) {
+        const oldPrice = document.createElement('div');
+        oldPrice.className = 'product-old-price';
+        oldPrice.textContent = `${formatCurrency(item.old_price)} сум`;
+        priceCol.appendChild(oldPrice);
+      }
+      form.appendChild(priceCol);
+
+      const quantityCol = document.createElement('div');
+      quantityCol.className = 'd-flex align-items-center gap-2';
+      quantityCol.innerHTML = `
+        <input type="number" name="quantity" class="form-control form-control-sm" min="1" max="${item.available}" value="${item.quantity}">
+        <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+      `;
+      form.appendChild(quantityCol);
+
+      const actionsCol = document.createElement('div');
+      actionsCol.className = 'text-end';
+      actionsCol.innerHTML = `
+        <div class="fw-semibold">${formatCurrency(item.subtotal)} сум</div>
+        <button type="submit" name="action" value="remove" class="btn btn-link text-danger btn-sm p-0 mt-1">Удалить</button>
+      `;
+      form.appendChild(actionsCol);
+
+      return form;
+    }
+
+    function refreshCart(cart) {
+      const items = Array.isArray(cart?.items) ? cart.items : [];
+      cartItemsContainer.innerHTML = '';
+
+      if (!items.length) {
+        toggleSummary(false);
+        return;
+      }
+
+      items.forEach((item) => {
+        cartItemsContainer.appendChild(buildCartItem(item));
+      });
+
+      if (totalValueEl) {
+        totalValueEl.textContent = formatCurrency(cart.total || 0);
+      }
+
+      toggleSummary(true);
+    }
+
+    function handleResponse(response) {
+      return response
+        .json()
+        .catch(() => ({}))
+        .then((data) => ({ ok: response.ok, status: response.status, data }));
+    }
+
+    function submitWithFetch(url, formData, pendingElement) {
+      if (pendingElement) {
+        pendingElement.disabled = true;
+      }
+
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: formData,
+      })
+        .then(handleResponse)
+        .finally(() => {
+          if (pendingElement) {
+            pendingElement.disabled = false;
+          }
+        });
+    }
+
+    addProductForms.forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const submitter = event.submitter || form.querySelector('button[type="submit"]');
+        const formData = new FormData(form);
+
+        submitWithFetch(form.action, formData, submitter).then(({ ok, data }) => {
+          if (!ok || !data?.success) {
+            showAlert(data?.error || 'Не удалось добавить товар. Попробуйте снова.', 'danger');
+            return;
+          }
+          refreshCart(data.cart);
+          showAlert('Товар добавлен в корзину.', 'success');
+        }).catch(() => {
+          showAlert('Произошла ошибка. Попробуйте позже.', 'danger');
+        });
+      });
+    });
+
+    cartItemsContainer.addEventListener('submit', (event) => {
+      const form = event.target;
+      if (!form.matches('[data-cart-update-form]')) {
+        return;
+      }
+
+      event.preventDefault();
+      const submitter = event.submitter || form.querySelector('button[type="submit"]');
+      const formData = new FormData(form);
+      if (submitter && submitter.name) {
+        formData.append(submitter.name, submitter.value);
+      }
+
+      submitWithFetch(updateUrl, formData, submitter).then(({ ok, data }) => {
+        if (!ok || !data?.success) {
+          showAlert(data?.error || 'Не удалось обновить корзину.', 'danger');
+          return;
+        }
+        refreshCart(data.cart);
+        showAlert('Корзина обновлена.', 'success');
+      }).catch(() => {
+        showAlert('Произошла ошибка при обновлении корзины.', 'danger');
+      });
+    });
+  });
+</script>
 
 <script>
   const stars = document.querySelectorAll('#star-rating i');
