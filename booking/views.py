@@ -117,16 +117,9 @@ def build_password(phone_digits: str) -> str:
 
 
 def ensure_guest_account(full_name: str, normalized_phone: str):
-    """Return (user, credentials dict or None) for a guest booking."""
+    """Always create a new user for a guest booking and return credentials."""
     if not normalized_phone:
         return None, None
-
-    existing = User.objects.filter(profile__phone=normalized_phone).first()
-    if existing:
-        if not existing.first_name and full_name:
-            existing.first_name = full_name
-            existing.save(update_fields=['first_name'])
-        return existing, None
 
     phone_digits = re.sub(r"\D", "", normalized_phone)
     username = build_username(full_name, phone_digits)
