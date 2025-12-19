@@ -530,16 +530,18 @@
 
         document.querySelectorAll('.copy-credential').forEach((btn) => {
           btn.addEventListener('click', () => {
+            const explicitValue = btn.getAttribute('data-credential');
             const targetSelector = btn.getAttribute('data-target');
-            const target = document.querySelector(targetSelector);
-            const value = target ? target.getAttribute('data-credential') || target.textContent : '';
+            const target = targetSelector ? document.querySelector(targetSelector) : null;
+            const targetValue = target ? target.getAttribute('data-credential') || target.textContent : '';
+            const value = (explicitValue || targetValue || '').trim();
 
             if (!value) {
               return;
             }
 
             if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(value.trim()).then(() => {
+              navigator.clipboard.writeText(value).then(() => {
                 btn.textContent = 'Скопировано';
                 setTimeout(() => {
                   btn.textContent = 'Скопировать';
