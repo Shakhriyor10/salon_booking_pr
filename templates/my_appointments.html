@@ -3,1436 +3,468 @@
 
 {% block content %}
 <style>
-  .appointments-wrapper {
-    background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 80%);
-    border-radius: 32px;
-    padding: clamp(28px, 4vw, 48px);
-    box-shadow: 0 32px 70px rgba(15, 23, 42, 0.08);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .appointments-wrapper::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 48%),
-                radial-gradient(circle at bottom left, rgba(244, 114, 182, 0.1), transparent 55%);
-    pointer-events: none;
-  }
-
-  .appointments-hero {
-    position: relative;
-    z-index: 1;
-    margin-bottom: clamp(32px, 4vw, 56px);
-  }
-
-  .hero-grid {
-    display: grid;
-    gap: clamp(24px, 4vw, 40px);
-  }
-
-  @media (min-width: 992px) {
-    .hero-grid {
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-      align-items: stretch;
-    }
-  }
-
-  .hero-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(17, 24, 39, 0.08);
-    color: #111827;
-    border-radius: 999px;
-    padding: 6px 14px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-  }
-
-  .hero-title {
-    font-size: clamp(32px, 4vw, 44px);
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 14px;
-  }
-
-  .hero-description {
-    color: #4b5563;
-    max-width: 520px;
-    font-size: 1.05rem;
-  }
-
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: center;
-    margin-top: clamp(16px, 3vw, 28px);
-  }
-
-  .hero-actions .cta-btn {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    border-radius: 999px;
-    padding: 12px 28px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    box-shadow: 0 18px 35px rgba(99, 102, 241, 0.3);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .hero-actions .cta-btn:hover {
-    transform: translateY(-2px);
-    color: #fff;
-    box-shadow: 0 24px 45px rgba(99, 102, 241, 0.35);
-  }
-
-  .favorite-salons {
-    margin-top: clamp(20px, 3vw, 32px);
-  }
-
-  .favorite-salons__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-
-  .favorite-salons__kicker {
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    font-weight: 700;
-    color: #4338ca;
-    font-size: 0.8rem;
-    margin-bottom: 4px;
-  }
-
-  .favorite-salons__title {
-    margin: 0;
-    font-weight: 800;
-    color: #0f172a;
-  }
-
-  .favorite-salons__description {
-    margin: 6px 0 0;
-    color: #6b7280;
-    max-width: 640px;
-  }
-
-  .favorite-card {
-    background: rgba(255, 255, 255, 0.92);
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .favorite-card__image {
-    position: relative;
-    height: 160px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.28));
-  }
-
-  .favorite-card__image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  .favorite-card__badge {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    background: #fff;
-    color: #111827;
-    border-radius: 999px;
-    padding: 6px 12px;
-    font-weight: 700;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
-  }
-
-  .favorite-card__body {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-  }
-
-  .favorite-card__meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #4b5563;
-    font-size: 0.95rem;
-    gap: 10px;
-  }
-
-  .favorite-card__rating {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(248, 113, 113, 0.12);
-    color: #b91c1c;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-weight: 700;
-  }
-
-  .favorite-empty {
-    border: 1px dashed rgba(99, 102, 241, 0.4);
-    padding: 18px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.9);
-    color: #4b5563;
-  }
-
-  .favorite-empty__icon {
-    font-size: 1.4rem;
-    margin-right: 6px;
-  }
-
-  .next-appointment-card {
-    background: rgba(255, 255, 255, 0.82);
-    backdrop-filter: blur(12px);
-    border-radius: 20px;
-    padding: 16px 20px;
-    border: 1px solid rgba(99, 102, 241, 0.16);
-    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
-    min-width: 260px;
-  }
-
-  .next-appointment-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-weight: 600;
-    color: #4338ca;
-    margin-bottom: 6px;
-  }
-
-  .next-appointment-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    color: #111827;
-  }
-
-  .next-appointment-meta span {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .profile-card {
-    background: rgba(17, 24, 39, 0.92);
-    color: #f8fafc;
-    border-radius: 26px;
-    padding: clamp(20px, 3vw, 28px);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
-  }
-
-  .profile-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .profile-avatar {
-    width: 60px;
-    height: 60px;
-    border-radius: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(129, 140, 248, 0.85));
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: #fff;
-  }
-
-  .profile-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .profile-meta small {
-    color: rgba(226, 232, 240, 0.8);
-  }
-
-  .profile-details {
-    margin: 18px 0;
-    padding: 16px;
-    border-radius: 18px;
-    background: rgba(148, 163, 184, 0.12);
-    font-size: 0.95rem;
-  }
-
-  .profile-details div {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-  }
-
-  .profile-details span:first-child {
-    color: rgba(226, 232, 240, 0.7);
-    text-transform: uppercase;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-  }
-
-  .profile-update-btn {
-    background: rgba(248, 250, 252, 0.12);
-    color: #fff;
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 999px;
-    padding: 10px 22px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: background 0.2s ease, transform 0.2s ease;
-  }
-
-  .payment-section {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
-  @media (min-width: 992px) {
-    .payment-section {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: stretch;
-    }
-  }
-
-  .payment-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .payment-summary-badges {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .payment-method-form {
-    margin: 0;
-  }
-
-  .payment-method-card {
-    position: relative;
-    border-radius: 20px;
-    padding: 20px clamp(18px, 4vw, 28px);
-    background: linear-gradient(145deg, rgba(248, 249, 255, 0.95), rgba(235, 233, 255, 0.86));
-    border: 1px solid rgba(99, 102, 241, 0.18);
-    box-shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
-    overflow: hidden;
-  }
-
-  .payment-method-card::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at top right, rgba(129, 140, 248, 0.18), transparent 55%),
-                radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.12), transparent 60%);
-    pointer-events: none;
-  }
-
-  .payment-method-card__inner {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .payment-method-card__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .payment-method-card__heading {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex: 1 1 220px;
-  }
-
-  .payment-method-card__icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(129, 140, 248, 0.24));
-    color: #4338ca;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.35rem;
-  }
-
-  .payment-method-card__label {
-    text-transform: uppercase;
-    font-size: 0.68rem;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: #4338ca;
-    margin-bottom: 6px;
-    display: inline-block;
-  }
-
-  .payment-method-card__title {
-    display: block;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 4px;
-  }
-
-  .payment-method-card__helper {
-    color: #6b7280;
-    font-size: 0.85rem;
-    margin: 0;
-  }
-
-  .payment-method-card__badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(99, 102, 241, 0.12);
-    color: #4338ca;
-    font-weight: 600;
-    font-size: 0.82rem;
-  }
-
-  .payment-method-card__body {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  @media (min-width: 768px) {
-    .payment-method-card__body {
-      flex-direction: row;
-      align-items: center;
-      gap: 16px;
-    }
-  }
-
-  .payment-method-card__control {
-    position: relative;
-    flex: 1 1 auto;
-  }
-
-  .payment-method-card__control i {
-    position: absolute;
-    top: 50%;
-    left: 16px;
-    transform: translateY(-50%);
-    color: #6366f1;
-    pointer-events: none;
-    font-size: 1.1rem;
-  }
-
-  .payment-method-card select {
-    width: 100%;
-    padding: 12px 16px 12px 48px;
-    border-radius: 14px;
-    border: 1px solid rgba(99, 102, 241, 0.24);
-    background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .payment-method-card select:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 0.25rem rgba(99, 102, 241, 0.18);
-  }
-
-  .payment-method-card .btn-gradient {
-    align-self: flex-start;
-    white-space: nowrap;
-    box-shadow: 0 18px 30px rgba(99, 102, 241, 0.3);
-  }
-
-  .btn-gradient {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    border: none;
-    padding: 10px 22px;
-    border-radius: 999px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .btn-gradient.btn-sm {
-    padding: 8px 18px;
-    font-size: 0.85rem;
-  }
-
-  .btn-gradient:hover {
-    color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.35);
-  }
-
-  .payment-details-card {
-    background: linear-gradient(135deg, rgba(236, 233, 255, 0.92), rgba(255, 255, 255, 0.95));
-    border-radius: 22px;
-    padding: 20px;
-    border: 1px solid rgba(99, 102, 241, 0.16);
-    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.12);
-  }
-
-  .payment-details-card__head {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .payment-details-card__badge {
-    background: rgba(99, 102, 241, 0.12);
-    color: #4338ca;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .payment-details-card__title {
-    text-transform: uppercase;
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    color: #6366f1;
-    font-weight: 700;
-  }
-
-  .payment-details-card__hint {
-    color: #4b5563;
-    font-size: 0.9rem;
-    margin: 4px 0 0;
-  }
-
-  .virtual-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    gap: 28px;
-    padding: clamp(20px, 3vw, 28px);
+  :root {
+    --border: #e5e7eb;
+    --muted: #6b7280;
+    --surface: #ffffff;
+    --bg: #f7f7f7;
+    --accent: #111827;
+  }
+
+  .appointments-page {
+    background: var(--bg);
     border-radius: 24px;
-    background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.55), transparent 60%),
-                radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.55), transparent 65%),
-                linear-gradient(135deg, #111827, #1f2937 55%, #0f172a 100%);
-    box-shadow: 0 22px 45px rgba(15, 23, 42, 0.45);
-    border: 1px solid rgba(148, 163, 184, 0.18);
-    overflow: hidden;
-    width: 100%;
-    max-width: 100%;
+    padding: clamp(24px, 3vw, 40px);
+    border: 1px solid var(--border);
   }
 
-  .virtual-card::after {
-    content: "";
-    position: absolute;
-    inset: 18px -120px -120px 18px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 68%);
-    opacity: 0.6;
-    pointer-events: none;
-  }
-
-  .virtual-card__top,
-  .virtual-card__footer,
-  .virtual-card__number,
-  .virtual-card__holder {
-    position: relative;
-    z-index: 1;
-  }
-
-  .virtual-card__top {
+  .page-header {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .page-header h1 {
+    margin: 0;
+    font-size: clamp(28px, 3vw, 34px);
+    font-weight: 700;
+  }
+
+  .page-header p {
+    margin: 4px 0 0;
+    color: var(--muted);
+  }
+
+  .btn-pill {
+    border-radius: 999px;
+    padding: 10px 16px;
+  }
+
+  .compact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .stack {
+    display: grid;
     gap: 12px;
   }
 
-  .virtual-card__chip {
-    width: 52px;
-    height: 36px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(148, 163, 184, 0.5));
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 0 12px;
+    gap: 12px;
+  }
+
+  .section-title h3,
+  .section-title h4 {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .profile-summary {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: start;
+  }
+
+  .profile-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+  }
+
+  .profile-initials {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #0f172a;
+    color: #fff;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #111827;
-    font-size: 1.25rem;
+    font-weight: 700;
+    font-size: 1.3rem;
   }
 
-  .virtual-card__brand {
-    display: inline-flex;
+  .favorite-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .favorite-item {
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 12px;
+    background: var(--surface);
+  }
+
+  .favorite-item header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 8px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    background: rgba(148, 163, 184, 0.18);
-    color: rgba(226, 232, 240, 0.92);
-    font-size: 0.8rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
   }
 
-  .virtual-card__number {
-    margin: clamp(12px, 3vw, 24px) 0 clamp(4px, 2vw, 12px);
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
-    color: #f8fafc;
-  }
-
-  .virtual-card__number-groups {
-    display: flex;
-    gap: clamp(12px, 3vw, 20px);
-    font-size: clamp(1.35rem, 3.5vw, 1.8rem);
-    letter-spacing: 0.12em;
-    font-family: 'Fira Code', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  }
-
-  .virtual-card__number-groups span {
-    display: inline-block;
-    min-width: 3.4ch;
-    text-align: center;
-  }
-
-  .virtual-card__holder {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 0.14em;
-    color: rgba(226, 232, 240, 0.78);
-  }
-
-  .virtual-card__holder strong {
-    font-size: clamp(0.95rem, 2.6vw, 1.1rem);
-    letter-spacing: 0.12em;
-    font-weight: 600;
-    color: #f8fafc;
-  }
-
-  .virtual-card__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-
-  .virtual-card__amount {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: clamp(1rem, 2.8vw, 1.25rem);
-    font-weight: 600;
-    color: #f8fafc;
-  }
-
-  .virtual-card__helper {
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(226, 232, 240, 0.7);
-  }
-
-  .virtual-card .copy-btn {
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    background: rgba(15, 23, 42, 0.45);
-    color: rgba(226, 232, 240, 0.92);
-  }
-
-  .virtual-card .copy-btn:hover {
-    background: rgba(15, 23, 42, 0.7);
-    color: #fff;
-  }
-
-  .copy-btn {
-    border: none;
-    background: rgba(99, 102, 241, 0.16);
-    color: #4338ca;
-    border-radius: 999px;
-    padding: 6px 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-  }
-
-  .copy-btn:hover {
-    background: rgba(99, 102, 241, 0.28);
-    transform: translateY(-1px);
-  }
-
-  .copy-btn.copied {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-  }
-
-  .copy-btn i {
-    font-size: 1rem;
-  }
-
-  .profile-update-btn:hover {
-    background: rgba(248, 250, 252, 0.2);
-    color: #fff;
-    transform: translateY(-1px);
-  }
-
-  @media (max-width: 575.98px) {
-    .virtual-card {
-      padding: 14px;
-      gap: 16px;
-      border-radius: 18px;
-    }
-
-    .virtual-card__top,
-    .virtual-card__footer {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .virtual-card__chip {
-      width: 42px;
-      height: 30px;
-      border-radius: 10px;
-      font-size: 1rem;
-    }
-
-    .virtual-card__brand {
-      padding: 4px 10px;
-      font-size: 0.7rem;
-      letter-spacing: 0.06em;
-    }
-
-    .virtual-card__number {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 10px;
-    }
-
-    .virtual-card__number-groups {
-      font-size: clamp(0.9rem, 5vw, 1.05rem);
-      gap: 8px;
-      letter-spacing: 0.06em;
-    }
-
-    .virtual-card__number-groups span {
-      min-width: 2.8ch;
-    }
-
-    .virtual-card__number .copy-btn {
-      padding: 6px 12px;
-      gap: 4px;
-      font-size: 0.72rem;
-    }
-
-    .virtual-card__holder {
-      font-size: 0.62rem;
-      letter-spacing: 0.12em;
-      gap: 2px;
-    }
-
-    .virtual-card__holder strong {
-      font-size: clamp(0.82rem, 4vw, 0.95rem);
-      letter-spacing: 0.1em;
-    }
-
-    .virtual-card__amount {
-      flex-wrap: wrap;
-      gap: 8px;
-      font-size: clamp(0.9rem, 4.8vw, 1.05rem);
-    }
-
-    .virtual-card__amount .copy-btn {
-      width: auto;
-      padding: 6px 12px;
-      font-size: 0.72rem;
-      gap: 4px;
-    }
-
-    .copy-btn i {
-      font-size: 0.85rem;
-    }
-  }
-
-  .profile-form {
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid rgba(148, 163, 184, 0.25);
-  }
-
-  .profile-form label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(148, 163, 184, 0.8);
-  }
-
-  .profile-form .form-control {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    color: #f8fafc;
-  }
-
-  .profile-form .form-control:focus {
-    border-color: rgba(129, 140, 248, 0.75);
-    box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.25);
-  }
-
-  .profile-form .invalid-feedback {
-    color: #fecdd3;
-  }
-
-  .summary-grid {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    gap: 18px;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    margin-bottom: clamp(32px, 4vw, 48px);
-  }
-
-  .summary-card {
-    background: rgba(255, 255, 255, 0.92);
-    border-radius: 22px;
-    padding: 22px 24px;
-    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    backdrop-filter: blur(10px);
-  }
-
-  .summary-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 16px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    margin-bottom: 14px;
-  }
-
-  .summary-card h3 {
-    font-weight: 700;
-    margin-bottom: 6px;
-    color: #1f2937;
-  }
-
-  .summary-card p {
-    margin: 0;
-    color: #6b7280;
-  }
-
-  .summary-card.total .summary-icon {
-    background: rgba(99, 102, 241, 0.18);
-    color: #4338ca;
-  }
-
-  .summary-card.pending .summary-icon {
-    background: rgba(253, 230, 138, 0.28);
-    color: #b45309;
-  }
-
-  .summary-card.confirmed .summary-icon {
-    background: rgba(167, 243, 208, 0.32);
-    color: #047857;
-  }
-
-  .summary-card.done .summary-icon {
-    background: rgba(191, 219, 254, 0.32);
-    color: #1d4ed8;
-  }
-
-  .summary-card.canceled .summary-icon {
-    background: rgba(254, 202, 202, 0.32);
-    color: #b91c1c;
-  }
-
-  .timeline {
-    position: relative;
-    z-index: 1;
-    padding-left: 24px;
-  }
-
-  .timeline::before {
-    content: "";
-    position: absolute;
-    left: 12px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: linear-gradient(180deg, rgba(129, 140, 248, 0.35), rgba(14, 165, 233, 0));
+  .favorite-rating {
+    font-size: 0.9rem;
+    color: #2563eb;
   }
 
   .appointment-card {
-    position: relative;
-    background: #ffffff;
-    border-radius: 22px;
-    padding: clamp(22px, 3vw, 28px);
-
-    margin-bottom: 24px;
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    box-shadow: 0 24px 44px rgba(148, 163, 184, 0.25);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .appointment-card::before {
-    position: absolute;
-    left: -32px;
-    top: 32px;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    border: 4px solid rgba(99, 102, 241, 0.4);
-    box-shadow: 0 0 0 6px rgba(129, 140, 248, 0.12);
-  }
-
-  .appointment-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 30px 55px rgba(15, 23, 42, 0.16);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    background: var(--surface);
   }
 
   .appointment-header {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
 
-  .appointment-header .salon-name {
+  .appointment-header h5 {
+    margin: 0;
     font-weight: 700;
-    color: #111827;
-    font-size: 1.1rem;
   }
 
   .status-chip {
-    display: inline-flex;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+  }
+
+  .status-pending { color: #b45309; background: #fef3c7; }
+  .status-confirmed { color: #065f46; background: #d1fae5; }
+  .status-done { color: #1d4ed8; background: #dbeafe; }
+  .status-canceled { color: #b91c1c; background: #fee2e2; }
+
+  .info-row {
+    display: flex;
     align-items: center;
     gap: 8px;
-    border-radius: 999px;
-    padding: 8px 16px;
-    font-weight: 600;
-    font-size: 0.85rem;
+    color: var(--muted);
+    font-size: 0.95rem;
   }
 
-  .status-pending {
-    background: rgba(253, 230, 138, 0.28);
-    color: #92400e;
-  }
-
-  .status-confirmed {
-    background: rgba(134, 239, 172, 0.28);
-    color: #047857;
-  }
-
-  .status-done {
-    background: rgba(191, 219, 254, 0.32);
-    color: #1d4ed8;
-  }
-
-  .status-canceled {
-    background: rgba(254, 202, 202, 0.32);
-    color: #b91c1c;
-  }
-
-  .services-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  .service-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
+    margin: 8px 0 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .services-list li {
-    background: rgba(99, 102, 241, 0.12);
-    color: #4338ca;
-    border-radius: 14px;
-    padding: 6px 14px;
-    font-size: 0.92rem;
+  .service-tags li {
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: #eef2ff;
+    color: #312e81;
     font-weight: 500;
+    font-size: 0.9rem;
+  }
+
+  .payment-box {
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 12px;
+    background: #f9fafb;
+  }
+
+  .payment-box .badge { border-radius: 8px; }
+
+  .card-shell {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 12px;
+    background: #111827;
+    color: #f8fafc;
+  }
+
+  .card-shell small { color: #cbd5e1; }
+
+  .copy-btn {
+    background: #e5e7eb;
+    border: none;
+    border-radius: 10px;
+    padding: 6px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
   }
 
   .appointment-footer {
-    margin-top: 22px;
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-between;
+    gap: 12px;
     align-items: center;
-    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
   }
 
-  .appointment-footer .time-block {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    color: #4b5563;
-    font-weight: 600;
-  }
-
-  .appointment-footer .time-block .badge {
-    background: rgba(15, 23, 42, 0.08);
-    color: #1f2937;
-    border-radius: 999px;
-  }
-
-  .aftercare {
-    position: relative;
-    z-index: 1;
-    margin-top: clamp(40px, 5vw, 60px);
+  .empty-state {
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    background: var(--surface);
   }
 
   .aftercare-grid {
     display: grid;
-    gap: 18px;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
   }
 
   .aftercare-card {
-    background: rgba(255, 255, 255, 0.92);
-    border-radius: 20px;
-    padding: 24px;
-    border: 1px solid rgba(226, 232, 240, 0.7);
-    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
   }
 
-  .aftercare-card .icon {
-    font-size: 1.6rem;
-    margin-bottom: 10px;
-  }
-
-  .aftercare-card h6 {
-    font-weight: 700;
-    color: #1f2937;
-    margin-bottom: 8px;
-  }
-
-  .aftercare-card p {
-    color: #6b7280;
-    margin: 0;
-    font-size: 0.95rem;
-  }
-
-  .empty-state {
-    position: relative;
-    z-index: 1;
-    text-align: center;
-    padding: clamp(40px, 6vw, 64px) clamp(24px, 4vw, 48px);
-    background: rgba(255, 255, 255, 0.92);
-    border-radius: 28px;
-    border: 1px dashed rgba(129, 140, 248, 0.4);
-    box-shadow: 0 20px 44px rgba(99, 102, 241, 0.12);
-  }
-
-  .empty-state .emoji {
-    font-size: 3rem;
-    margin-bottom: 16px;
-  }
-
-  .empty-state p {
-    color: #4b5563;
-    max-width: 480px;
-    margin: 0 auto 24px;
-  }
-
-  .empty-state .tips {
-    display: inline-flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.9rem;
-    color: #6b7280;
-    margin-top: 16px;
-  }
-
-  @media (max-width: 768px) {
-    .appointments-wrapper {
-      padding: 24px 18px;
-    }
-
-    .timeline {
-      padding-left: 0;
-    }
-
-    .timeline::before,
-    .appointment-card::before {
-      display: none;
-    }
-
-    .appointment-card {
-      margin-left: 0;
-    }
-
-    .profile-card {
-      border-radius: 24px;
-    }
+  .profile-form label {
+    font-size: 0.85rem;
+    color: var(--muted);
   }
 </style>
 
-<div class="appointments-wrapper">
-  <section class="appointments-hero">
-    <div class="hero-grid">
-      <div class="hero-copy">
-        <span class="hero-kicker"><i class="bi bi-stars"></i> Ваш бьюти-план</span>
-        <h1 class="hero-title">✨ Мои записи</h1>
-        <p class="hero-description">Следите за статусами, планируйте новые визиты и держите важные детали под рукой в одном месте.</p>
+<div class="appointments-page">
+  <header class="page-header">
+    <div>
+      <h1>Мои записи</h1>
+      <p>Лаконичный список ваших визитов и оплаты</p>
+    </div>
+    <a href="{% url 'home' %}" class="btn btn-dark btn-pill">Записаться ещё</a>
+  </header>
 
-        <div class="hero-actions">
-          <a href="{% url 'home' %}" class="cta-btn">Записаться ещё <i class="bi bi-arrow-right-short fs-4"></i></a>
-
-          {% if upcoming_appointment %}
-          <div class="next-appointment-card">
-            <span class="next-appointment-label"><i class="bi bi-clock-history"></i> Ближайшая запись</span>
-            <div class="next-appointment-meta">
-              <span><i class="bi bi-calendar3"></i> {{ upcoming_appointment.start_time|date:"d E" }} • {{ upcoming_appointment.start_time|date:"H:i" }}</span>
-              {% with first_service=upcoming_appointment.services.all|first %}
-                <span><i class="bi bi-geo-alt"></i>
-                  {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
-                    {{ first_service.stylist_service.salon_service.salon.name }}
-                  {% else %}
-                    {{ upcoming_appointment.stylist.salon.name|default:"Салон уточняется" }}
-                  {% endif %}
-                </span>
-              {% endwith %}
-            </div>
-          </div>
-          {% endif %}
+  <div class="profile-summary">
+    <div class="compact-card stack">
+      <div class="profile-line">
+        <div class="profile-initials">{% firstof request.user.first_name|slice:":1" request.user.username|slice:":1" %}</div>
+        <div>
+          <div class="fw-semibold">{{ request.user.get_full_name|default:request.user.username }}</div>
+          <div class="text-muted">Персональный профиль</div>
         </div>
       </div>
 
-      <aside class="profile-card">
-        <div>
-          <div class="profile-header">
-            <div class="profile-avatar">
-              {% firstof request.user.first_name|slice:":1" request.user.username|slice:":1" %}
+      {% if upcoming_appointment %}
+        <div class="compact-card">
+          <div class="text-uppercase text-muted small mb-1">Ближайшая запись</div>
+          <div class="fw-semibold">{{ upcoming_appointment.start_time|date:"d E" }} • {{ upcoming_appointment.start_time|date:"H:i" }}</div>
+          {% with first_service=upcoming_appointment.services.all|first %}
+            <div class="info-row">
+              <i class="bi bi-geo-alt"></i>
+              {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                {{ first_service.stylist_service.salon_service.salon.name }}
+              {% else %}
+                {{ upcoming_appointment.stylist.salon.name|default:"Салон уточняется" }}
+              {% endif %}
             </div>
-            <div class="profile-meta">
-              <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-              <small>Персональный профиль</small>
-            </div>
-          </div>
-
-          <div class="profile-details mt-3">
-            <div class="mt-2">
-              <span>Телефон</span>
-              <span>{{ request.user.profile.phone|default:"Добавьте номер" }}</span>
-            </div>
-          </div>
+          {% endwith %}
         </div>
-
-        <button class="profile-update-btn" type="button" data-bs-toggle="collapse" data-bs-target="#profileForm" aria-expanded="false" aria-controls="profileForm">
-          <i class="bi bi-sliders"></i> Обновить профиль
-        </button>
-
-        <div class="collapse profile-form" id="profileForm">
-          <form method="post" novalidate>
-            {% csrf_token %}
-            <input type="hidden" name="profile_form" value="1">
-            {% if profile_form.non_field_errors %}
-              <div class="invalid-feedback d-block mb-2">
-                {{ profile_form.non_field_errors|join:", " }}
-              </div>
-            {% endif %}
-            <div class="row g-3">
-              <div class="col-sm-6">
-                <label class="form-label">{{ profile_form.first_name.label }}</label>
-                {{ profile_form.first_name }}
-                {% if profile_form.first_name.errors %}
-                  <div class="invalid-feedback d-block">{{ profile_form.first_name.errors|join:", " }}</div>
-                {% endif %}
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label">{{ profile_form.last_name.label }}</label>
-                {{ profile_form.last_name }}
-                {% if profile_form.last_name.errors %}
-                  <div class="invalid-feedback d-block">{{ profile_form.last_name.errors|join:", " }}</div>
-                {% endif %}
-              </div>
-              <div class="col-12">
-                <label class="form-label">{{ profile_form.phone.label }}</label>
-                {{ profile_form.phone }}
-                {% if profile_form.phone.errors %}
-                  <div class="invalid-feedback d-block">{{ profile_form.phone.errors|join:", " }}</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="d-grid mt-3">
-              <button type="submit" class="btn btn-light text-dark fw-semibold">Сохранить изменения</button>
-            </div>
-          </form>
-        </div>
-      </aside>
+      {% endif %}
     </div>
-  </section>
+
+    <div class="compact-card">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="fw-semibold">Контакты</div>
+        <button class="btn btn-outline-secondary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#profileForm" aria-expanded="false" aria-controls="profileForm">
+          Обновить
+        </button>
+      </div>
+      <div class="mt-2 text-muted">Телефон: {{ request.user.profile.phone|default:"Добавьте номер" }}</div>
+
+      <div class="collapse mt-3" id="profileForm">
+        <form method="post" novalidate class="stack">
+          {% csrf_token %}
+          <input type="hidden" name="profile_form" value="1">
+          {% if profile_form.non_field_errors %}
+            <div class="invalid-feedback d-block mb-2">
+              {{ profile_form.non_field_errors|join:", " }}
+            </div>
+          {% endif %}
+          <div class="row g-3">
+            <div class="col-sm-6">
+              <label class="form-label">{{ profile_form.first_name.label }}</label>
+              {{ profile_form.first_name }}
+              {% if profile_form.first_name.errors %}
+                <div class="invalid-feedback d-block">{{ profile_form.first_name.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">{{ profile_form.last_name.label }}</label>
+              {{ profile_form.last_name }}
+              {% if profile_form.last_name.errors %}
+                <div class="invalid-feedback d-block">{{ profile_form.last_name.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ profile_form.phone.label }}</label>
+              {{ profile_form.phone }}
+              {% if profile_form.phone.errors %}
+                <div class="invalid-feedback d-block">{{ profile_form.phone.errors|join:", " }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-dark">Сохранить</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <section class="favorite-salons">
-    <div class="favorite-salons__header">
-      <div>
-        <div class="favorite-salons__kicker">Избранные салоны</div>
-        <h4 class="favorite-salons__title">Ваши фавориты</h4>
-        <p class="favorite-salons__description">Сохраняйте салоны, которые вам нравятся, чтобы записываться к ним быстрее.</p>
-      </div>
-      <a href="{% url 'home' %}" class="btn btn-outline-dark d-flex align-items-center gap-2">
-        <i class="bi bi-search-heart"></i> Найти новый салон
-      </a>
+    <div class="section-title">
+      <h3>Избранные салоны</h3>
+      <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-sm">Найти новый салон</a>
     </div>
 
     {% if favorite_salons %}
-      <div class="row g-3">
+      <div class="favorite-grid">
         {% for salon in favorite_salons %}
-          <div class="col-md-6 col-lg-4">
-            <div class="favorite-card h-100">
-              <div class="favorite-card__image">
-                {% with photos=salon.get_photos %}
-                  {% if photos %}
-                    <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
-                  {% else %}
-                    <img src="{% static 'img/default_salon.jpg' %}" alt="{{ salon.name }}">
-                  {% endif %}
-                {% endwith %}
-                <span class="favorite-card__badge"><i class="bi bi-heart-fill text-danger me-1"></i>Избранное</span>
-              </div>
-              <div class="favorite-card__body">
-                <div class="favorite-card__meta">
-                  <span><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ salon.city.name }}</span>
-                  <span class="favorite-card__rating"><i class="bi bi-star-fill"></i>{{ salon.rating_value|default:"0.0" }}/5</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <div class="fw-bold text-dark">{{ salon.name }}</div>
-                  <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn btn-dark btn-sm">Перейти</a>
-                </div>
-              </div>
-            </div>
+          <div class="favorite-item">
+            <header>
+              <div class="fw-semibold">{{ salon.name }}</div>
+              <div class="favorite-rating"><i class="bi bi-star-fill"></i> {{ salon.rating_value|default:"0.0" }}/5</div>
+            </header>
+            <div class="info-row mt-2"><i class="bi bi-geo-alt"></i>{{ salon.city.name }}</div>
+            <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn btn-outline-dark btn-sm mt-3">Открыть</a>
           </div>
         {% endfor %}
       </div>
     {% else %}
-      <div class="favorite-empty d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-          <div class="favorite-empty__icon">❤️</div>
-          <div>Добавляйте салоны в избранное на странице каталога, чтобы они появлялись здесь.</div>
-        </div>
+      <div class="empty-state">
+        <div class="mb-2">❤️</div>
+        <div class="mb-2">Добавляйте салоны в избранное, чтобы они появились здесь.</div>
         <a href="{% url 'home' %}" class="btn btn-dark btn-sm">Перейти к каталогу</a>
       </div>
     {% endif %}
   </section>
 
   {% if appointments %}
-
-
+    <div class="stack">
       {% for appointment in appointments %}
-      <article class="appointment-card">
-        <header class="appointment-header">
-          <div>
-            <div class="salon-name">
-              {{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
-            </div>
-            {% with first_service=appointment.services.all|first %}
-              <div class="text-muted small">
-                {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
-                  {{ first_service.stylist_service.salon_service.salon.name }}
-                {% else %}
-                  {% if appointment.stylist.salon %}
-                    {{ appointment.stylist.salon.name }}
+        <article class="appointment-card">
+          <header class="appointment-header">
+            <div>
+              <h5>{{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}</h5>
+              {% with first_service=appointment.services.all|first %}
+                <div class="info-row">
+                  <i class="bi bi-building"></i>
+                  {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                    {{ first_service.stylist_service.salon_service.salon.name }}
                   {% else %}
-                    Салон уточняется
+                    {% if appointment.stylist.salon %}
+                      {{ appointment.stylist.salon.name }}
+                    {% else %}
+                      Салон уточняется
+                    {% endif %}
                   {% endif %}
-                {% endif %}
-              </div>
-            {% endwith %}
-          </div>
-          <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'X' %}status-canceled{% endif %}">
-            {% if appointment.status == 'P' %}
-              <i class="bi bi-hourglass-split"></i> Ожидает
-            {% elif appointment.status == 'C' %}
-              <i class="bi bi-check2-circle"></i> Принято
-            {% elif appointment.status == 'D' %}
-              <i class="bi bi-stars"></i> Выполнено
-            {% elif appointment.status == 'X' %}
-              <i class="bi bi-x-octagon"></i> Отменено
-            {% endif %}
-          </span>
-        </header>
-
-        <section>
-          <h6 class="fw-semibold text-uppercase text-secondary mb-3">Услуги</h6>
-          <ul class="services-list">
-            {% for service in appointment.services.all %}
-              {% if service.stylist_service and service.stylist_service.salon_service %}
-                <li>{{ service.stylist_service.salon_service.service.name }}</li>
-              {% else %}
-                <li class="bg-light text-muted">Услуга уточняется</li>
-              {% endif %}
-            {% empty %}
-              <li class="bg-light text-muted">Услуги не указаны</li>
-            {% endfor %}
-          </ul>
-        </section>
-
-        <section class="mt-4">
-          <div class="payment-section">
-            <div class="payment-summary">
-              <h6 class="fw-semibold text-uppercase text-secondary mb-2">Оплата</h6>
-              <div class="payment-summary-badges">
-                <span class="badge bg-dark text-uppercase">{{ appointment.get_payment_method_display }}</span>
-                <span class="badge {% if appointment.payment_status == 'paid' %}bg-success{% elif appointment.payment_status == 'awaiting_payment' %}bg-warning text-dark{% elif appointment.payment_status == 'awaiting_confirmation' %}bg-info text-dark{% elif appointment.payment_status == 'refund_requested' %}bg-danger{% else %}bg-secondary{% endif %}">
-                  {{ appointment.get_payment_status_display }}
-                </span>
-              </div>
-            </div>
-            {% if appointment.can_change_payment_method %}
-            <form method="post" class="payment-method-form">
-              {% csrf_token %}
-              <input type="hidden" name="payment_action" value="change_method">
-              <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
-              <div class="payment-method-card">
-                <div class="payment-method-card__inner">
-                  <div class="payment-method-card__header">
-                    <div class="payment-method-card__heading">
-                      <div class="payment-method-card__icon">
-                        <i class="bi bi-credit-card-2-front"></i>
-                      </div>
-                      <div>
-                        <span class="payment-method-card__label">Способ оплаты</span>
-                        <label for="payment-method-{{ appointment.id }}" class="payment-method-card__title">Обновить способ оплаты</label>
-                        <p class="payment-method-card__helper">Можно менять до отправки чека или подтверждения перевода.</p>
-                      </div>
-                    </div>
-                    <span class="payment-method-card__badge">
-                      <i class="bi bi-shield-check"></i>
-                      Гибкие варианты
-                    </span>
-                  </div>
-                  <div class="payment-method-card__body">
-                    <div class="payment-method-card__control">
-                      <i class="bi bi-wallet2"></i>
-                      <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select">
-                        {% for value, label in appointment.payment_method_choices %}
-                          <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                    <button type="submit" class="btn-gradient btn-sm">
-                      <i class="bi bi-arrow-repeat"></i>
-                      <span>Обновить</span>
-                    </button>
-                  </div>
                 </div>
-              </div>
-            </form>
+              {% endwith %}
+            </div>
+            <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'X' %}status-canceled{% endif %}">
+              {% if appointment.status == 'P' %}Ожидает{% elif appointment.status == 'C' %}Принято{% elif appointment.status == 'D' %}Выполнено{% elif appointment.status == 'X' %}Отменено{% endif %}
+            </span>
+          </header>
+
+          <div class="mt-2">
+            <div class="text-muted small mb-1">Услуги</div>
+            <ul class="service-tags">
+              {% for service in appointment.services.all %}
+                {% if service.stylist_service and service.stylist_service.salon_service %}
+                  <li>{{ service.stylist_service.salon_service.service.name }}</li>
+                {% else %}
+                  <li class="bg-light text-muted">Услуга уточняется</li>
+                {% endif %}
+              {% empty %}
+                <li class="bg-light text-muted">Услуги не указаны</li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="payment-box">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <span class="badge bg-dark text-uppercase">{{ appointment.get_payment_method_display }}</span>
+              <span class="badge {% if appointment.payment_status == 'paid' %}bg-success{% elif appointment.payment_status == 'awaiting_payment' %}bg-warning text-dark{% elif appointment.payment_status == 'awaiting_confirmation' %}bg-info text-dark{% elif appointment.payment_status == 'refund_requested' %}bg-danger{% else %}bg-secondary{% endif %}">{{ appointment.get_payment_status_display }}</span>
+            </div>
+
+            {% if appointment.can_change_payment_method %}
+              <form method="post" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="payment_action" value="change_method">
+                <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                <div class="d-flex flex-column flex-md-row gap-2 align-items-start">
+                  <select id="payment-method-{{ appointment.id }}" name="payment_method" class="form-select form-select-sm">
+                    {% for value, label in appointment.payment_method_choices %}
+                      <option value="{{ value }}" {% if value == appointment.payment_method %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit" class="btn btn-outline-dark btn-sm">Обновить</button>
+                </div>
+              </form>
             {% elif appointment.payment_receipt %}
-            <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
+              <p class="small text-muted mb-0 mt-2">После отправки чека изменить способ оплаты нельзя.</p>
             {% endif %}
           </div>
 
           {% if appointment.payment_method == 'card' %}
             {% if appointment.show_card_details %}
-              <div class="payment-details-card mt-3 mb-0">
-                <div class="payment-details-card__head">
+              <div class="card-shell">
+                {% with card_number=appointment.active_payment_card.card_number|default_if_none:''|cut:' '|cut:'-' %}
+                  <div class="d-flex justify-content-between flex-wrap gap-2">
+                    <div>
+                      <small class="text-uppercase">{{ appointment.active_payment_card.get_card_type_display|default:"Карта" }}</small>
+                      <div class="fw-semibold mt-1">{{ card_number|default:"•••• •••• •••• ••••" }}</div>
+                    </div>
+                    <button type="button" class="copy-btn" data-copy="{{ card_number }}" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                      <i class="bi bi-clipboard"></i>
+                      <span class="copy-btn__text">Копировать</span>
+                    </button>
+                  </div>
+                {% endwith %}
+
+                <div class="d-flex justify-content-between flex-wrap gap-2 align-items-center mt-3">
                   <div>
-                    <div class="payment-details-card__title">Реквизиты салона для перевода</div>
-                    <p class="payment-details-card__hint mb-0">После перевода загрузите чек, чтобы мастер быстрее подтвердил оплату.</p>
+                    <small class="text-uppercase">Владелец</small>
+                    <div class="fw-semibold">{{ appointment.active_payment_card.cardholder_name|default:"—" }}</div>
                   </div>
-                  <div class="payment-details-card__badge">
-                    <i class="bi bi-shield-lock"></i>
-                    Безопасный перевод
+                  <div>
+                    <small class="text-uppercase">Сумма</small>
+                    <div class="fw-semibold">{{ appointment.get_total_price|floatformat:0|intcomma }} сум</div>
                   </div>
-                </div>
-                <div class="virtual-card mt-4">
-                  <div class="virtual-card__top">
-                    <div class="virtual-card__chip">
-                      <i class="bi bi-credit-card-2-front"></i>
-                    </div>
-                    <div class="virtual-card__brand">
-                      <i class="bi bi-bank"></i>
-                      {{ appointment.active_payment_card.get_card_type_display|default:"Карта" }}
-                    </div>
-                  </div>
-                  {% with card_number=appointment.active_payment_card.card_number|default_if_none:''|cut:' '|cut:'-' %}
-                    {% with group_one=card_number|slice:":4" group_two=card_number|slice:"4:8" group_three=card_number|slice:"8:12" group_four=card_number|slice:"12:16" %}
-                      <div class="virtual-card__number">
-                        <div class="virtual-card__number-groups">
-                          <span>{{ group_one|default:"••••" }}</span>
-                          <span>{{ group_two|default:"••••" }}</span>
-                          <span>{{ group_three|default:"••••" }}</span>
-                          <span>{{ group_four|default:"••••" }}</span>
-                          {% if card_number|length > 16 %}
-                            <span>{{ card_number|slice:"16:20"|default:"••••" }}</span>
-                          {% endif %}
-                        </div>
-                        <button type="button" class="copy-btn" data-copy="{{ card_number }}" data-copy-label="Скопировать" data-copy-success="Скопировано!">
-                          <i class="bi bi-clipboard"></i>
-                          <span class="copy-btn__text">Копировать</span>
-                        </button>
-                      </div>
-                    {% endwith %}
-                  {% endwith %}
-                  <div class="virtual-card__holder">
-                    <span>Владелец карты</span>
-                    <strong>{{ appointment.active_payment_card.cardholder_name|default:"—" }}</strong>
-                  </div>
-                  <div class="virtual-card__footer">
-                    <div class="virtual-card__helper">Сумма перевода</div>
-                    <div class="virtual-card__amount">
-                      <span>{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
-                      <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать" data-copy-success="Скопировано!">
-                        <i class="bi bi-clipboard"></i>
-                        <span class="copy-btn__text">Копировать</span>
-                      </button>
-                    </div>
-                  </div>
+                  <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                    <i class="bi bi-clipboard"></i>
+                    <span class="copy-btn__text">Скопировать сумму</span>
+                  </button>
                 </div>
               </div>
             {% elif not appointment.active_payment_card and appointment.status != 'X' %}
-              <div class="alert alert-warning mt-3 mb-0">
-                Реквизиты салона временно недоступны. Пожалуйста, уточните возможность оплаты картой у администратора.
+              <div class="alert alert-warning mt-2 mb-0">
+                Реквизиты салона временно недоступны. Уточните возможность оплаты у администратора.
               </div>
             {% endif %}
 
@@ -1443,7 +475,7 @@
                 <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
                 <div class="row g-2 align-items-end">
                   <div class="col-md-8">
-                    <label class="form-label small text-uppercase text-muted">Загрузить чек</label>
+                    <label class="form-label small text-muted">Загрузить чек</label>
                     <input type="file" name="receipt" class="form-control form-control-sm" accept="image/*" required>
                   </div>
                   <div class="col-md-4 d-grid d-md-flex justify-content-md-end">
@@ -1483,7 +515,7 @@
                   <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
                   <div class="row g-2">
                     <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Тип карты</label>
+                      <label class="form-label small text-muted">Тип карты</label>
                       <select name="refund_card_type" class="form-select form-select-sm" required>
                         {% for value, label in card_type_choices %}
                           <option value="{{ value }}" {% if value == appointment.refund_card_type %}selected{% endif %}>{{ label }}</option>
@@ -1491,11 +523,11 @@
                       </select>
                     </div>
                     <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Имя владельца</label>
+                      <label class="form-label small text-muted">Имя владельца</label>
                       <input type="text" name="refund_cardholder_name" class="form-control form-control-sm" value="{{ appointment.refund_cardholder_name|default_if_none:'' }}" required>
                     </div>
                     <div class="col-md-4">
-                      <label class="form-label small text-uppercase text-muted">Номер карты</label>
+                      <label class="form-label small text-muted">Номер карты</label>
                       <input type="text" name="refund_card_number" class="form-control form-control-sm" value="{{ appointment.refund_card_number|default_if_none:'' }}" required>
                     </div>
                     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -1529,28 +561,29 @@
               {% endif %}
             {% endif %}
           {% endif %}
-        </section>
 
-        <footer class="appointment-footer">
-          <div class="time-block">
-            <span class="badge px-3 py-2 fw-semibold"><i class="bi bi-clock"></i> {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}</span>
-            <span class="text-muted">{{ appointment.start_time|date:"l"|capfirst }}</span>
-          </div>
-          <div class="actions">
-            {% if appointment.status == 'P' or appointment.status == 'C' %}
-            <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
-              {% csrf_token %}
-              <button type="submit" class="btn btn-outline-danger btn-sm px-4" onclick="return confirm('Точно отменить запись?')">
-                Отменить запись
-              </button>
-            </form>
-            {% else %}
-            <span class="text-muted fst-italic">Действия недоступны</span>
-            {% endif %}
-          </div>
-        </footer>
-      </article>
+          <footer class="appointment-footer">
+            <div class="text-muted">
+              <i class="bi bi-clock"></i>
+              {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}
+              <span class="ms-2">{{ appointment.start_time|date:"l"|capfirst }}</span>
+            </div>
+            <div>
+              {% if appointment.status == 'P' or appointment.status == 'C' %}
+              <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Точно отменить запись?')">
+                  Отменить запись
+                </button>
+              </form>
+              {% else %}
+              <span class="text-muted">Действия недоступны</span>
+              {% endif %}
+            </div>
+          </footer>
+        </article>
       {% endfor %}
+    </div>
   {% else %}
     <div class="empty-state">
       <div class="emoji">💫</div>
@@ -1564,22 +597,22 @@
   {% endif %}
 
   <section class="aftercare">
-    <h4 class="fw-bold mb-3">Как сделать следующий визит ещё приятнее</h4>
+    <h4 class="fw-bold mb-3">Советы для спокойных визитов</h4>
     <div class="aftercare-grid">
       <div class="aftercare-card">
         <div class="icon">🗓️</div>
-        <h6>Запланируйте заранее</h6>
-        <p>Выбирайте удобные окна, пока они свободны, и получайте подтверждение от мастера без ожидания.</p>
+        <h6>Планируйте заранее</h6>
+        <p>Выбирайте удобные окна, пока они свободны.</p>
       </div>
       <div class="aftercare-card">
         <div class="icon">💬</div>
         <h6>Делитесь ожиданиями</h6>
-        <p>Добавляйте комментарии при записи — это поможет мастеру подготовиться и подобрать лучшее решение.</p>
+        <p>Комментарии помогают мастеру подготовиться.</p>
       </div>
       <div class="aftercare-card">
         <div class="icon">🎁</div>
         <h6>Сохраняйте любимых</h6>
-        <p>Возвращайтесь к мастерам и услугам, которые вам понравились, чтобы поддерживать идеальный образ.</p>
+        <p>Возвращайтесь к мастерам, которые вам нравятся.</p>
       </div>
     </div>
   </section>
