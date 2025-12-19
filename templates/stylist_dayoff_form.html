@@ -891,6 +891,33 @@
     </form>
   </div>
 </div>
+<div class="modal fade" id="addBreakModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="addBreakForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Добавить перерыв</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="workinghour_id" id="addBreakWorkingHourId">
+        <input type="hidden" name="stylist_id" id="addBreakStylistId" value="{{ selected_stylist_id }}">
+        <div class="mb-3">
+          <label class="form-label" for="addBreakStart">Начало</label>
+          <input type="time" class="form-control" id="addBreakStart" name="start_time" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="addBreakEnd">Конец</label>
+          <input type="time" class="form-control" id="addBreakEnd" name="end_time" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
 <script>
 const stylistSelectEl = document.getElementById('stylistSelect');
 if (stylistSelectEl) {
@@ -1128,28 +1155,12 @@ function attachWorkingHourEvents() {
     document.querySelectorAll('.add-break').forEach(btn => {
         btn.onclick = function() {
             const whId = this.dataset.id;
-            const start = prompt('Введите время начала (HH:MM)');
-            if (!start) return;
-            const end = prompt('Введите время окончания (HH:MM)');
-            if (!end) return;
-
-            fetch("{% url 'stylist_dayoff' %}", {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: `form_type=break_add&workinghour_id=${whId}&start_time=${start}&end_time=${end}&stylist_id=${document.getElementById('modalStylistId').value}`
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    fetch(`/stylist/ajax/${document.getElementById('modalStylistId').value}/`)
-                        .then(res => res.json())
-                        .then(data => renderWorkingHours(data.working_hours));
-                }
-            });
+            document.getElementById('addBreakWorkingHourId').value = whId;
+            document.getElementById('addBreakStylistId').value = document.getElementById('modalStylistId').value;
+            document.getElementById('addBreakStart').value = '';
+            document.getElementById('addBreakEnd').value = '';
+            const modal = new bootstrap.Modal(document.getElementById('addBreakModal'));
+            modal.show();
         };
     });
 
@@ -1288,5 +1299,33 @@ function bindPriceForms() {
 
 bindAddSalonServiceForm();
 bindPriceForms();
+
+const addBreakForm = document.getElementById('addBreakForm');
+if (addBreakForm) {
+    addBreakForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(addBreakForm);
+        formData.append('form_type', 'break_add');
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: new URLSearchParams(formData)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderWorkingHours(data.working_hours);
+                    bootstrap.Modal.getInstance(document.getElementById('addBreakModal')).hide();
+                    showToast('Перерыв добавлен ✅');
+                } else {
+                    alert(data.error || 'Не удалось добавить перерыв');
+                }
+            });
+    });
+}
 </script>
 {% endblock %}
