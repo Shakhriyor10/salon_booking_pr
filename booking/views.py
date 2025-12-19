@@ -20,9 +20,12 @@ from .form import (
     AppointmentReceiptForm,
     AppointmentRefundForm,
     AppointmentRefundCompleteForm,
+    SalonProductForm,
+    ProductOrderForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
-    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard, FavoriteSalon
+    SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard, FavoriteSalon, \
+    SalonProduct, ProductCart, ProductCartItem, ProductOrder, ProductOrderItem
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils import timezone
 from django.utils.timezone import make_aware, now, localtime, timedelta
@@ -136,6 +139,102 @@ def ensure_guest_account(full_name: str, normalized_phone: str):
     profile.save(update_fields=['phone'])
 
     return user, {'username': username, 'password': password}
+
+
+def _get_product_cart_for_request(request, salon: Salon):
+    if not request.session.session_key:
+        request.session.save()
+
+    session_key = request.session.session_key
+    cart = None
+
+    if request.user.is_authenticated:
+        cart = (
+            ProductCart.objects
+            .filter(salon=salon, user=request.user, is_active=True)
+            .first()
+        )
+        if cart is None:
+            cart = ProductCart.objects.create(
+                salon=salon,
+                user=request.user,
+                session_key=session_key,
+            )
+        if cart.session_key != session_key:
+            cart.session_key = session_key
+            cart.save(update_fields=['session_key'])
+
+        anonymous_cart = (
+            ProductCart.objects
+            .filter(salon=salon, user__isnull=True, session_key=session_key, is_active=True)
+            .first()
+        )
+        if anonymous_cart and anonymous_cart.items.exists():
+            for item in anonymous_cart.items.select_related('product'):
+                target_item, _ = ProductCartItem.objects.get_or_create(
+                    cart=cart,
+                    product=item.product,
+                    defaults={'quantity': 0},
+                )
+                target_item.quantity = min(
+                    item.product.quantity,
+                    target_item.quantity + item.quantity,
+                )
+                target_item.save()
+            anonymous_cart.items.all().delete()
+            anonymous_cart.is_active = False
+            anonymous_cart.save(update_fields=['is_active'])
+    else:
+        cart = (
+            ProductCart.objects
+            .filter(salon=salon, session_key=session_key, user__isnull=True, is_active=True)
+            .first()
+        )
+        if cart is None:
+            cart = ProductCart.objects.create(
+                salon=salon,
+                session_key=session_key,
+            )
+
+    return cart
+
+
+def _available_product_payment_methods(salon: Salon):
+    methods = [ProductOrder.PaymentMethod.CASH]
+    if salon.get_active_payment_card():
+        methods.insert(0, ProductOrder.PaymentMethod.CARD)
+    return methods
+
+
+def _serialize_cart(cart: ProductCart, as_strings: bool = False):
+    items_data = []
+    total = Decimal('0')
+    if not cart:
+        return {'items': items_data, 'total': str(total) if as_strings else total}
+
+    for item in cart.items.select_related('product'):
+        product = item.product
+        final_price = product.get_final_price()
+        subtotal = final_price * item.quantity
+        total += subtotal
+        items_data.append({
+            'id': item.id,
+            'product_id': product.id,
+            'name': product.name,
+            'quantity': item.quantity,
+            'available': product.quantity,
+            'photo': product.photo.url if product.photo else '',
+            'final_price': str(final_price) if as_strings else final_price,
+            'old_price': (
+                str(product.get_display_old_price())
+                if as_strings and product.get_display_old_price() is not None
+                else product.get_display_old_price()
+            ),
+            'has_discount': product.has_discount(),
+            'subtotal': str(subtotal) if as_strings else subtotal,
+        })
+
+    return {'items': items_data, 'total': str(total) if as_strings else total}
 
 
 def format_duration(duration):
@@ -422,6 +521,21 @@ class SalonDetailView(DetailView):
             )
         )
         context['stylists'] = stylists
+        products = SalonProduct.objects.filter(
+            salon=salon,
+            is_active=True,
+            quantity__gt=0,
+        ).order_by('-created_at')
+        context['salon_products'] = products
+
+        product_cart = _get_product_cart_for_request(self.request, salon)
+        cart_data = _serialize_cart(product_cart)
+        context['product_cart_items'] = cart_data['items']
+        context['product_cart_total'] = cart_data['total']
+        available_methods = _available_product_payment_methods(salon)
+        context['product_order_form'] = ProductOrderForm(available_methods=available_methods)
+        context['product_payment_methods'] = available_methods
+        context['delivery_eta_days'] = 2
         return context
 
     def post(self, request, *args, **kwargs):
@@ -439,6 +553,149 @@ class SalonDetailView(DetailView):
             return redirect('salon_detail', pk=self.object.pk, slug=self.object.slug)
 
         return self.get(request, *args, **kwargs)
+
+
+@require_POST
+def add_product_to_cart(request, pk):
+    salon = get_object_or_404(Salon.objects.active(), id=pk)
+    product_id = request.POST.get('product_id')
+    try:
+        quantity = int(request.POST.get('quantity', 1))
+    except (TypeError, ValueError):
+        quantity = 1
+    quantity = max(1, quantity)
+
+    product = get_object_or_404(SalonProduct, id=product_id, salon=salon)
+    if not product.is_active or product.quantity <= 0:
+        messages.error(request, 'Этот товар недоступен для заказа.')
+        return redirect(salon.get_absolute_url())
+
+    cart = _get_product_cart_for_request(request, salon)
+    cart_item, _ = ProductCartItem.objects.get_or_create(
+        cart=cart,
+        product=product,
+        defaults={'quantity': 0},
+    )
+    cart_item.quantity = min(product.quantity, cart_item.quantity + quantity)
+    cart_item.save()
+
+    cart_data = _serialize_cart(cart, as_strings=True)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'cart': cart_data})
+
+    messages.success(request, f'Товар «{product.name}» добавлен в корзину.')
+    return redirect(salon.get_absolute_url())
+
+
+@require_POST
+def update_product_cart_item(request, pk):
+    salon = get_object_or_404(Salon.objects.active(), id=pk)
+    cart = _get_product_cart_for_request(request, salon)
+    item_id = request.POST.get('item_id')
+    action = request.POST.get('action', 'update')
+    quantity_raw = request.POST.get('quantity', 1)
+    try:
+        quantity = int(quantity_raw)
+    except (TypeError, ValueError):
+        quantity = 1
+
+    item = get_object_or_404(ProductCartItem, id=item_id, cart=cart)
+
+    if action == 'remove' or quantity <= 0 or item.product.quantity == 0:
+        item.delete()
+    else:
+        quantity = min(max(quantity, 1), item.product.quantity)
+        item.quantity = quantity
+        item.save()
+
+    cart_data = _serialize_cart(cart, as_strings=True)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'cart': cart_data})
+
+    messages.success(request, 'Корзина обновлена.')
+    return redirect(salon.get_absolute_url())
+
+
+@login_required
+@require_POST
+def checkout_salon_products(request, pk):
+    salon = get_object_or_404(Salon.objects.active(), id=pk)
+    cart = _get_product_cart_for_request(request, salon)
+    cart_items = list(cart.items.select_related('product'))
+
+    if not cart_items:
+        messages.error(request, 'Добавьте товары в корзину, чтобы оформить заказ.')
+        return redirect(salon.get_absolute_url())
+
+    available_methods = _available_product_payment_methods(salon)
+    order_form = ProductOrderForm(request.POST, available_methods=available_methods)
+    if not order_form.is_valid():
+        errors = []
+        for error_list in order_form.errors.values():
+            errors.extend([str(err) for err in error_list])
+        messages.error(request, '; '.join(errors) or 'Проверьте форму заказа.')
+        return redirect(salon.get_absolute_url())
+
+    cleaned_items = []
+    for item in cart_items:
+        product = item.product
+        if not product.is_active or product.quantity == 0:
+            continue
+
+        if item.quantity > product.quantity:
+            item.quantity = product.quantity
+            item.save(update_fields=['quantity'])
+
+        if item.quantity > 0:
+            cleaned_items.append(item)
+
+    if not cleaned_items:
+        cart.items.all().delete()
+        messages.error(request, 'Выбранные товары сейчас недоступны.')
+        return redirect(salon.get_absolute_url())
+
+    total = Decimal('0')
+    for item in cleaned_items:
+        total += item.product.get_final_price() * item.quantity
+
+    payment_method = order_form.cleaned_data['payment_method']
+    payment_card = None
+    if payment_method == ProductOrder.PaymentMethod.CARD:
+        payment_card = salon.get_active_payment_card()
+        if not payment_card:
+            messages.error(request, 'У салона нет активной карты для оплаты.')
+            return redirect(salon.get_absolute_url())
+
+    order = ProductOrder.objects.create(
+        salon=salon,
+        user=request.user,
+        total_amount=total,
+        payment_method=payment_method,
+        payment_card=payment_card,
+    )
+
+    for item in cleaned_items:
+        product = item.product
+        ProductOrderItem.objects.create(
+            order=order,
+            product_name=product.name,
+            unit_price=product.get_final_price(),
+            quantity=item.quantity,
+            old_price=product.get_display_old_price(),
+        )
+        new_quantity = product.quantity - item.quantity
+        product.quantity = max(0, new_quantity)
+        if product.quantity == 0:
+            product.is_active = False
+        product.save(update_fields=['quantity', 'is_active', 'updated_at'])
+
+    cart.items.all().delete()
+    messages.success(
+        request,
+        'Заказ оформлен! Курьер доставит товары в течение 2 дней.',
+    )
+    return redirect(salon.get_absolute_url())
+
 
 @login_required
 @require_POST
@@ -2644,6 +2901,8 @@ def stylist_dayoff_view(request):
     selected_stylist_id = None
     payment_card_form = None
     payment_cards = SalonPaymentCard.objects.none()
+    product_form = None
+    salon_products = None
 
     stylists = []
     stylists_map = {}
@@ -2676,6 +2935,12 @@ def stylist_dayoff_view(request):
         salon_service_form = SalonServiceForm(profile.salon)
         payment_card_form = SalonPaymentCardForm()
         payment_cards = SalonPaymentCard.objects.filter(salon=profile.salon).order_by('-is_active', '-updated_at')
+        salon_products = list(
+            SalonProduct.objects.filter(salon=profile.salon).order_by('-created_at')
+        )
+        for product in salon_products:
+            product.update_form = SalonProductForm(instance=product)
+        product_form = SalonProductForm()
 
         selected_stylist_id = request.POST.get('stylist_id') or request.GET.get('stylist_id')
 
@@ -2855,9 +3120,47 @@ def stylist_dayoff_view(request):
             card.delete()
             messages.success(request, 'Карта удалена.')
             return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'product_add':
+            product_form = SalonProductForm(request.POST, request.FILES)
+            if product_form.is_valid():
+                product = product_form.save(commit=False)
+                product.salon = profile.salon
+                product.save()
+                messages.success(request, 'Товар добавлен в каталог салона.')
+                return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'product_update':
+            product_id = request.POST.get('product_id')
+            product = get_object_or_404(SalonProduct, id=product_id, salon=profile.salon)
+            update_form = SalonProductForm(request.POST, request.FILES, instance=product)
+            if update_form.is_valid():
+                update_form.save()
+                messages.success(request, 'Информация о товаре обновлена.')
+                return redirect(reverse('stylist_dayoff'))
+            else:
+                if isinstance(salon_products, list):
+                    for p in salon_products:
+                        if p.id == product.id:
+                            p.update_form = update_form
+                            break
+                else:
+                    product.update_form = update_form
+        elif profile.is_salon_admin and form_type == 'product_toggle':
+            product_id = request.POST.get('product_id')
+            product = get_object_or_404(SalonProduct, id=product_id, salon=profile.salon)
+            product.is_active = not product.is_active
+            product.save(update_fields=['is_active', 'updated_at'])
+            state = 'активен' if product.is_active else 'выключен'
+            messages.success(request, f'Статус товара обновлён: {state}.')
+            return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'product_delete':
+            product_id = request.POST.get('product_id')
+            product = get_object_or_404(SalonProduct, id=product_id, salon=profile.salon)
+            product.delete()
+            messages.success(request, 'Товар удалён из каталога.')
+            return redirect(reverse('stylist_dayoff'))
 
         # Дальнейшие действия требуют выбранного стилиста
-        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'salon_service_update', 'stylist_update', 'stylist_delete'}:
+        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'salon_service_update', 'stylist_update', 'stylist_delete', 'product_add', 'product_update', 'product_delete', 'product_toggle'}:
             messages.error(request, 'Сначала выберите мастера.')
             return redirect(reverse('stylist_dayoff'))
 
@@ -3115,6 +3418,8 @@ def stylist_dayoff_view(request):
         'salon_services': salon_services,
         'payment_cards': payment_cards,
         'payment_card_form': payment_card_form,
+        'salon_products': salon_products,
+        'product_form': product_form,
         'is_salon_admin': profile.is_salon_admin,
         'subscription_expires_at': subscription_expires_at,
         'subscription_is_active': subscription_is_active,

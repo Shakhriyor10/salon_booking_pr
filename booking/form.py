@@ -17,7 +17,9 @@ from .models import (
     Category,
     SalonService,
     SalonPaymentCard,
+    SalonProduct,
     Appointment,
+    ProductOrder,
 )
 
 
@@ -543,3 +545,66 @@ class AppointmentRefundCompleteForm(forms.Form):
         field = self.fields['refund_receipt']
         field.widget.attrs.setdefault('class', 'form-control form-control-sm')
         field.widget.attrs.setdefault('accept', 'image/*')
+
+
+class SalonProductForm(forms.ModelForm):
+    class Meta:
+        model = SalonProduct
+        fields = (
+            'name',
+            'description',
+            'photo',
+            'price',
+            'old_price',
+            'discount_percent',
+            'quantity',
+            'is_active',
+        )
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-check-input')
+            elif isinstance(field.widget, forms.Textarea):
+                field.widget.attrs.setdefault('class', 'form-control')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
+            if field_name == 'photo':
+                field.widget.attrs.setdefault('accept', 'image/*')
+
+    def clean_discount_percent(self):
+        value = self.cleaned_data.get('discount_percent') or 0
+        if value < 0 or value > 90:
+            raise forms.ValidationError('Скидка должна быть от 0 до 90%.')
+        return value
+
+    def clean(self):
+        cleaned = super().clean()
+        price = cleaned.get('price')
+        old_price = cleaned.get('old_price')
+        if price is not None and price < 0:
+            self.add_error('price', 'Цена должна быть неотрицательной.')
+        if old_price is not None and price is not None and old_price < price:
+            self.add_error('old_price', 'Старая цена должна быть не меньше текущей.')
+        return cleaned
+
+
+class ProductOrderForm(forms.Form):
+    payment_method = forms.ChoiceField(
+        label='Способ оплаты',
+        choices=(),
+        widget=forms.RadioSelect,
+    )
+
+    def __init__(self, *args, available_methods=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        label_map = dict(ProductOrder.PaymentMethod.choices)
+        methods = available_methods or []
+        choices = [(m, label_map.get(m, m)) for m in methods]
+        self.fields['payment_method'].choices = choices
+        if choices:
+            self.fields['payment_method'].initial = choices[0][0]
