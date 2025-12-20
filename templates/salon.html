@@ -173,87 +173,145 @@
   }
 }
 
-.promo-banner {
-  border-radius: 20px;
-  padding: 1.5rem 1.75rem;
-  box-shadow: var(--promo-shadow);
-  position: relative;
-  overflow: hidden;
-  border: 1px solid rgba(72, 107, 113, 0.1);
-  min-height: 230px;
-}
+  .promo-banner {
+    --promo-accent: #486b71;
+    --promo-accent-strong: #2a3f44;
+    --promo-accent-soft: rgba(72, 107, 113, 0.14);
+    --promo-image: url("{% static 'img/default_salon.jpg' %}");
+    border-radius: 24px;
+    padding: 1.75rem 1.9rem;
+    box-shadow: 0 25px 55px rgba(14, 38, 46, 0.2);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(72, 107, 113, 0.14);
+    min-height: 260px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(245, 250, 252, 0.92));
+    isolation: isolate;
+  }
 
-.promo-banner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mix-blend-mode: screen;
-  opacity: 0.4;
-}
+  .promo-banner::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background: var(--promo-image) center/cover no-repeat;
+    filter: blur(38px) saturate(1.15);
+    opacity: 0.55;
+    transform: scale(1.05);
+    z-index: 0;
+  }
 
-.promo-banner.promo-theme-1 {
-  background: linear-gradient(135deg, #eef6ff 0%, #f7f0ff 60%, #ffeef6 100%);
-}
-.promo-banner.promo-theme-1::after {
-  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.6), transparent 45%),
-              radial-gradient(circle at 15% 75%, rgba(72, 107, 113, 0.15), transparent 55%);
-}
+  .promo-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.55;
+    background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.75), transparent 42%),
+                radial-gradient(circle at 15% 75%, rgba(72, 107, 113, 0.22), transparent 50%);
+    z-index: 0;
+  }
 
-.promo-banner.promo-theme-2 {
-  background: linear-gradient(135deg, #e9fbf3 0%, #f1f7ff 60%, #fff3e9 100%);
-}
-.promo-banner.promo-theme-2::after {
-  background: radial-gradient(circle at 70% 25%, rgba(255, 255, 255, 0.55), transparent 50%),
-              radial-gradient(circle at 25% 80%, rgba(72, 107, 113, 0.18), transparent 55%);
-}
+  .promo-banner .promo-ambient-dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-.promo-banner.promo-theme-3 {
-  background: linear-gradient(135deg, #f0f4ff 0%, #fef3ff 60%, #e9fbff 100%);
-}
-.promo-banner.promo-theme-3::after {
-  background: radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.65), transparent 50%),
-              radial-gradient(circle at 18% 78%, rgba(72, 107, 113, 0.18), transparent 55%);
-}
+  .promo-banner .promo-ambient-dots span {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+    filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.08));
+    opacity: 0.8;
+  }
 
-.promo-banner.promo-theme-4 {
-  background: linear-gradient(135deg, #fff2f2 0%, #eef7ff 60%, #f1fff8 100%);
-}
-.promo-banner.promo-theme-4::after {
-  background: radial-gradient(circle at 75% 22%, rgba(255, 255, 255, 0.55), transparent 50%),
-              radial-gradient(circle at 22% 72%, rgba(72, 107, 113, 0.15), transparent 50%);
-}
+  .promo-banner .promo-ambient-dots span:nth-child(1) { top: 10%; left: 8%; }
+  .promo-banner .promo-ambient-dots span:nth-child(2) { top: 65%; left: 18%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(72, 107, 113, 0.22), rgba(72, 107, 113, 0)); }
+  .promo-banner .promo-ambient-dots span:nth-child(3) { top: 20%; right: 10%; width: 90px; height: 90px; background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)); }
 
-.promo-content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1.2fr 0.9fr;
-  gap: 1.1rem;
-  align-items: center;
-}
+  .promo-banner.promo-theme-1 {
+    --promo-accent: #7a6cf1;
+    --promo-accent-strong: #4c43c9;
+    --promo-accent-soft: rgba(122, 108, 241, 0.14);
+    background: linear-gradient(135deg, rgba(238, 246, 255, 0.9) 0%, rgba(247, 240, 255, 0.92) 60%, rgba(255, 238, 246, 0.95) 100%);
+  }
 
-.promo-text h2 {
-  font-weight: 800;
-  margin-bottom: 0.35rem;
-  color: #1f2b2e;
-}
+  .promo-banner.promo-theme-2 {
+    --promo-accent: #44b48c;
+    --promo-accent-strong: #2c8b69;
+    --promo-accent-soft: rgba(68, 180, 140, 0.16);
+    background: linear-gradient(135deg, rgba(233, 251, 243, 0.92) 0%, rgba(241, 247, 255, 0.92) 60%, rgba(255, 243, 233, 0.94) 100%);
+  }
 
-.promo-text p {
-  margin-bottom: 0.75rem;
-  color: #4a5a5d;
-}
+  .promo-banner.promo-theme-3 {
+    --promo-accent: #f27fb0;
+    --promo-accent-strong: #d25d92;
+    --promo-accent-soft: rgba(242, 127, 176, 0.16);
+    background: linear-gradient(135deg, rgba(240, 244, 255, 0.92) 0%, rgba(254, 243, 255, 0.92) 60%, rgba(233, 251, 255, 0.94) 100%);
+  }
 
-.promo-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.85rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
-  color: #1f2b2e;
-  box-shadow: 0 8px 18px rgba(72, 107, 113, 0.16);
-}
+  .promo-banner.promo-theme-4 {
+    --promo-accent: #ff9f68;
+    --promo-accent-strong: #e57736;
+    --promo-accent-soft: rgba(255, 159, 104, 0.16);
+    background: linear-gradient(135deg, rgba(255, 242, 242, 0.92) 0%, rgba(238, 247, 255, 0.92) 60%, rgba(241, 255, 248, 0.94) 100%);
+  }
+
+  .promo-content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1.2fr 0.9fr;
+    gap: 1.25rem;
+    align-items: center;
+  }
+
+  .promo-text h2 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: #0f1c1f;
+  }
+
+  .promo-text p {
+    margin-bottom: 0.75rem;
+    color: #304345;
+  }
+
+  .promo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    color: #0f1c1f;
+    box-shadow: 0 10px 20px rgba(14, 38, 46, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .promo-tone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    background: var(--promo-accent-soft);
+    color: #0f1c1f;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(14, 38, 46, 0.12);
+  }
+
+  .promo-tone .tone-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--promo-accent);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.4);
+  }
 
 .promo-price {
   display: flex;
@@ -263,54 +321,78 @@
   margin: 0.5rem 0 1rem;
 }
 
-.promo-price strong {
-  font-size: 1.5rem;
-  color: #1d2c2f;
-}
+  .promo-price strong {
+    font-size: 1.6rem;
+    color: #0f1c1f;
+  }
 
-.promo-price del {
-  color: #6f8085;
-  font-weight: 600;
-}
+  .promo-price del {
+    color: #576b71;
+    font-weight: 600;
+  }
 
-.promo-discount {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: #c1121f;
-  font-weight: 700;
-  background: rgba(193, 18, 31, 0.12);
-  padding: 0.45rem 0.75rem;
-  border-radius: 12px;
-}
+  .promo-discount {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #c1121f;
+    font-weight: 700;
+    background: rgba(193, 18, 31, 0.12);
+    padding: 0.45rem 0.75rem;
+    border-radius: 12px;
+  }
 
-.promo-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: #1f2b2e;
-  color: #fff;
-  padding: 0.65rem 1.1rem;
-  border-radius: 14px;
-  font-weight: 700;
-  text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 12px 30px rgba(72, 107, 113, 0.22);
-}
+  .promo-highlights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.4rem;
+    margin: 0.75rem 0 0.4rem;
+    padding: 0;
+    list-style: none;
+  }
 
-.promo-cta:hover {
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 18px 35px rgba(72, 107, 113, 0.28);
-}
+  .promo-highlights li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.65rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f1c1f;
+    box-shadow: 0 12px 24px rgba(14, 38, 46, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .promo-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--promo-accent-strong);
+    color: #fff;
+    padding: 0.65rem 1.1rem;
+    border-radius: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 14px 30px rgba(14, 38, 46, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .promo-cta:hover {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 22px 38px rgba(14, 38, 46, 0.28);
+    background: var(--promo-accent);
+  }
 
 .promo-image {
   position: relative;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.42);
   border-radius: 18px;
   overflow: hidden;
-  min-height: 200px;
-  box-shadow: 0 12px 28px rgba(72, 107, 113, 0.14);
+  min-height: 220px;
+  box-shadow: 0 12px 28px rgba(14, 38, 46, 0.16);
+  backdrop-filter: blur(3px);
 }
 
 .promo-image img {
@@ -325,10 +407,11 @@
   right: 0.75rem;
   padding: 0.45rem 0.8rem;
   border-radius: 12px;
-  background: #c1121f;
+  background: var(--promo-accent-strong);
   color: #fff;
   font-weight: 800;
-  box-shadow: 0 10px 25px rgba(193, 18, 31, 0.3);
+  box-shadow: 0 14px 24px rgba(14, 38, 46, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .promo-meta {
@@ -337,18 +420,58 @@
   gap: 0.45rem;
   padding: 0.35rem 0.75rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
-  color: #233133;
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f1c1f;
   font-weight: 700;
+  box-shadow: 0 12px 24px rgba(14, 38, 46, 0.12);
 }
 
 .promo-carousel .carousel-indicators [data-bs-target] {
-  background-color: #1f2b2e;
+  background-color: #0f1c1f;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0.3;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.promo-carousel .carousel-indicators .active {
+  opacity: 0.9;
+  background-color: #0f1c1f;
 }
 
 .promo-carousel .carousel-control-next,
 .promo-carousel .carousel-control-prev {
   width: 4rem;
+  height: 4rem;
+}
+
+.promo-carousel .carousel-control-next .carousel-control-next-icon,
+.promo-carousel .carousel-control-prev .carousel-control-prev-icon {
+  filter: invert(1);
+}
+
+.promo-carousel .carousel-control-next,
+.promo-carousel .carousel-control-prev {
+  align-items: center;
+  justify-content: center;
+}
+
+.promo-carousel .carousel-control-next,
+.promo-carousel .carousel-control-prev {
+  margin: auto 0.35rem;
+}
+
+.promo-carousel .carousel-control-next span,
+.promo-carousel .carousel-control-prev span {
+  background-color: rgba(15, 28, 31, 0.6);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 12px 24px rgba(14, 38, 46, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 @media (max-width: 992px) {
@@ -403,7 +526,13 @@
     <div class="carousel-inner">
       {% for product in promoted_products %}
         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}">
+          {% with promo_image=product.photo.url|default:'' %}
+          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}" style="--promo-image: url('{% if promo_image %}{{ promo_image }}{% else %}{% static 'img/default_salon.jpg' %}{% endif %}');">
+            <div class="promo-ambient-dots" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
             <div class="promo-content">
               <div class="promo-text">
                 <div class="d-flex gap-2 flex-wrap mb-2">
@@ -411,6 +540,10 @@
                   {% if product.category %}
                     <span class="promo-chip"><i class="bi bi-tag"></i> {{ product.category.name }}</span>
                   {% endif %}
+                </div>
+                <div class="promo-tone mb-3">
+                  <span class="tone-dot"></span>
+                  <span>Фон подобран под обложку товара</span>
                 </div>
                 <h2>{{ product.name }}</h2>
                 <p class="mb-2">Товар из салона <strong>{{ product.salon.name }}</strong>. Заберите свою выгоду, пока действует акция.</p>
@@ -425,6 +558,11 @@
                     <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> Спецпредложение</span>
                   {% endif %}
                 </div>
+                <ul class="promo-highlights">
+                  <li><i class="bi bi-magic"></i> Новое оформление карусели</li>
+                  <li><i class="bi bi-bag-heart-fill"></i> Подходит под стиль салона</li>
+                  <li><i class="bi bi-brightness-high"></i> Мягкие подсветки и акценты</li>
+                </ul>
                 <div class="d-flex gap-2 flex-wrap align-items-center">
                   <a href="{% url 'salon_detail' product.salon.pk product.salon.slug %}" class="promo-cta">
                     В салон
@@ -447,6 +585,7 @@
               </div>
             </div>
           </div>
+          {% endwith %}
         </div>
       {% endfor %}
     </div>
