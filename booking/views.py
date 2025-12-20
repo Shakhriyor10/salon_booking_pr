@@ -779,6 +779,8 @@ def cancel_product_order(request, pk):
     order = get_object_or_404(ProductOrder, pk=pk, user=request.user)
     non_cancellable = {
         ProductOrder.Status.DELIVERED,
+        ProductOrder.Status.IN_DELIVERY,
+        ProductOrder.Status.COMPLETED,
         ProductOrder.Status.CANCELLED,
     }
     if order.status in non_cancellable:
@@ -828,6 +830,9 @@ def salon_product_orders_admin(request):
         order_id = request.POST.get('order_id')
         status = request.POST.get('status')
         order = get_object_or_404(ProductOrder, id=order_id, salon=profile.salon)
+        if order.status == ProductOrder.Status.CANCELLED:
+            messages.error(request, 'Клиент отменил заказ. Изменение статуса недоступно.')
+            return redirect('salon_product_orders_admin')
         valid_statuses = {choice[0] for choice in ProductOrder.Status.choices}
         if status in valid_statuses:
             order.status = status

@@ -42,6 +42,7 @@
     .status-accepted { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
     .status-in_delivery { background: #fff3cd; color: #8f5a0a; border: 1px solid #ffe8a1; }
     .status-delivered { background: #e6f4ff; color: #0b6bcf; border: 1px solid #cfe3ff; }
+    .status-completed { background: #dff6e3; color: #146c43; border: 1px solid #c4e8cd; }
     .status-cancelled { background: #fdecea; color: #b23c17; border: 1px solid #f7d7d2; }
     .status-paid { background: #e9f7ef; color: #1e8549; border: 1px solid #d1e9d8; }
 
@@ -133,7 +134,7 @@
                       {% if order.is_pickup %}
                         <span class="status-badge bg-secondary text-white border-0"><i class="bi bi-shop me-1"></i>Самовывоз</span>
                       {% endif %}
-                      {% if order.status != 'cancelled' and order.status != 'delivered' %}
+                      {% if order.status not in ('cancelled', 'delivered', 'in_delivery', 'completed') %}
                         <form method="post" action="{% url 'cancel_product_order' order.id %}">
                           {% csrf_token %}
                           <button type="submit" class="btn btn-outline-danger btn-sm ms-1 d-inline-flex align-items-center gap-1">

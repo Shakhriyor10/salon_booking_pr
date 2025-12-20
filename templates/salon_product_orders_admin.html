@@ -38,6 +38,7 @@
     .status-accepted { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
     .status-in_delivery { background: #fff3cd; color: #8f5a0a; border-color: #ffe8a1; }
     .status-delivered { background: #e6f4ff; color: #0b6bcf; border-color: #cfe3ff; }
+    .status-completed { background: #dff6e3; color: #146c43; border-color: #c4e8cd; }
     .status-cancelled { background: #fdecea; color: #b23c17; border-color: #f7d7d2; }
     .status-paid { background: #e9f7ef; color: #1e8549; border-color: #d1e9d8; }
 
@@ -136,12 +137,12 @@
                   <form method="post" class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
                     {% csrf_token %}
                     <input type="hidden" name="order_id" value="{{ order.id }}">
-                    <select name="status" class="form-select form-select-sm w-auto">
+                    <select name="status" class="form-select form-select-sm w-auto" {% if order.status == 'cancelled' %}disabled{% endif %}>
                       {% for value,label in status_choices %}
                         <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>{{ label }}</option>
                       {% endfor %}
                     </select>
-                    <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                    <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1" {% if order.status == 'cancelled' %}disabled{% endif %}>
                       <i class="bi bi-save"></i><span>Сохранить</span>
                     </button>
                   </form>
