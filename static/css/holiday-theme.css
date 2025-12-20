@@ -1,0 +1,257 @@
+.holiday-theme {
+  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.07), transparent 30%),
+    linear-gradient(135deg, #0f1628 0%, #0b1a2f 40%, #0f0f1c 100%);
+  color: #f4f7fb;
+}
+
+.holiday-theme .post-section.grey-section {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(15, 26, 47, 0.45) 20%, rgba(10, 10, 15, 0.82) 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.holiday-theme main {
+  position: relative;
+  z-index: 1;
+}
+
+.holiday-theme .container {
+  position: relative;
+  z-index: 2;
+}
+
+.holiday-theme .navbar-luxe {
+  background: linear-gradient(120deg, rgba(27, 27, 48, 0.95) 0%, rgba(62, 24, 58, 0.92) 50%, rgba(25, 41, 83, 0.9) 100%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.holiday-theme .navbar-luxe .nav-link::after {
+  background: linear-gradient(135deg, #ffdf6f, #ff5f6d);
+}
+
+.holiday-theme .navbar-luxe .nav-link:hover,
+.holiday-theme .navbar-luxe .nav-link:focus,
+.holiday-theme .navbar-luxe .nav-link.active {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255, 223, 111, 0.45);
+}
+
+.holiday-theme .btn-nav,
+.holiday-theme .btn,
+.holiday-theme .btn-primary,
+.holiday-theme .btn-outline-light {
+  border-radius: 999px;
+  background: linear-gradient(135deg, #ff5f6d 0%, #ff9966 50%, #ffd166 100%);
+  border: none;
+  color: #1b1b1b;
+  box-shadow: 0 12px 25px rgba(255, 153, 102, 0.35);
+}
+
+.holiday-theme .btn-nav.btn-outline-light,
+.holiday-theme .btn-outline-light {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.holiday-theme .btn-nav:hover,
+.holiday-theme .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(255, 153, 102, 0.4);
+}
+
+.holiday-theme .holiday-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transition: all 0.2s ease;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.holiday-theme .holiday-toggle:hover,
+.holiday-theme .holiday-toggle:focus {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.holiday-theme .holiday-toggle.is-off {
+  opacity: 0.75;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.holiday-theme .card,
+.holiday-theme .modal-content,
+.holiday-theme .list-group-item,
+.holiday-theme .table {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+  color: #f6f8fc;
+}
+
+.holiday-theme .card h1,
+.holiday-theme .card h2,
+.holiday-theme .card h3,
+.holiday-theme .card h4,
+.holiday-theme .card h5 {
+  color: #ffffff;
+}
+
+.holiday-theme .form-control,
+.holiday-theme .form-select,
+.holiday-theme .input-group-text {
+  background: rgba(12, 18, 32, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #f4f7fb;
+}
+
+.holiday-theme .form-control:focus,
+.holiday-theme .form-select:focus {
+  border-color: #ff9966;
+  box-shadow: 0 0 0 0.2rem rgba(255, 153, 102, 0.25);
+}
+
+.holiday-theme .badge,
+.holiday-theme .pill {
+  background: linear-gradient(135deg, rgba(255, 223, 111, 0.2), rgba(255, 95, 109, 0.2));
+  border: 1px solid rgba(255, 223, 111, 0.35);
+  color: #ffeaa7;
+}
+
+.holiday-theme .footer-luxe {
+  background: radial-gradient(circle at 50% -10%, rgba(255, 223, 111, 0.2), transparent 35%),
+    linear-gradient(180deg, rgba(21, 16, 34, 0.95), rgba(11, 16, 26, 0.98));
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.holiday-theme .footer-luxe .social-link {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffeaa7;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+.holiday-theme .footer-luxe .social-link:hover {
+  background: linear-gradient(135deg, #ffdf6f, #ff5f6d);
+  color: #0f172a;
+}
+
+.holiday-theme .footer-divider {
+  background: linear-gradient(90deg, rgba(255, 223, 111, 0), rgba(255, 223, 111, 0.8), rgba(255, 95, 109, 0));
+}
+
+.holiday-snow {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0.9;
+}
+
+.holiday-snow .snowflake {
+  position: absolute;
+  top: -10%;
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle, #fff 35%, rgba(255, 255, 255, 0) 60%);
+  border-radius: 50%;
+  animation: snowfall 14s linear infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.45));
+}
+
+.holiday-snow .snowflake:nth-child(1) { left: 10%; animation-duration: 12s; animation-delay: 0s; }
+.holiday-snow .snowflake:nth-child(2) { left: 25%; animation-duration: 14s; animation-delay: 2s; transform: scale(1.2); }
+.holiday-snow .snowflake:nth-child(3) { left: 40%; animation-duration: 16s; animation-delay: 4s; transform: scale(0.9); }
+.holiday-snow .snowflake:nth-child(4) { left: 55%; animation-duration: 18s; animation-delay: 1s; transform: scale(1.4); }
+.holiday-snow .snowflake:nth-child(5) { left: 70%; animation-duration: 15s; animation-delay: 3s; transform: scale(1.1); }
+.holiday-snow .snowflake:nth-child(6) { left: 85%; animation-duration: 17s; animation-delay: 5s; }
+
+@keyframes snowfall {
+  0% { transform: translateY(-10%) rotate(0deg); }
+  100% { transform: translateY(110vh) rotate(360deg); }
+}
+
+.holiday-garland {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(circle at 10% 0%, rgba(255, 95, 109, 0.24), transparent 20%),
+    radial-gradient(circle at 90% 0%, rgba(255, 223, 111, 0.2), transparent 20%);
+}
+
+.holiday-garland::before,
+.holiday-garland::after {
+  content: "";
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  height: 6px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(255, 223, 111, 0.9), rgba(255, 223, 111, 0.9) 12px, rgba(255, 95, 109, 0.9) 12px, rgba(255, 95, 109, 0.9) 24px);
+  opacity: 0.6;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.holiday-garland::before { top: 0; }
+.holiday-garland::after { top: 20px; opacity: 0.35; }
+
+.holiday-theme .shadowed-box,
+.holiday-theme .card,
+.holiday-theme .modal-content {
+  backdrop-filter: blur(10px);
+}
+
+.holiday-theme .glow-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255, 223, 111, 0.15), rgba(255, 95, 109, 0.3));
+  color: #ffeaa7;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(255, 223, 111, 0.4);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.holiday-theme .table thead {
+  background: linear-gradient(135deg, rgba(255, 223, 111, 0.2), rgba(255, 95, 109, 0.2));
+  color: #fff;
+}
+
+.holiday-theme .table-striped tbody tr:nth-of-type(odd) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.holiday-theme .alert {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, rgba(255, 223, 111, 0.15), rgba(255, 255, 255, 0.12));
+  color: #0b1221;
+}
+
+.holiday-theme-off .holiday-snow,
+.holiday-theme-off .holiday-garland {
+  display: none;
+}
+
+.holiday-theme-off .holiday-toggle {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 767.98px) {
+  .holiday-theme .navbar-luxe {
+    background: linear-gradient(150deg, rgba(27, 27, 48, 0.95), rgba(62, 24, 58, 0.92));
+  }
+
+  .holiday-garland::after {
+    top: 16px;
+  }
+}
