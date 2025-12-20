@@ -628,6 +628,7 @@
     border: none;
     border-radius: 20px;
     overflow: hidden;
+    position: relative;
     box-shadow: 0 15px 35px rgba(15, 34, 36, 0.08);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     background: #fff;
@@ -678,6 +679,43 @@
     padding: 0.55rem 1.3rem;
     font-weight: 600;
     transition: all 0.25s ease;
+  }
+
+  .card-garland {
+    position: absolute;
+    top: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 86%;
+    height: 14px;
+    border-radius: 999px;
+    background-repeat: repeat-x;
+    background-size: 38px 14px;
+    opacity: 0.9;
+    pointer-events: none;
+    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.16));
+    z-index: 2;
+  }
+
+  .tinsel-emerald {
+    background-image:
+      radial-gradient(circle at 8px 7px, #9ad0ff 0, #9ad0ff 5px, transparent 7px),
+      radial-gradient(circle at 22px 7px, #c1ffd7 0, #c1ffd7 5px, transparent 7px),
+      radial-gradient(circle at 34px 7px, #ffe29a 0, #ffe29a 5px, transparent 7px);
+  }
+
+  .tinsel-berry {
+    background-image:
+      radial-gradient(circle at 10px 7px, #f497da 0, #f497da 5px, transparent 7px),
+      radial-gradient(circle at 24px 7px, #ffb3c6 0, #ffb3c6 5px, transparent 7px),
+      radial-gradient(circle at 36px 7px, #fcd5ce 0, #fcd5ce 5px, transparent 7px);
+  }
+
+  .tinsel-gold {
+    background-image:
+      radial-gradient(circle at 6px 7px, #ffd166 0, #ffd166 5px, transparent 7px),
+      radial-gradient(circle at 20px 7px, #fff3b0 0, #fff3b0 5px, transparent 7px),
+      radial-gradient(circle at 32px 7px, #b5e48c 0, #b5e48c 5px, transparent 7px);
   }
 
   .btn-outline-theme:hover,
@@ -1875,6 +1913,7 @@
       {% for salon_service in uncategorized_services %}
         <div class="col-lg-4 col-md-6">
           <div class="card service-card h-100">
+            <span class="card-garland {% cycle 'tinsel-emerald' 'tinsel-berry' 'tinsel-gold' %}"></span>
             {% if salon_service.service.photo %}
               <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
             {% else %}
@@ -1898,6 +1937,7 @@
       {% for category in categories %}
         <div class="col-lg-4 col-md-6">
           <div class="card category-card h-100">
+            <span class="card-garland {% cycle 'tinsel-emerald' 'tinsel-berry' 'tinsel-gold' %}"></span>
             {% if category.photo %}
               <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.name }}">
             {% else %}
@@ -1932,10 +1972,11 @@
     {% if salon_products %}
       <div class="row g-4 mt-2">
         {% for product in salon_products %}
-          <div class="col-xl-4 col-lg-4 col-md-6">
-            <div class="product-card">
-              {% if product.photo %}
-                <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
+        <div class="col-xl-4 col-lg-4 col-md-6">
+          <div class="product-card">
+            <span class="card-garland {% cycle 'tinsel-emerald' 'tinsel-berry' 'tinsel-gold' %}"></span>
+            {% if product.photo %}
+              <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
               {% else %}
                 <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80" alt="{{ product.name }}" class="product-image">
               {% endif %}
