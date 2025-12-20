@@ -546,9 +546,7 @@ class SalonDetailView(DetailView):
         cart_data = _serialize_cart(product_cart)
         context['product_cart_items'] = cart_data['items']
         context['product_cart_total'] = cart_data['total']
-        available_methods = _available_product_payment_methods(salon)
-        context['product_order_form'] = ProductOrderForm(available_methods=available_methods)
-        context['product_payment_methods'] = available_methods
+        context['product_payment_methods'] = _available_product_payment_methods(salon)
         context['delivery_eta_days'] = 2
         profile = getattr(self.request.user, 'profile', None)
         context['prefill_guest_name'] = (
@@ -656,7 +654,13 @@ def checkout_salon_products(request, pk):
         return _error_response('Добавьте товары в корзину, чтобы оформить заказ.')
 
     available_methods = _available_product_payment_methods(salon)
-    order_form = ProductOrderForm(request.POST, available_methods=available_methods)
+
+    post_data = request.POST
+    if request.method == "POST" and 'payment_method' not in request.POST and available_methods:
+        post_data = request.POST.copy()
+        post_data['payment_method'] = available_methods[0]
+
+    order_form = ProductOrderForm(post_data, available_methods=available_methods)
     if not order_form.is_valid():
         errors = []
         for error_list in order_form.errors.values():
