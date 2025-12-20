@@ -81,9 +81,15 @@ class SalonPaymentCardAdmin(admin.ModelAdmin):
 
 @admin.register(SalonProduct)
 class SalonProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'salon', 'category', 'price', 'discount_percent', 'quantity', 'is_active', 'updated_at')
-    list_filter = ('salon', 'category', 'is_active')
+    list_display = ('name', 'salon', 'category', 'price', 'discount_percent', 'quantity', 'is_active', 'is_promoted', 'updated_at')
+    list_filter = ('salon', 'category', 'is_active', 'is_promoted')
     search_fields = ('name', 'salon__name', 'category__name')
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = super().get_readonly_fields(request, obj)
+        if not request.user.is_superuser:
+            return readonly + ('is_promoted',)
+        return readonly
 
 
 @admin.register(ProductCategory)
