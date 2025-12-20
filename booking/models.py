@@ -119,6 +119,44 @@ class Salon(models.Model):
 
 
 
+class SalonProduct(models.Model):
+    salon = models.ForeignKey(Salon, related_name='products', on_delete=models.CASCADE)
+    name = models.CharField('Название', max_length=255)
+    description = models.TextField('Описание', blank=True)
+    photo = models.ImageField('Фото товара', upload_to='salon_products/', null=True, blank=True)
+    price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
+    old_price = models.DecimalField('Старая цена', max_digits=10, decimal_places=2, null=True, blank=True)
+    discount_percent = models.PositiveIntegerField('Скидка, %', default=0)
+    quantity = models.PositiveIntegerField('Количество на складе', default=0)
+    is_active = models.BooleanField('Товар активен', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Товар салона'
+        verbose_name_plural = 'Товары салона'
+
+    def __str__(self):
+        return f"{self.name} ({self.salon.name})"
+
+    def get_final_price(self):
+        if self.discount_percent and self.discount_percent < 100:
+            discounted = (self.price * (Decimal('100') - Decimal(self.discount_percent))) / Decimal('100')
+            return discounted.quantize(Decimal('0.01'))
+        return self.price
+
+    def get_display_old_price(self):
+        if self.old_price:
+            return self.old_price
+        if self.discount_percent:
+            return self.price
+        return None
+
+    def has_discount(self):
+        return bool(self.discount_percent or self.old_price)
+
+
 class SalonPaymentCard(models.Model):
     CARD_TYPE_CHOICES = [
         ('uzcard', 'UZCARD'),
@@ -146,6 +184,103 @@ class SalonPaymentCard(models.Model):
     def __str__(self):
         return f"{self.salon.name}: {self.get_card_type_display()} — {self.card_number}"
 
+
+
+class ProductCart(models.Model):
+    salon = models.ForeignKey(Salon, related_name='product_carts', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='product_carts', on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=64, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Корзина товаров'
+        verbose_name_plural = 'Корзины товаров'
+        indexes = [
+            models.Index(fields=['session_key']),
+        ]
+
+    def __str__(self):
+        return f"Cart #{self.pk} ({self.salon.name})"
+
+    def total_amount(self):
+        return sum(item.get_total() for item in self.items.select_related('product'))
+
+
+class ProductCartItem(models.Model):
+    cart = models.ForeignKey(ProductCart, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(SalonProduct, related_name='cart_items', on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Позиция корзины'
+        verbose_name_plural = 'Позиции корзины'
+
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity}"
+
+    def get_total(self):
+        return self.product.get_final_price() * self.quantity
+
+
+class ProductOrder(models.Model):
+    class Status(models.TextChoices):
+        CREATED = 'created', 'Создан'
+        ACCEPTED = 'accepted', 'Принят'
+        IN_DELIVERY = 'in_delivery', 'В доставке'
+        DELIVERED = 'delivered', 'Доставлен'
+        CANCELLED = 'cancelled', 'Отменён'
+        PAID = 'paid', 'Оплачен'
+
+    class PaymentMethod(models.TextChoices):
+        CASH = 'cash', 'Наличные'
+        CARD = 'card', 'Перевод на карту'
+
+    salon = models.ForeignKey(Salon, related_name='product_orders', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='product_orders', on_delete=models.SET_NULL, null=True, blank=True)
+    contact_name = models.CharField(max_length=255, blank=True)
+    contact_phone = models.CharField(max_length=32, blank=True)
+    address = models.TextField(blank=True)
+    is_pickup = models.BooleanField(default=False)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.CREATED)
+    payment_method = models.CharField(max_length=16, choices=PaymentMethod.choices, default=PaymentMethod.CASH)
+    payment_card = models.ForeignKey(
+        'SalonPaymentCard',
+        related_name='product_orders',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Заказ товаров'
+        verbose_name_plural = 'Заказы товаров'
+
+    def __str__(self):
+        return f"Order #{self.pk} — {self.salon.name}"
+
+
+class ProductOrderItem(models.Model):
+    order = models.ForeignKey(ProductOrder, related_name='items', on_delete=models.CASCADE)
+    product_name = models.CharField(max_length=255)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.PositiveIntegerField(default=1)
+    old_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Товар в заказе'
+        verbose_name_plural = 'Товары в заказе'
+
+    def __str__(self):
+        return f"{self.product_name} x{self.quantity}"
+
+    def get_total(self):
+        return self.unit_price * self.quantity
 
 
 class Category(models.Model):

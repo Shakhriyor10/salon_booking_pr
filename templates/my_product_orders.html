@@ -1,0 +1,40 @@
+{% extends 'base3.html' %}
+{% load humanize %}
+
+{% block content %}
+<div class="container py-4">
+  <h2 class="mb-4">Мои заказы товаров</h2>
+  {% if orders %}
+    <div class="list-group">
+      {% for order in orders %}
+        <div class="list-group-item">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <div class="fw-semibold">Заказ #{{ order.id }}</div>
+              <div class="text-muted small">{{ order.created_at|date:"d.m.Y H:i" }}</div>
+              <div class="small">Статус: {{ order.get_status_display }}</div>
+              <div class="small">Оплата: {{ order.get_payment_method_display }}</div>
+              {% if order.is_pickup %}
+                <span class="badge bg-secondary mt-1">Самовывоз</span>
+              {% else %}
+                <div class="small text-muted mt-1">Адрес: {{ order.address|default:"—" }}</div>
+              {% endif %}
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold">{{ order.total_amount|intcomma }} сум</div>
+            </div>
+          </div>
+          <hr class="my-2">
+          <ul class="mb-0">
+            {% for item in order.items.all %}
+              <li>{{ item.product_name }} — {{ item.quantity }} шт. × {{ item.unit_price|intcomma }} сум</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-muted">Заказов пока нет.</p>
+  {% endif %}
+</div>
+{% endblock %}
