@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 from users.models import Profile
 from .models import Service, Stylist, WorkingHour, Appointment, StylistService, Category, BreakPeriod, Salon, City, \
     SalonService, User, Review, StylistLevel, StylistDayOff, AppointmentService, SalonPaymentCard, FavoriteSalon, \
-    SalonProduct, ProductOrder, ProductOrderItem, ProductCart, ProductCartItem
+    ProductCategory, SalonProduct, ProductOrder, ProductOrderItem, ProductCart, ProductCartItem
 
 
 class ProfileInline(admin.StackedInline):
@@ -81,9 +81,15 @@ class SalonPaymentCardAdmin(admin.ModelAdmin):
 
 @admin.register(SalonProduct)
 class SalonProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'salon', 'price', 'discount_percent', 'quantity', 'is_active', 'updated_at')
-    list_filter = ('salon', 'is_active')
-    search_fields = ('name', 'salon__name')
+    list_display = ('name', 'salon', 'category', 'price', 'discount_percent', 'quantity', 'is_active', 'updated_at')
+    list_filter = ('salon', 'category', 'is_active')
+    search_fields = ('name', 'salon__name', 'category__name')
+
+
+@admin.register(ProductCategory)
+class ProductCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name',)
+    search_fields = ('name',)
 
 
 class ProductOrderItemInline(admin.TabularInline):

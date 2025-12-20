@@ -551,6 +551,7 @@ class SalonProductForm(forms.ModelForm):
     class Meta:
         model = SalonProduct
         fields = (
+            'category',
             'name',
             'description',
             'photo',

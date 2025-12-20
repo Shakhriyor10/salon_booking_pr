@@ -119,8 +119,28 @@ class Salon(models.Model):
 
 
 
+class ProductCategory(models.Model):
+    name = models.CharField('Название категории', max_length=100, unique=True)
+
+    class Meta:
+        verbose_name = 'Категория товара'
+        verbose_name_plural = 'Категории товаров'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class SalonProduct(models.Model):
     salon = models.ForeignKey(Salon, related_name='products', on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        ProductCategory,
+        related_name='products',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Категория',
+    )
     name = models.CharField('Название', max_length=255)
     description = models.TextField('Описание', blank=True)
     photo = models.ImageField('Фото товара', upload_to='salon_products/', null=True, blank=True)
