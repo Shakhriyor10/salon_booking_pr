@@ -36,7 +36,7 @@ from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 from django.template.context_processors import csrf
 from django.db import transaction
-from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max, Avg, Q
+from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max, Avg, Q, Case, When, Value, IntegerField
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
 from calendar import monthrange
@@ -519,11 +519,27 @@ class SalonDetailView(DetailView):
             )
         )
         context['stylists'] = stylists
-        products = SalonProduct.objects.filter(
-            salon=salon,
-            is_active=True,
-            quantity__gt=0,
-        ).order_by('-created_at')
+        products = (
+            SalonProduct.objects.filter(
+                salon=salon,
+                is_active=True,
+                quantity__gt=0,
+            )
+            .select_related('category')
+            .annotate(
+                has_discount=Case(
+                    When(Q(discount_percent__gt=0) | Q(old_price__isnull=False), then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+                category_sort=Case(
+                    When(category__isnull=True, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                ),
+            )
+            .order_by('category_sort', 'category__name', '-has_discount', '-discount_percent', 'name')
+        )
         context['salon_products'] = products
 
         product_cart = _get_product_cart_for_request(self.request, salon)
