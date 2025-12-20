@@ -1930,50 +1930,61 @@
     <div id="product-cart-alert" class="alert alert-info d-none mt-3" role="alert"></div>
 
     {% if salon_products %}
-      <div class="row g-4 mt-2">
-        {% for product in salon_products %}
-          <div class="col-xl-4 col-lg-4 col-md-6">
-            <div class="product-card">
-              {% if product.photo %}
-                <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
-              {% else %}
-                <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80" alt="{{ product.name }}" class="product-image">
-              {% endif %}
-              <div class="product-body">
-                <div class="d-flex justify-content-between align-items-start gap-3">
-                  <div>
-                    <div class="h5 mb-1">{{ product.name }}</div>
-                    {% if product.description %}
-                      <div class="product-description-container">
-                        <div class="product-meta product-description" data-full-description="{{ product.description|escape }}">
-                          {{ product.description }}
-                        </div>
-                        <button type="button" class="btn btn-link p-0 product-description__more d-none" data-description-toggle>
-                          Читать полностью
-                        </button>
-                      </div>
+      {% regroup salon_products by category as salon_products_by_category %}
+      <div class="d-flex flex-column gap-4 mt-2">
+        {% for category_group in salon_products_by_category %}
+          <div class="category-products">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h5 class="mb-0">{{ category_group.grouper.name|default:'Без категории' }}</h5>
+              <span class="badge bg-light text-dark border">{{ category_group.list|length }} товаров</span>
+            </div>
+            <div class="row g-4">
+              {% for product in category_group.list %}
+                <div class="col-xl-4 col-lg-4 col-md-6">
+                  <div class="product-card">
+                    {% if product.photo %}
+                      <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
+                    {% else %}
+                      <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80" alt="{{ product.name }}" class="product-image">
                     {% endif %}
+                    <div class="product-body">
+                      <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                          <div class="h5 mb-1">{{ product.name }}</div>
+                          {% if product.description %}
+                            <div class="product-description-container">
+                              <div class="product-meta product-description" data-full-description="{{ product.description|escape }}">
+                                {{ product.description }}
+                              </div>
+                              <button type="button" class="btn btn-link p-0 product-description__more d-none" data-description-toggle>
+                                Читать полностью
+                              </button>
+                            </div>
+                          {% endif %}
+                        </div>
+                        {% if product.discount_percent %}
+                          <span class="discount-chip"><i class="bi bi-fire"></i> -{{ product.discount_percent }}%</span>
+                        {% endif %}
+                      </div>
+                      <div class="d-flex flex-wrap align-items-baseline gap-2">
+                        <span class="product-price">{{ product.get_final_price|intcomma }} сум</span>
+                        {% if product.get_display_old_price %}
+                          <span class="product-old-price">{{ product.get_display_old_price|intcomma }} сум</span>
+                        {% endif %}
+                      </div>
+                      <div class="product-meta">В наличии: {{ product.quantity }} шт.</div>
+                      <form method="post" action="{% url 'add_product_to_cart' salon.id %}" class="mt-auto" data-product-add-form>
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <div class="d-flex align-items-center gap-2">
+                          <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" class="form-control form-control-sm" style="max-width: 120px;">
+                          <button type="submit" class="btn btn-theme flex-grow-1">В корзину</button>
+                        </div>
+                      </form>
+                    </div>
                   </div>
-                  {% if product.discount_percent %}
-                    <span class="discount-chip"><i class="bi bi-fire"></i> -{{ product.discount_percent }}%</span>
-                  {% endif %}
                 </div>
-                <div class="d-flex flex-wrap align-items-baseline gap-2">
-                  <span class="product-price">{{ product.get_final_price|intcomma }} сум</span>
-                  {% if product.get_display_old_price %}
-                    <span class="product-old-price">{{ product.get_display_old_price|intcomma }} сум</span>
-                  {% endif %}
-                </div>
-                <div class="product-meta">В наличии: {{ product.quantity }} шт.</div>
-                <form method="post" action="{% url 'add_product_to_cart' salon.id %}" class="mt-auto" data-product-add-form>
-                  {% csrf_token %}
-                  <input type="hidden" name="product_id" value="{{ product.id }}">
-                  <div class="d-flex align-items-center gap-2">
-                    <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" class="form-control form-control-sm" style="max-width: 120px;">
-                    <button type="submit" class="btn btn-theme flex-grow-1">В корзину</button>
-                  </div>
-                </form>
-              </div>
+              {% endfor %}
             </div>
           </div>
         {% endfor %}
