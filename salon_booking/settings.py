@@ -88,6 +88,11 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+if os.environ.get('USE_SQLITE_FOR_TESTS'):
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 
 
 # Password validation
