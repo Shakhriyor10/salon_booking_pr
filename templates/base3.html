@@ -31,6 +31,7 @@
         <link rel="stylesheet" type="text/css" href="{% static 'css/icomoon.css' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="{% static 'css/support_widget.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/holiday-theme.css' %}">
 <!--	<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">-->
 
 	<!-- SLIDER REVOLUTION 4.x CSS SETTINGS -->
@@ -43,7 +44,7 @@
     <![endif]-->
 
 </head>
-<body>
+<body class="holiday-theme">
 
 <style>
   html, body {
@@ -366,6 +367,12 @@
       </ul>
 
       <ul class="navbar-nav ms-lg-3 align-items-lg-center">
+        <li class="nav-item me-lg-2 mb-2 mb-lg-0">
+          <button class="btn holiday-toggle px-3 py-2 d-inline-flex align-items-center gap-2" id="holidayToggle" type="button">
+            <span class="bi bi-snow"></span>
+            <span class="small text-uppercase fw-semibold">Зимний режим</span>
+          </button>
+        </li>
         {% if user.is_authenticated %}
         <li class="nav-item me-lg-3 mb-2 mb-lg-0">
           <span class="nav-link user-pill"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
@@ -383,6 +390,15 @@
   </div>
 </nav>
 <main>
+  <div class="holiday-garland" aria-hidden="true"></div>
+  <div class="holiday-snow" aria-hidden="true">
+    <div class="snowflake"></div>
+    <div class="snowflake"></div>
+    <div class="snowflake"></div>
+    <div class="snowflake"></div>
+    <div class="snowflake"></div>
+    <div class="snowflake"></div>
+  </div>
   <section class="post-section grey-section clearfix">
     <div class="container">
         {% if messages %}
@@ -480,6 +496,41 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/uzbek-phone-mask.js' %}"></script>
+    <script>
+      (function() {
+        const HOLIDAY_KEY = 'gobeauty-holiday-enabled';
+
+        function setState(enabled) {
+          const body = document.body;
+          const toggle = document.getElementById('holidayToggle');
+          if (!body || !toggle) return;
+
+          body.classList.toggle('holiday-theme', enabled);
+          body.classList.toggle('holiday-theme-off', !enabled);
+          toggle.classList.toggle('is-off', !enabled);
+          toggle.querySelector('.bi').className = enabled ? 'bi bi-snow' : 'bi bi-sun';
+          toggle.querySelector('span.small').textContent = enabled ? 'Зимний режим' : 'Обычный режим';
+        }
+
+        function init() {
+          const toggle = document.getElementById('holidayToggle');
+          if (!toggle) return;
+
+          const saved = localStorage.getItem(HOLIDAY_KEY);
+          const enabled = saved === null ? true : saved === 'true';
+          setState(enabled);
+
+          toggle.addEventListener('click', () => {
+            const current = !document.body.classList.contains('holiday-theme-off');
+            const next = !current;
+            localStorage.setItem(HOLIDAY_KEY, String(next));
+            setState(next);
+          });
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+      })();
+    </script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         const successModalEl = document.getElementById('bookingSuccessModal');
