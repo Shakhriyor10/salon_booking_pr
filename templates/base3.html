@@ -329,6 +329,11 @@
           <li class="nav-item">
               <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-sliders"></i> Настройки</a>
           </li>
+          {% if user.profile.is_salon_admin %}
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'salon_product_orders_admin' %}"><i class="bi bi-bag-check"></i> Заказы</a>
+          </li>
+          {% endif %}
           {% if user.is_staff %}
           <li class="nav-item">
               <a class="nav-link" href="{% url 'support:inbox' %}"><i class="bi bi-chat-text"></i> Поддержка</a>
@@ -353,6 +358,9 @@
         {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
           <li class="nav-item">
               <a class="nav-link" href="{% url 'my_appointments' %}"><i class="bi bi-journal-check"></i> Мои записи</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'my_product_orders' %}"><i class="bi bi-bag-heart"></i> Мои заказы</a>
           </li>
         {% endif %}
       </ul>

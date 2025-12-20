@@ -35,6 +35,7 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 from django.template.context_processors import csrf
+from django.db import transaction
 from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max, Avg, Q
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
@@ -773,6 +774,46 @@ def my_product_orders(request):
 
 
 @login_required
+@require_POST
+def cancel_product_order(request, pk):
+    order = get_object_or_404(ProductOrder, pk=pk, user=request.user)
+    non_cancellable = {
+        ProductOrder.Status.DELIVERED,
+        ProductOrder.Status.IN_DELIVERY,
+        ProductOrder.Status.COMPLETED,
+        ProductOrder.Status.CANCELLED,
+    }
+    if order.status in non_cancellable:
+        messages.error(request, 'Этот заказ уже нельзя отменить.')
+        return redirect('my_product_orders')
+
+    with transaction.atomic():
+        order = (
+            ProductOrder.objects.select_for_update()
+            .prefetch_related('items')
+            .get(pk=pk, user=request.user)
+        )
+        if order.status in non_cancellable:
+            messages.error(request, 'Этот заказ уже нельзя отменить.')
+            return redirect('my_product_orders')
+
+        order.status = ProductOrder.Status.CANCELLED
+        order.save(update_fields=['status'])
+
+        for item in order.items.all():
+            product = SalonProduct.objects.filter(
+                salon=order.salon, name=item.product_name
+            ).first()
+            if product:
+                product.quantity = F('quantity') + item.quantity
+                product.is_active = True
+                product.save(update_fields=['quantity', 'is_active', 'updated_at'])
+
+    messages.success(request, 'Заказ отменён, товары возвращены в салон.')
+    return redirect('my_product_orders')
+
+
+@login_required
 def salon_product_orders_admin(request):
     profile = getattr(request.user, 'profile', None)
     if not profile or not getattr(profile, 'is_salon_admin', False) or not profile.salon:
@@ -789,6 +830,9 @@ def salon_product_orders_admin(request):
         order_id = request.POST.get('order_id')
         status = request.POST.get('status')
         order = get_object_or_404(ProductOrder, id=order_id, salon=profile.salon)
+        if order.status == ProductOrder.Status.CANCELLED:
+            messages.error(request, 'Клиент отменил заказ. Изменение статуса недоступно.')
+            return redirect('salon_product_orders_admin')
         valid_statuses = {choice[0] for choice in ProductOrder.Status.choices}
         if status in valid_statuses:
             order.status = status

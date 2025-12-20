@@ -231,6 +231,7 @@ class ProductOrder(models.Model):
         ACCEPTED = 'accepted', 'Принят'
         IN_DELIVERY = 'in_delivery', 'В доставке'
         DELIVERED = 'delivered', 'Доставлен'
+        COMPLETED = 'completed', 'Завершён'
         CANCELLED = 'cancelled', 'Отменён'
         PAID = 'paid', 'Оплачен'
 
