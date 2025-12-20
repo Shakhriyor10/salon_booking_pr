@@ -31,6 +31,7 @@
         <link rel="stylesheet" type="text/css" href="{% static 'css/icomoon.css' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
         <link rel="stylesheet" type="text/css" href="{% static 'css/support_widget.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/new_year.css' %}">
 <!--	<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">-->
 
 	<!-- SLIDER REVOLUTION 4.x CSS SETTINGS -->
@@ -43,7 +44,19 @@
     <![endif]-->
 
 </head>
-<body>
+<body class="theme-newyear">
+
+<script>
+  (() => {
+    const themeKey = 'gobeauty-theme';
+    const savedTheme = localStorage.getItem(themeKey);
+    const initialTheme = savedTheme === 'classic' ? 'classic' : 'newyear';
+
+    document.body.classList.remove('theme-newyear', 'theme-classic');
+    document.body.classList.add(`theme-${initialTheme}`);
+    document.documentElement.dataset.theme = initialTheme;
+  })();
+</script>
 
 <style>
   html, body {
@@ -366,6 +379,12 @@
       </ul>
 
       <ul class="navbar-nav ms-lg-3 align-items-lg-center">
+        <li class="nav-item me-lg-2 mb-2 mb-lg-0">
+          <button class="btn btn-nav btn-theme-toggle" type="button" data-theme-toggle aria-pressed="true">
+            <span class="theme-toggle__icon" aria-hidden="true">🎄</span>
+            <span class="theme-toggle__label">Новый год</span>
+          </button>
+        </li>
         {% if user.is_authenticated %}
         <li class="nav-item me-lg-3 mb-2 mb-lg-0">
           <span class="nav-link user-pill"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
@@ -480,6 +499,54 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/uzbek-phone-mask.js' %}"></script>
+    <script>
+      (function () {
+        const themeKey = 'gobeauty-theme';
+        const body = document.body;
+        const root = document.documentElement;
+
+        const updateButton = (theme) => {
+          const toggle = document.querySelector('[data-theme-toggle]');
+          if (!toggle) return;
+
+          toggle.setAttribute('data-active-theme', theme);
+          toggle.setAttribute('aria-pressed', theme === 'newyear');
+          toggle.classList.toggle('is-festive', theme === 'newyear');
+
+          const label = toggle.querySelector('.theme-toggle__label');
+          if (label) {
+            label.textContent = theme === 'newyear' ? 'Новый год' : 'Классика';
+          }
+
+          const icon = toggle.querySelector('.theme-toggle__icon');
+          if (icon) {
+            icon.textContent = theme === 'newyear' ? '🎄' : '✨';
+          }
+        };
+
+        const applyTheme = (theme) => {
+          const safeTheme = theme === 'classic' ? 'classic' : 'newyear';
+          body.classList.remove('theme-newyear', 'theme-classic');
+          body.classList.add(`theme-${safeTheme}`);
+          root.dataset.theme = safeTheme;
+          root.style.colorScheme = safeTheme === 'newyear' ? 'dark' : 'light';
+          localStorage.setItem(themeKey, safeTheme);
+          updateButton(safeTheme);
+        };
+
+        applyTheme(body.classList.contains('theme-classic') ? 'classic' : 'newyear');
+
+        window.addEventListener('DOMContentLoaded', () => {
+          const toggle = document.querySelector('[data-theme-toggle]');
+          if (!toggle) return;
+
+          toggle.addEventListener('click', () => {
+            const nextTheme = body.classList.contains('theme-newyear') ? 'classic' : 'newyear';
+            applyTheme(nextTheme);
+          });
+        });
+      })();
+    </script>
     <script>
       document.addEventListener('DOMContentLoaded', function () {
         const successModalEl = document.getElementById('bookingSuccessModal');

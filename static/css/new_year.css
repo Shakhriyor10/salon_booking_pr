@@ -1,0 +1,172 @@
+.theme-newyear {
+  --ny-bg: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.14), transparent 30%), radial-gradient(circle at 80% 0%, rgba(255, 255, 255, 0.12), transparent 25%), linear-gradient(180deg, #0c1729 0%, #0b1f3b 45%, #0a1b32 100%);
+  --ny-card: rgba(255, 255, 255, 0.07);
+  --ny-card-border: rgba(255, 255, 255, 0.1);
+  --ny-text: #e9f3ff;
+  --ny-muted: #c8d5eb;
+  --ny-accent: #eacb57;
+  --ny-accent-2: #ff9fb1;
+  --ny-snow: rgba(255, 255, 255, 0.4);
+  --ny-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+.theme-newyear body {
+  background: var(--ny-bg);
+  color: var(--ny-text);
+}
+
+.theme-newyear .post-section.grey-section {
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-newyear .post-section.grey-section::before,
+.theme-newyear .post-section.grey-section::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.theme-newyear .post-section.grey-section::before {
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, var(--ny-snow), transparent),
+    radial-gradient(2px 2px at 40% 10%, var(--ny-snow), transparent),
+    radial-gradient(2px 2px at 80% 20%, var(--ny-snow), transparent),
+    radial-gradient(3px 3px at 60% 40%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(2px 2px at 10% 70%, var(--ny-snow), transparent),
+    radial-gradient(2px 2px at 90% 80%, var(--ny-snow), transparent);
+  animation: ny-snowfall 24s linear infinite;
+  opacity: 0.9;
+}
+
+.theme-newyear .post-section.grey-section::after {
+  background: radial-gradient(120% 120% at 50% -10%, rgba(255, 255, 255, 0.08), transparent 55%);
+}
+
+.theme-newyear main {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-newyear .container {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-newyear .navbar-luxe {
+  background: linear-gradient(135deg, rgba(12, 23, 41, 0.95) 0%, rgba(12, 23, 41, 0.85) 55%, rgba(13, 26, 52, 0.9) 100%);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.theme-newyear .navbar-luxe .nav-link {
+  color: rgba(233, 243, 255, 0.9);
+}
+
+.theme-newyear .navbar-luxe .nav-link::after {
+  background: linear-gradient(135deg, var(--ny-accent), var(--ny-accent-2));
+}
+
+.theme-newyear .navbar-luxe .btn-nav {
+  color: #0b1729;
+  background: linear-gradient(135deg, var(--ny-accent), var(--ny-accent-2));
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+.theme-newyear .navbar-luxe .btn-nav.btn-outline-light {
+  color: var(--ny-text);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.theme-newyear .navbar-luxe .btn-nav.btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.theme-newyear .navbar-luxe .brand-logo img {
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
+}
+
+.theme-newyear .footer-luxe {
+  background: radial-gradient(circle at 20% 20%, rgba(234, 203, 87, 0.08), transparent 30%), radial-gradient(circle at 80% 10%, rgba(255, 159, 177, 0.08), transparent 30%), linear-gradient(180deg, #0c1729 0%, #0b1f3b 60%, #091425 100%);
+  color: var(--ny-text);
+  box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.35);
+}
+
+.theme-newyear .footer-luxe a,
+.theme-newyear .footer-luxe p,
+.theme-newyear .footer-luxe li,
+.theme-newyear .footer-luxe h5 {
+  color: var(--ny-text);
+}
+
+.theme-newyear .footer-divider {
+  background: linear-gradient(90deg, rgba(234, 203, 87, 0), rgba(234, 203, 87, 0.8), rgba(234, 203, 87, 0));
+}
+
+.theme-newyear .modal-content.luxe-celebration {
+  background: rgba(12, 23, 41, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--ny-shadow);
+}
+
+.theme-newyear .modal-content.luxe-celebration .modal-body {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  color: var(--ny-text);
+}
+
+.theme-newyear .btn-nav.btn-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ny-text);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
+}
+
+.theme-newyear .btn-nav.btn-theme-toggle.is-festive {
+  background: linear-gradient(135deg, var(--ny-accent), var(--ny-accent-2));
+  color: #0b1729;
+  border-color: transparent;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.btn-nav.btn-theme-toggle .theme-toggle__icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.btn-nav.btn-theme-toggle .theme-toggle__label {
+  letter-spacing: 0.04em;
+}
+
+.theme-classic {
+  background: linear-gradient(135deg, #f2f4f7 0%, #ffffff 45%, #f8f1ff 100%);
+  color: #4a4a4a;
+}
+
+.theme-classic .navbar-luxe {
+  background: linear-gradient(120deg, rgba(15, 15, 15, 0.96) 0%, rgba(47, 47, 47, 0.92) 50%, rgba(12, 12, 12, 0.96) 100%);
+}
+
+.theme-classic .btn-nav.btn-theme-toggle {
+  background: #ffffff;
+  color: #222;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+@keyframes ny-snowfall {
+  0% {
+    transform: translateY(-10%);
+  }
+  100% {
+    transform: translateY(20%);
+  }
+}
