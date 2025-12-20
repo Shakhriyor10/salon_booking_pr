@@ -631,6 +631,7 @@ def checkout_salon_products(request, pk):
     cart = _get_product_cart_for_request(request, salon)
     cart_items = list(cart.items.select_related('product'))
     is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+    redirect_url = salon.get_absolute_url()
 
     def _error_response(message: str):
         if is_ajax:
@@ -737,21 +738,24 @@ def checkout_salon_products(request, pk):
     cart.items.all().delete()
     if credentials_data:
         message_html = format_html(
-            '<div class="d-flex flex-wrap align-items-center gap-3 booking-success-credentials" data-credential="Ваш логин: {0}, Ваш пароль: {1}">'
-            '<span class="badge bg-light text-dark border small mb-0" data-credential="Ваш логин: {0}, Ваш пароль: {1}">Ваш логин: {0}, Ваш пароль: {1}</span>'
-            '<button type="button" class="btn btn-sm btn-outline-secondary copy-credential" data-credential="Ваш логин: {0}, Ваш пароль: {1}">Скопировать</button>'
+            '<div class="mb-3 text-start">Заказ оформлен! Курьер доставит товары в течение 2 дней.</div>'
+            '<div class="d-flex flex-wrap align-items-center gap-3 booking-success-credentials" '
+            'data-credential="Ваш логин: {0}, Ваш пароль: {1}">'
+            '<span class="badge bg-light text-dark border small mb-0" '
+            'data-credential="Ваш логин: {0}, Ваш пароль: {1}">Ваш логин: {0}, Ваш пароль: {1}</span>'
+            '<button type="button" class="btn btn-sm btn-outline-secondary copy-credential" '
+            'data-credential="Ваш логин: {0}, Ваш пароль: {1}">Скопировать</button>'
             '</div>',
             credentials_data['username'],
             credentials_data['password'],
         )
         messages.success(
             request,
-            format_html(
-                'Заказ оформлен! Курьер доставит товары в течение 2 дней.<br>{}',
-                message_html,
-            ),
+            message_html,
+            extra_tags='booking-success-modal booking-credentials',
         )
         login(request, customer, backend='django.contrib.auth.backends.ModelBackend')
+        redirect_url = reverse('my_product_orders')
     else:
         messages.success(
             request,
@@ -759,8 +763,8 @@ def checkout_salon_products(request, pk):
         )
 
     if is_ajax:
-        return JsonResponse({'success': True})
-    return redirect(salon.get_absolute_url())
+        return JsonResponse({'success': True, 'redirect_url': redirect_url})
+    return redirect(redirect_url)
 
 
 @login_required
