@@ -174,13 +174,20 @@
 }
 
 .promo-banner {
+  --promo-base-rgb: 72, 107, 113;
+  --promo-highlight-rgb: 255, 255, 255;
+  --promo-depth-rgb: 34, 49, 52;
+  --promo-glow-rgb: 214, 229, 233;
   border-radius: 20px;
   padding: 1.5rem 1.75rem;
   box-shadow: var(--promo-shadow);
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(72, 107, 113, 0.1);
+  border: 1px solid rgba(72, 107, 113, 0.08);
   min-height: 230px;
+  background: radial-gradient(circle at 18% 18%, rgba(var(--promo-highlight-rgb), 0.78), transparent 42%),
+              radial-gradient(circle at 82% 12%, rgba(var(--promo-glow-rgb), 0.55), transparent 42%),
+              linear-gradient(135deg, rgba(var(--promo-base-rgb), 0.14) 0%, rgba(var(--promo-base-rgb), 0.72) 100%);
 }
 
 .promo-banner::after {
@@ -189,39 +196,9 @@
   inset: 0;
   pointer-events: none;
   mix-blend-mode: screen;
-  opacity: 0.4;
-}
-
-.promo-banner.promo-theme-1 {
-  background: linear-gradient(135deg, #eef6ff 0%, #f7f0ff 60%, #ffeef6 100%);
-}
-.promo-banner.promo-theme-1::after {
-  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.6), transparent 45%),
-              radial-gradient(circle at 15% 75%, rgba(72, 107, 113, 0.15), transparent 55%);
-}
-
-.promo-banner.promo-theme-2 {
-  background: linear-gradient(135deg, #e9fbf3 0%, #f1f7ff 60%, #fff3e9 100%);
-}
-.promo-banner.promo-theme-2::after {
-  background: radial-gradient(circle at 70% 25%, rgba(255, 255, 255, 0.55), transparent 50%),
-              radial-gradient(circle at 25% 80%, rgba(72, 107, 113, 0.18), transparent 55%);
-}
-
-.promo-banner.promo-theme-3 {
-  background: linear-gradient(135deg, #f0f4ff 0%, #fef3ff 60%, #e9fbff 100%);
-}
-.promo-banner.promo-theme-3::after {
-  background: radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.65), transparent 50%),
-              radial-gradient(circle at 18% 78%, rgba(72, 107, 113, 0.18), transparent 55%);
-}
-
-.promo-banner.promo-theme-4 {
-  background: linear-gradient(135deg, #fff2f2 0%, #eef7ff 60%, #f1fff8 100%);
-}
-.promo-banner.promo-theme-4::after {
-  background: radial-gradient(circle at 75% 22%, rgba(255, 255, 255, 0.55), transparent 50%),
-              radial-gradient(circle at 22% 72%, rgba(72, 107, 113, 0.15), transparent 50%);
+  opacity: 0.36;
+  background: radial-gradient(circle at 28% 78%, rgba(var(--promo-base-rgb), 0.12), transparent 55%),
+              radial-gradient(circle at 78% 82%, rgba(var(--promo-highlight-rgb), 0.32), transparent 50%);
 }
 
 .promo-content {
@@ -250,7 +227,7 @@
   gap: 0.4rem;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(var(--promo-highlight-rgb), 0.82);
   color: #1f2b2e;
   box-shadow: 0 8px 18px rgba(72, 107, 113, 0.16);
 }
@@ -288,7 +265,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #1f2b2e;
+  background: linear-gradient(135deg, rgba(var(--promo-depth-rgb), 0.95), rgba(var(--promo-base-rgb), 0.95));
   color: #fff;
   padding: 0.65rem 1.1rem;
   border-radius: 14px;
@@ -306,7 +283,7 @@
 
 .promo-image {
   position: relative;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(var(--promo-highlight-rgb), 0.35);
   border-radius: 18px;
   overflow: hidden;
   min-height: 200px;
@@ -325,7 +302,7 @@
   right: 0.75rem;
   padding: 0.45rem 0.8rem;
   border-radius: 12px;
-  background: #c1121f;
+  background: linear-gradient(135deg, rgba(var(--promo-depth-rgb), 0.92), rgba(var(--promo-base-rgb), 0.9));
   color: #fff;
   font-weight: 800;
   box-shadow: 0 10px 25px rgba(193, 18, 31, 0.3);
@@ -337,7 +314,7 @@
   gap: 0.45rem;
   padding: 0.35rem 0.75rem;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(var(--promo-highlight-rgb), 0.9);
   color: #233133;
   font-weight: 700;
 }
@@ -403,7 +380,7 @@
     <div class="carousel-inner">
       {% for product in promoted_products %}
         <div class="carousel-item {% if forloop.first %}active{% endif %}">
-          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}">
+          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}" data-promo-banner>
             <div class="promo-content">
               <div class="promo-text">
                 <div class="d-flex gap-2 flex-wrap mb-2">
@@ -435,9 +412,9 @@
               </div>
               <div class="promo-image">
                 {% if product.photo %}
-                  <img src="{{ product.photo.url }}" alt="{{ product.name }}">
+                  <img src="{{ product.photo.url }}" alt="{{ product.name }}" data-promo-image>
                 {% else %}
-                  <img src="{% static 'img/default_salon.jpg' %}" alt="{{ product.name }}">
+                  <img src="{% static 'img/default_salon.jpg' %}" alt="{{ product.name }}" data-promo-image>
                 {% endif %}
                 {% if product.discount_percent %}
                   <span class="promo-badge">-{{ product.discount_percent }}%</span>
@@ -620,6 +597,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const searchTypeInput = document.getElementById("searchTypeInput");
   const salonGrid = document.querySelector(".salon-grid");
   const salonColumns = salonGrid ? Array.from(salonGrid.querySelectorAll(".col[data-lat][data-lng]")) : [];
+  const promoBanners = document.querySelectorAll('[data-promo-banner]');
   let suggestions = [];
   const favoriteModalElement = document.getElementById("favoriteAuthModal");
   const favoriteAuthModal = favoriteModalElement && typeof bootstrap !== "undefined"
@@ -762,6 +740,70 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
+
+  function extractAverageColor(image) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = image.src;
+
+      img.onload = function () {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve({ r: 72, g: 107, b: 113 });
+          return;
+        }
+
+        const width = canvas.width = img.naturalWidth;
+        const height = canvas.height = img.naturalHeight;
+
+        try {
+          ctx.drawImage(img, 0, 0, width, height);
+          const data = ctx.getImageData(0, 0, width, height).data;
+
+          let r = 0, g = 0, b = 0;
+          const totalPixels = data.length / 4;
+
+          for (let i = 0; i < data.length; i += 4) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+          }
+
+          resolve({
+            r: Math.round(r / totalPixels),
+            g: Math.round(g / totalPixels),
+            b: Math.round(b / totalPixels),
+          });
+        } catch (e) {
+          resolve({ r: 72, g: 107, b: 113 });
+        }
+      };
+
+      img.onerror = function () {
+        resolve({ r: 72, g: 107, b: 113 });
+      };
+    });
+  }
+
+  function adjustBannerPalette(banner) {
+    const image = banner.querySelector('[data-promo-image]');
+    if (!image) {
+      return;
+    }
+
+    extractAverageColor(image).then(color => {
+      const { r, g, b } = color;
+      banner.style.setProperty('--promo-base-rgb', `${r}, ${g}, ${b}`);
+      banner.style.setProperty('--promo-depth-rgb', `${Math.max(r - 20, 0)}, ${Math.max(g - 20, 0)}, ${Math.max(b - 20, 0)}`);
+      banner.style.setProperty('--promo-glow-rgb', `${Math.min(r + 25, 255)}, ${Math.min(g + 25, 255)}, ${Math.min(b + 25, 255)}`);
+      banner.style.setProperty('--promo-highlight-rgb', `${Math.min(r + 60, 255)}, ${Math.min(g + 60, 255)}, ${Math.min(b + 60, 255)}`);
+    });
+  }
+
+  promoBanners.forEach(banner => adjustBannerPalette(banner));
 
   function calculateDistance(lat1, lon1, lat2, lon2) {
     const toRad = value => (value * Math.PI) / 180;
