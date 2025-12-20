@@ -14,6 +14,7 @@ urlpatterns = [
     path('<int:pk>/products/cart-item/', views.update_product_cart_item, name='update_product_cart_item'),
     path('<int:pk>/products/checkout/', views.checkout_salon_products, name='checkout_salon_products'),
     path('my-product-orders/', views.my_product_orders, name='my_product_orders'),
+    path('my-product-orders/<int:pk>/cancel/', views.cancel_product_order, name='cancel_product_order'),
     path('salon/product-orders/', views.salon_product_orders_admin, name='salon_product_orders_admin'),
     path('stylists/', StylistListView.as_view(), name='stylists'),
     path('stylist/<int:stylist_id>/', StylistDetailView.as_view(), name='stylist_detail'),

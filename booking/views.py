@@ -35,6 +35,7 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.template.loader import render_to_string
 from django.views.decorators.http import require_GET, require_POST
 from django.template.context_processors import csrf
+from django.db import transaction
 from django.db.models import Count, Sum, DecimalField, Prefetch, F, Max, Avg, Q
 from django.db.models.functions import Cast, TruncDate, Coalesce, Lower, Upper
 from datetime import date, datetime
@@ -770,6 +771,44 @@ def my_product_orders(request):
         .order_by('-created_at')
     )
     return render(request, 'my_product_orders.html', {'orders': orders})
+
+
+@login_required
+@require_POST
+def cancel_product_order(request, pk):
+    order = get_object_or_404(ProductOrder, pk=pk, user=request.user)
+    non_cancellable = {
+        ProductOrder.Status.DELIVERED,
+        ProductOrder.Status.CANCELLED,
+    }
+    if order.status in non_cancellable:
+        messages.error(request, 'Этот заказ уже нельзя отменить.')
+        return redirect('my_product_orders')
+
+    with transaction.atomic():
+        order = (
+            ProductOrder.objects.select_for_update()
+            .prefetch_related('items')
+            .get(pk=pk, user=request.user)
+        )
+        if order.status in non_cancellable:
+            messages.error(request, 'Этот заказ уже нельзя отменить.')
+            return redirect('my_product_orders')
+
+        order.status = ProductOrder.Status.CANCELLED
+        order.save(update_fields=['status'])
+
+        for item in order.items.all():
+            product = SalonProduct.objects.filter(
+                salon=order.salon, name=item.product_name
+            ).first()
+            if product:
+                product.quantity = F('quantity') + item.quantity
+                product.is_active = True
+                product.save(update_fields=['quantity', 'is_active', 'updated_at'])
+
+    messages.success(request, 'Заказ отменён, товары возвращены в салон.')
+    return redirect('my_product_orders')
 
 
 @login_required
