@@ -149,6 +149,11 @@ class SalonProduct(models.Model):
     discount_percent = models.PositiveIntegerField('Скидка, %', default=0)
     quantity = models.PositiveIntegerField('Количество на складе', default=0)
     is_active = models.BooleanField('Товар активен', default=True)
+    is_promoted = models.BooleanField(
+        'Рекламировать на главной',
+        default=False,
+        help_text='Только суперпользователь может включить или выключить рекламу.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

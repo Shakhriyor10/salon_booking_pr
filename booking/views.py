@@ -349,6 +349,19 @@ class HomePageView(ListView):
         context['selected_rating'] = self.request.GET.get('rating', '')
         context['selected_service'] = self.request.GET.get('service', '')
         context['favorite_salon_ids'] = list(favorite_salon_ids)
+        today = timezone.localdate()
+        context['promoted_products'] = (
+            SalonProduct.objects
+            .select_related('salon', 'category')
+            .filter(
+                is_promoted=True,
+                is_active=True,
+                quantity__gt=0,
+                salon__status=True,
+            )
+            .filter(Q(salon__subscription_expires_at__isnull=True) | Q(salon__subscription_expires_at__gte=today))
+            .order_by('-discount_percent', '-updated_at')[:6]
+        )
         return context
 
 

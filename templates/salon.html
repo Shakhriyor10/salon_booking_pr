@@ -10,6 +10,7 @@
     --salon-card-shadow-hover: 0 24px 55px rgba(72, 107, 113, 0.26);
     --salon-accent: #486b71;
     --salon-accent-soft: rgba(72, 107, 113, 0.08);
+    --promo-shadow: 0 20px 40px rgba(72, 107, 113, 0.18);
   }
 
   .salon-grid {
@@ -171,6 +172,190 @@
     letter-spacing: 0.03em;
   }
 }
+
+.promo-banner {
+  border-radius: 20px;
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--promo-shadow);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(72, 107, 113, 0.1);
+  min-height: 230px;
+}
+
+.promo-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.4;
+}
+
+.promo-banner.promo-theme-1 {
+  background: linear-gradient(135deg, #eef6ff 0%, #f7f0ff 60%, #ffeef6 100%);
+}
+.promo-banner.promo-theme-1::after {
+  background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.6), transparent 45%),
+              radial-gradient(circle at 15% 75%, rgba(72, 107, 113, 0.15), transparent 55%);
+}
+
+.promo-banner.promo-theme-2 {
+  background: linear-gradient(135deg, #e9fbf3 0%, #f1f7ff 60%, #fff3e9 100%);
+}
+.promo-banner.promo-theme-2::after {
+  background: radial-gradient(circle at 70% 25%, rgba(255, 255, 255, 0.55), transparent 50%),
+              radial-gradient(circle at 25% 80%, rgba(72, 107, 113, 0.18), transparent 55%);
+}
+
+.promo-banner.promo-theme-3 {
+  background: linear-gradient(135deg, #f0f4ff 0%, #fef3ff 60%, #e9fbff 100%);
+}
+.promo-banner.promo-theme-3::after {
+  background: radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.65), transparent 50%),
+              radial-gradient(circle at 18% 78%, rgba(72, 107, 113, 0.18), transparent 55%);
+}
+
+.promo-banner.promo-theme-4 {
+  background: linear-gradient(135deg, #fff2f2 0%, #eef7ff 60%, #f1fff8 100%);
+}
+.promo-banner.promo-theme-4::after {
+  background: radial-gradient(circle at 75% 22%, rgba(255, 255, 255, 0.55), transparent 50%),
+              radial-gradient(circle at 22% 72%, rgba(72, 107, 113, 0.15), transparent 50%);
+}
+
+.promo-content {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr;
+  gap: 1.1rem;
+  align-items: center;
+}
+
+.promo-text h2 {
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+  color: #1f2b2e;
+}
+
+.promo-text p {
+  margin-bottom: 0.75rem;
+  color: #4a5a5d;
+}
+
+.promo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  color: #1f2b2e;
+  box-shadow: 0 8px 18px rgba(72, 107, 113, 0.16);
+}
+
+.promo-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+}
+
+.promo-price strong {
+  font-size: 1.5rem;
+  color: #1d2c2f;
+}
+
+.promo-price del {
+  color: #6f8085;
+  font-weight: 600;
+}
+
+.promo-discount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #c1121f;
+  font-weight: 700;
+  background: rgba(193, 18, 31, 0.12);
+  padding: 0.45rem 0.75rem;
+  border-radius: 12px;
+}
+
+.promo-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1f2b2e;
+  color: #fff;
+  padding: 0.65rem 1.1rem;
+  border-radius: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 12px 30px rgba(72, 107, 113, 0.22);
+}
+
+.promo-cta:hover {
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 35px rgba(72, 107, 113, 0.28);
+}
+
+.promo-image {
+  position: relative;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 200px;
+  box-shadow: 0 12px 28px rgba(72, 107, 113, 0.14);
+}
+
+.promo-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.promo-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 12px;
+  background: #c1121f;
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 10px 25px rgba(193, 18, 31, 0.3);
+}
+
+.promo-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #233133;
+  font-weight: 700;
+}
+
+.promo-carousel .carousel-indicators [data-bs-target] {
+  background-color: #1f2b2e;
+}
+
+.promo-carousel .carousel-control-next,
+.promo-carousel .carousel-control-prev {
+  width: 4rem;
+}
+
+@media (max-width: 992px) {
+  .promo-content {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 <!--<form method="get" class="row gy-2 gx-3 align-items-center mb-4">-->
 <!--  &lt;!&ndash; Тип салона &ndash;&gt;-->
@@ -204,6 +389,80 @@
 <!--    <button class="btn btn-primary w-100" type="submit">Поиск</button>-->
 <!--  </div>-->
 <!--</form>-->
+
+{% if promoted_products %}
+<section class="container my-4 promo-carousel">
+  <div id="promoCarousel" class="carousel slide" data-bs-ride="carousel">
+    {% if promoted_products|length > 1 %}
+      <div class="carousel-indicators">
+        {% for product in promoted_products %}
+          <button type="button" data-bs-target="#promoCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} {% if forloop.first %}aria-current="true"{% endif %} aria-label="Товар {{ forloop.counter }}"></button>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="carousel-inner">
+      {% for product in promoted_products %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}">
+            <div class="promo-content">
+              <div class="promo-text">
+                <div class="d-flex gap-2 flex-wrap mb-2">
+                  <span class="promo-chip"><i class="bi bi-stars"></i> Выбор администрации</span>
+                  {% if product.category %}
+                    <span class="promo-chip"><i class="bi bi-tag"></i> {{ product.category.name }}</span>
+                  {% endif %}
+                </div>
+                <h2>{{ product.name }}</h2>
+                <p class="mb-2">Товар из салона <strong>{{ product.salon.name }}</strong>. Заберите свою выгоду, пока действует акция.</p>
+                <div class="promo-price">
+                  <strong>{{ product.get_final_price }} сум</strong>
+                  {% if product.get_display_old_price %}
+                    <del>{{ product.get_display_old_price }} сум</del>
+                  {% endif %}
+                  {% if product.discount_percent %}
+                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> -{{ product.discount_percent }}%</span>
+                  {% elif product.get_display_old_price %}
+                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> Спецпредложение</span>
+                  {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap align-items-center">
+                  <a href="{% url 'salon_detail' product.salon.pk product.salon.slug %}" class="promo-cta">
+                    В салон
+                    <i class="bi bi-arrow-right-short fs-4 mb-0"></i>
+                  </a>
+                  <span class="promo-meta"><i class="bi bi-box-seam"></i> В наличии: {{ product.quantity }}</span>
+                </div>
+              </div>
+              <div class="promo-image">
+                {% if product.photo %}
+                  <img src="{{ product.photo.url }}" alt="{{ product.name }}">
+                {% else %}
+                  <img src="{% static 'img/default_salon.jpg' %}" alt="{{ product.name }}">
+                {% endif %}
+                {% if product.discount_percent %}
+                  <span class="promo-badge">-{{ product.discount_percent }}%</span>
+                {% elif product.get_display_old_price %}
+                  <span class="promo-badge">SALE</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    {% if promoted_products|length > 1 %}
+      <button class="carousel-control-prev" type="button" data-bs-target="#promoCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Предыдущий</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#promoCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Следующий</span>
+      </button>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
 
 <h3 class="text-center fw-semibold mt-4 mb-3">Поиск и фильтр</h3>
 <form id="filterForm" method="get" class="mb-4">
