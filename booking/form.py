@@ -598,6 +598,7 @@ class ProductOrderForm(forms.Form):
         label='Способ оплаты',
         choices=(),
         widget=forms.RadioSelect,
+        required=False,
     )
 
     def __init__(self, *args, available_methods=None, **kwargs):
@@ -608,3 +609,15 @@ class ProductOrderForm(forms.Form):
         self.fields['payment_method'].choices = choices
         if choices:
             self.fields['payment_method'].initial = choices[0][0]
+
+    def clean_payment_method(self):
+        value = self.cleaned_data.get('payment_method')
+        if not value:
+            choices = self.fields['payment_method'].choices
+            if choices:
+                return choices[0][0]
+            return ProductOrder.PaymentMethod.CASH
+        valid_values = {choice[0] for choice in self.fields['payment_method'].choices}
+        if value not in valid_values:
+            raise forms.ValidationError('Выберите доступный способ оплаты.')
+        return value
