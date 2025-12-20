@@ -201,10 +201,7 @@ def _get_product_cart_for_request(request, salon: Salon):
 
 
 def _available_product_payment_methods(salon: Salon):
-    methods = [ProductOrder.PaymentMethod.CASH]
-    if salon.get_active_payment_card():
-        methods.insert(0, ProductOrder.PaymentMethod.CARD)
-    return methods
+    return [ProductOrder.PaymentMethod.CASH]
 
 
 def _serialize_cart(cart: ProductCart, as_strings: bool = False):
