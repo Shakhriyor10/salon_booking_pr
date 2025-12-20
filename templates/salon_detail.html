@@ -2005,7 +2005,20 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Телефон для доставки</label>
-                <input type="text" name="guest_phone" class="form-control" value="{{ prefill_guest_phone }}" placeholder="93-123-45-67" required>
+                <div class="input-group">
+                  <span class="input-group-text">+998</span>
+                  <input type="tel"
+                         name="guest_phone"
+                         id="guest_phone"
+                         class="form-control"
+                         inputmode="numeric"
+                         value="{{ prefill_guest_phone }}"
+                         placeholder="93-123-45-67"
+                         pattern="^\d{2}-\d{3}-\d{2}-\d{2}$"
+                         title="Введите номер в формате 93-123-45-67"
+                         data-uzbek-phone-input
+                         required>
+                </div>
                 <div class="form-text">Мы создадим профиль для отслеживания заказа, если вы ещё не зарегистрированы.</div>
               </div>
               <div class="col-md-12">
@@ -2018,24 +2031,6 @@
                 <div class="form-text">Оставьте пустым только если выбрали самовывоз.</div>
               </div>
             </div>
-            {% if product_order_form %}
-              <div class="mb-3">
-                <label class="form-label">Способ оплаты</label>
-                <div class="d-flex flex-wrap gap-3">
-                  {% for radio in product_order_form.payment_method %}
-                    <div class="form-check">
-                      {{ radio.tag }}
-                      <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
-                    </div>
-                  {% endfor %}
-                </div>
-                {% if product_payment_methods and product_payment_methods.0 == 'card' %}
-                  <div class="form-text">Оплата доступна на карту салона или наличными при получении заказа.</div>
-                {% else %}
-                  <div class="form-text">Оплата доступна только наличными при получении заказа курьером.</div>
-                {% endif %}
-              </div>
-            {% endif %}
             <button type="submit" class="btn btn-theme" data-cart-submit {% if not product_cart_items %}disabled{% endif %}>Оформить заказ</button>
           </form>
         </div>
