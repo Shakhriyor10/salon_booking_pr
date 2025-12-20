@@ -2,75 +2,182 @@
 {% load humanize %}
 
 {% block content %}
-<div class="container py-4">
-  <h2 class="mb-4">Заказы товаров салона</h2>
+<div class="container py-4 py-md-5">
+  <style>
+    .admin-hero {
+      background: linear-gradient(120deg, #0f0f0f 0%, #1f1f1f 45%, #101010 100%);
+      border-radius: 20px;
+      padding: 1.75rem;
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
+    }
+
+    .admin-order-card {
+      border: 1px solid #e9ecef;
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.06);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .admin-order-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .status-badge {
+      border-radius: 999px;
+      padding: 0.45rem 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border: 1px solid transparent;
+    }
+
+    .status-created { background: #f1f3f5; color: #495057; border-color: #e9ecef; }
+    .status-accepted { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
+    .status-in_delivery { background: #fff3cd; color: #8f5a0a; border-color: #ffe8a1; }
+    .status-delivered { background: #e6f4ff; color: #0b6bcf; border-color: #cfe3ff; }
+    .status-cancelled { background: #fdecea; color: #b23c17; border-color: #f7d7d2; }
+    .status-paid { background: #e9f7ef; color: #1e8549; border-color: #d1e9d8; }
+
+    .order-chip {
+      background: #0f0f0f;
+      color: #fff;
+      padding: 0.55rem 1rem;
+      border-radius: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+    }
+
+    .order-items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .order-item {
+      border: 1px dashed #e3e6ea;
+      border-radius: 12px;
+      padding: 0.75rem 0.9rem;
+      background: #f8f9fa;
+    }
+
+    .order-item .price {
+      font-weight: 700;
+      color: #1b1b1b;
+    }
+  </style>
+
+  <div class="admin-hero mb-4">
+    <div class="d-flex align-items-center flex-wrap gap-3">
+      <div class="order-chip d-inline-flex align-items-center gap-2 bg-white text-dark">
+        <i class="bi bi-shop-window"></i>
+      </div>
+      <div>
+        <h2 class="fw-bold mb-1">Заказы товаров салона</h2>
+        <p class="mb-0 text-light opacity-75">Контролируйте статусы, оплату и состав заказов гостей в одном рабочем окне.</p>
+      </div>
+      {% if orders %}
+        <div class="ms-auto">
+          <span class="status-badge bg-white text-dark border-0"><i class="bi bi-list-check me-1"></i>Всего заказов: {{ orders|length }}</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
   {% if orders %}
-    <div class="table-responsive">
-      <table class="table align-middle">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Клиент</th>
-            <th>Контакты</th>
-            <th>Адрес</th>
-            <th>Сумма</th>
-            <th>Оплата</th>
-            <th>Статус</th>
-            <th class="text-end">Действия</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for order in orders %}
-          <tr>
-            <td>#{{ order.id }}<div class="text-muted small">{{ order.created_at|date:"d.m.Y H:i" }}</div></td>
-            <td>
-              {% if order.user %}
-                {{ order.user.get_full_name|default:order.user.username }}
-              {% else %}
-                Гость
-              {% endif %}
-            </td>
-            <td>
-              <div>{{ order.contact_name|default:"—" }}</div>
-              <div class="text-muted small">{{ order.contact_phone|default:"" }}</div>
-            </td>
-            <td>
-              {% if order.is_pickup %}
-                <span class="badge bg-secondary">Самовывоз</span>
-              {% else %}
-                {{ order.address|default:"—" }}
-              {% endif %}
-            </td>
-            <td>{{ order.total_amount|intcomma }} сум</td>
-            <td>{{ order.get_payment_method_display }}</td>
-            <td>{{ order.get_status_display }}</td>
-            <td class="text-end">
-              <form method="post" class="d-inline-flex gap-2 align-items-center">
-                {% csrf_token %}
-                <input type="hidden" name="order_id" value="{{ order.id }}">
-                <select name="status" class="form-select form-select-sm">
-                  {% for value,label in status_choices %}
-                    <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>{{ label }}</option>
-                  {% endfor %}
-                </select>
-                <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
-              </form>
-              <details class="mt-2">
-                <summary class="small text-muted">Товары</summary>
-                <ul class="mb-0 small">
+    <div class="row g-4">
+      {% for order in orders %}
+        <div class="col-12">
+          <div class="admin-order-card">
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div class="d-flex align-items-start gap-3">
+                  <div class="order-chip">#{{ order.id }}</div>
+                  <div>
+                    <div class="fw-semibold fs-5 mb-1">
+                      {% if order.user %}
+                        {{ order.user.get_full_name|default:order.user.username }}
+                      {% else %}
+                        Гость
+                      {% endif %}
+                    </div>
+                    <div class="text-muted small d-flex flex-wrap gap-3">
+                      <span><i class="bi bi-calendar-week"></i> {{ order.created_at|date:"d.m.Y H:i" }}</span>
+                      <span><i class="bi bi-wallet2"></i> {{ order.get_payment_method_display }}</span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                      <span class="status-badge status-{{ order.status }}">{{ order.get_status_display }}</span>
+                      {% if order.is_pickup %}
+                        <span class="status-badge bg-secondary text-white border-0"><i class="bi bi-shop me-1"></i>Самовывоз</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <div class="text-end">
+                  <div class="text-muted small">Сумма заказа</div>
+                  <div class="h4 fw-bold mb-1">{{ order.total_amount|intcomma }} сум</div>
+                  {% if not order.is_pickup %}
+                    <div class="text-muted small"><i class="bi bi-geo-alt"></i> {{ order.address|default:"—" }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="row g-3 align-items-center">
+                <div class="col-md-7">
+                  <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-light text-dark border"><i class="bi bi-person"></i> {{ order.contact_name|default:"—" }}</span>
+                    <span class="badge bg-light text-dark border"><i class="bi bi-telephone"></i> {{ order.contact_phone|default:"—" }}</span>
+                  </div>
+                </div>
+                <div class="col-md-5">
+                  <form method="post" class="d-flex flex-wrap gap-2 justify-content-md-end align-items-center">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" value="{{ order.id }}">
+                    <select name="status" class="form-select form-select-sm w-auto">
+                      {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if value == order.status %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                      <i class="bi bi-save"></i><span>Сохранить</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <div class="fw-semibold text-uppercase small text-muted">Товары в заказе</div>
+                  <div class="badge bg-dark text-white">шт.: {{ order.items.all|length }}</div>
+                </div>
+                <div class="order-items-grid">
                   {% for item in order.items.all %}
-                    <li>{{ item.product_name }} — {{ item.quantity }} шт. ({{ item.unit_price|intcomma }} сум)</li>
+                    <div class="order-item">
+                      <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                          <div class="fw-semibold">{{ item.product_name }}</div>
+                          <div class="text-muted small">{{ item.unit_price|intcomma }} сум × {{ item.quantity }} шт.</div>
+                        </div>
+                        <div class="price">{{ item.get_total|intcomma }} сум</div>
+                      </div>
+                    </div>
                   {% endfor %}
-                </ul>
-              </details>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
     </div>
   {% else %}
-    <p class="text-muted">Заказов пока нет.</p>
+    <div class="text-center bg-white rounded-4 border shadow-sm p-5">
+      <div class="display-6 text-muted mb-3"><i class="bi bi-clipboard-x"></i></div>
+      <h5 class="fw-semibold mb-2">Заказов пока нет</h5>
+      <p class="text-muted mb-0">Как только клиенты оформят заказ, он появится здесь для обработки.</p>
+    </div>
   {% endif %}
 </div>
 {% endblock %}
