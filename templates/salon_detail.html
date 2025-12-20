@@ -2070,6 +2070,24 @@
                 <textarea name="address" rows="2" class="form-control" placeholder="Укажите улицу, дом, подъезд, ориентиры"></textarea>
                 <div class="form-text">Оставьте пустым только если выбрали самовывоз.</div>
               </div>
+              <div class="col-md-12">
+                <label class="form-label d-block">Способ оплаты</label>
+                {% if product_order_form.fields.payment_method.choices %}
+                  {% for value, label in product_order_form.fields.payment_method.choices %}
+                    <div class="form-check">
+                      <input class="form-check-input"
+                             type="radio"
+                             name="payment_method"
+                             id="id_payment_method_{{ forloop.counter }}"
+                             value="{{ value }}"
+                             {% if forloop.first %}checked{% endif %}>
+                      <label class="form-check-label" for="id_payment_method_{{ forloop.counter }}">{{ label }}</label>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <p class="text-muted small mb-0">Способы оплаты недоступны.</p>
+                {% endif %}
+              </div>
             </div>
             <button type="submit" class="btn btn-theme" data-cart-submit {% if not product_cart_items %}disabled{% endif %}>Оформить заказ</button>
           </form>
