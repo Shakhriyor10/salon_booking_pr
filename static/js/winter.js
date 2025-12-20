@@ -1,5 +1,5 @@
 (function () {
-  const SNOWFLAKE_COUNT = 140;
+  const SNOWFLAKE_COUNT = 90;
 
   function createSnowflake(index) {
     const flake = document.createElement('div');
