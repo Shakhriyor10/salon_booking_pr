@@ -18,6 +18,7 @@
   }
 
   .salon-card {
+    position: relative;
     border-radius: var(--salon-card-radius);
     overflow: hidden;
     border: none;
@@ -39,38 +40,39 @@
 
   .salon-card__garland {
     position: absolute;
-    top: 0.75rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 86%;
-    height: 14px;
-    border-radius: 999px;
-    background-repeat: repeat-x;
-    background-size: 38px 14px;
-    opacity: 0.9;
+    inset: 0.75rem;
+    border-radius: calc(var(--salon-card-radius) - 0.4rem);
+    background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
+    background-size: 32px 14px, 32px 14px, 14px 32px, 14px 32px;
+    background-position: top center, bottom center, left center, right center;
+    opacity: 0.95;
     pointer-events: none;
-    filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.18));
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.18));
+    z-index: 2;
   }
 
   .garland-theme-1 {
     background-image:
       radial-gradient(circle at 8px 7px, #ff9aa2 0, #ff9aa2 5px, transparent 7px),
-      radial-gradient(circle at 28px 7px, #c1ffd7 0, #c1ffd7 5px, transparent 7px),
-      radial-gradient(circle at 18px 7px, #ffe29a 0, #ffe29a 5px, transparent 7px);
+      radial-gradient(circle at 24px 7px, #b5e48c 0, #b5e48c 5px, transparent 7px),
+      radial-gradient(circle at 7px 8px, #ffe29a 0, #ffe29a 5px, transparent 7px),
+      radial-gradient(circle at 7px 24px, #9ad0ff 0, #9ad0ff 5px, transparent 7px);
   }
 
   .garland-theme-2 {
     background-image:
       radial-gradient(circle at 10px 7px, #9ad0ff 0, #9ad0ff 5px, transparent 7px),
       radial-gradient(circle at 22px 7px, #ffd3b6 0, #ffd3b6 5px, transparent 7px),
-      radial-gradient(circle at 34px 7px, #fbb1bd 0, #fbb1bd 5px, transparent 7px);
+      radial-gradient(circle at 7px 10px, #fcd5ce 0, #fcd5ce 5px, transparent 7px),
+      radial-gradient(circle at 7px 22px, #f497da 0, #f497da 5px, transparent 7px);
   }
 
   .garland-theme-3 {
     background-image:
-      radial-gradient(circle at 6px 7px, #b5e48c 0, #b5e48c 5px, transparent 7px),
-      radial-gradient(circle at 20px 7px, #ffd166 0, #ffd166 5px, transparent 7px),
-      radial-gradient(circle at 32px 7px, #f497da 0, #f497da 5px, transparent 7px);
+      radial-gradient(circle at 8px 7px, #ffd166 0, #ffd166 5px, transparent 7px),
+      radial-gradient(circle at 22px 7px, #c1ffd7 0, #c1ffd7 5px, transparent 7px),
+      radial-gradient(circle at 7px 8px, #9ad0ff 0, #9ad0ff 5px, transparent 7px),
+      radial-gradient(circle at 7px 22px, #ffb3c6 0, #ffb3c6 5px, transparent 7px);
   }
 
   .salon-card__image-wrapper img {
