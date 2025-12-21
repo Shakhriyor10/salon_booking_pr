@@ -1204,6 +1204,8 @@
 
     if (visibleRows.length === 0) {
       boardEmptyState.classList.remove('d-none');
+      bindAppointmentActionButtons(boardWrapper);
+      bindCopyButtons(boardWrapper);
       return;
     }
 
@@ -1359,7 +1361,8 @@
       boardWrapper.appendChild(dayCard);
     });
 
-    attachDashboardControls(true);
+    bindAppointmentActionButtons(boardWrapper);
+    bindCopyButtons(boardWrapper);
   }
 
   function createBoardAppointmentElement(item) {
@@ -1910,6 +1913,7 @@
       }
     });
 
+    bindAppointmentActionButtons();
     const cancelModal = document.getElementById("cancelModal");
     if (cancelModal && !cancelModal.dataset.bound) {
       cancelModal.addEventListener("hidden.bs.modal", () => {
@@ -1945,6 +1949,44 @@
 
     bindCopyButtons(document);
     applyFilters();
+  }
+
+  function bindAppointmentActionButtons(scope = document) {
+    const target = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+    target.querySelectorAll("[data-appointment-action]").forEach((button) => {
+      if (button.dataset.bound) {
+        return;
+      }
+
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const action = button.dataset.appointmentAction;
+        const appointmentId = button.dataset.appointmentId;
+        if (!action || !appointmentId) {
+          return;
+        }
+
+        if (action === "cancel") {
+          currentAppointmentId = appointmentId;
+          pendingActionButton = button;
+          const modalEl = document.getElementById("cancelModal");
+          if (modalEl) {
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+            stopUpdatePolling();
+          } else {
+            setLoadingState(button, true);
+            submitAction(appointmentId, action)
+              .finally(() => setLoadingState(button, false));
+          }
+        } else {
+          setLoadingState(button, true);
+          submitAction(appointmentId, action)
+            .finally(() => setLoadingState(button, false));
+        }
+      });
+      button.dataset.bound = "true";
+    });
   }
 
   function applyFilters() {
