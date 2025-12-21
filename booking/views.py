@@ -1571,6 +1571,36 @@ def group_appointments_by_date(appointments):
     return dict(sorted(grouped.items(), reverse=True))  # свежие даты сверху
 
 
+def serialize_dashboard_stylists(user, profile):
+    salon_stylists = []
+
+    if not user.is_superuser:
+        if not (profile and profile.salon):
+            return salon_stylists
+
+        stylists_qs = profile.salon.stylists.select_related("user").prefetch_related("working_hours")
+    else:
+        stylists_qs = Stylist.objects.select_related("user").prefetch_related("working_hours")
+
+    for stylist in stylists_qs:
+        salon_stylists.append(
+            {
+                "id": stylist.id,
+                "name": stylist.user.get_full_name() or stylist.user.username,
+                "working_hours": [
+                    {
+                        "weekday": wh.weekday,
+                        "start": wh.start_time.strftime("%H:%M"),
+                        "end": wh.end_time.strftime("%H:%M"),
+                    }
+                    for wh in stylist.working_hours.all()
+                ],
+            }
+        )
+
+    return salon_stylists
+
+
 def get_latest_activity_timestamp(appointments):
     timestamps = []
     for appointment in appointments:
@@ -1667,23 +1697,7 @@ def dashboard_view(request):
     ]
 
     calendar_summary = build_calendar_summary(appointments)
-    salon_stylists = []
-    if not user.is_superuser and profile and profile.salon:
-        salon_stylists = [
-            {
-                "id": stylist.id,
-                "name": stylist.user.get_full_name() or stylist.user.username,
-            }
-            for stylist in profile.salon.stylists.select_related("user").all()
-        ]
-    elif user.is_superuser:
-        salon_stylists = [
-            {
-                "id": stylist.id,
-                "name": stylist.user.get_full_name() or stylist.user.username,
-            }
-            for stylist in Stylist.objects.select_related("user").all()
-        ]
+    salon_stylists = serialize_dashboard_stylists(user, profile)
 
     context = {
         "grouped_appointments": grouped_appointments,
@@ -1734,6 +1748,7 @@ def dashboard_ajax(request):
         tomorrow.isoformat(),
     ]
     calendar_summary = build_calendar_summary(appointments)
+    salon_stylists = serialize_dashboard_stylists(user, profile)
 
     context = {
         "grouped_appointments": grouped_appointments,
@@ -1751,6 +1766,7 @@ def dashboard_ajax(request):
         "today": today.isoformat(),
         "latest_created": latest_activity.isoformat() if latest_activity else None,
         "count": len(appointments),
+        "salon_stylists": salon_stylists,
     })
 
 
