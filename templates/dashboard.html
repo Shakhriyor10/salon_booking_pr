@@ -1056,6 +1056,7 @@
   let activeStatusFilter = "all";
   let latestCreatedAt = "{{ latest_created_iso|default_if_none:''|escapejs }}";
   const updatesCheckUrl = "{% url 'dashboard_updates' %}";
+  const dashboardStylists = JSON.parse('{{ salon_stylists_json|default:"[]"|escapejs }}');
   let pendingCountHint = null;
   let defaultVisibleDatesArray = JSON.parse('{{ default_visible_dates_json|escapejs }}');
   const defaultAppointmentView = Number("{{ appointment_view_style|default:1 }}") || 1;
@@ -1306,6 +1307,14 @@
 
     sortedDates.forEach((dateKey) => {
       const dateData = boardData.get(dateKey);
+      const stylistDirectory = Array.isArray(dashboardStylists) ? dashboardStylists : [];
+      stylistDirectory.forEach((stylist) => {
+        const key = String(stylist.id);
+        if (!dateData.stylists.has(key)) {
+          dateData.stylists.set(key, { name: stylist.name || 'Без мастера', appointments: {} });
+        }
+      });
+
       const stylists = Array.from(dateData.stylists.entries()).map(([key, value]) => ({ key, ...value }));
       stylists.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
       const times = Array.from(dateData.times).sort();
