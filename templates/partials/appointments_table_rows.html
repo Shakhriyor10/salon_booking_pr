@@ -2,7 +2,7 @@
 {% with show_stylist=show_stylist_column|default:True %}
 {% with total_columns=show_stylist|yesno:'7,6' %}
 {% for date, appointments_on_date in grouped_appointments.items %}
-  <div class="appointments-day card" data-day-block data-date="{{ date|date:'Y-m-d' }}">
+  <div class="appointments-day card" data-day-block data-date="{{ date|date:'Y-m-d' }}" data-date-label="{{ date }}">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3 py-3 px-4">
       <div class="d-flex align-items-center gap-3">
         <div class="date-icon d-flex align-items-center justify-content-center">
@@ -34,7 +34,7 @@
         </thead>
         <tbody>
           {% for a in appointments_on_date %}
-            <tr class="appointment-row" data-appointment-row="true" data-status="{{ a.status }}" data-appointment-id="{{ a.id }}" data-date="{{ a.start_time|date:'Y-m-d' }}">
+            <tr class="appointment-row" data-appointment-row="true" data-status="{{ a.status }}" data-appointment-id="{{ a.id }}" data-date="{{ a.start_time|date:'Y-m-d' }}" data-time="{{ a.start_time|date:'H:i' }}" data-stylist="{{ a.stylist_id|default_if_none:'' }}" data-stylist-name="{{ a.stylist.user.get_full_name|default:a.stylist.user.username }}">
               <td data-label="Клиент">
   {% if a.customer %}
     <div class="client-name">{{ a.customer.first_name|default:a.customer.username }}</div>

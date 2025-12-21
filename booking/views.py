@@ -15,6 +15,7 @@ from .form import (
     SalonServiceForm,
     SalonServiceUpdateForm,
     StylistUpdateForm,
+    SalonSettingsForm,
     SalonPaymentCardForm,
     AppointmentPaymentMethodForm,
     AppointmentReceiptForm,
@@ -1641,6 +1642,9 @@ def dashboard_view(request):
     grouped_appointments = group_appointments_by_date(appointments)
     latest_activity = get_latest_activity_timestamp(appointments)
     latest_created_iso = latest_activity.isoformat() if latest_activity else ""
+    appointment_view_style = 1
+    if profile and getattr(profile, 'salon', None):
+        appointment_view_style = getattr(profile.salon, 'appointment_view_style', 1) or 1
 
     # 📊 Группировка и расчёты
     visible_start = yesterday
@@ -1676,6 +1680,7 @@ def dashboard_view(request):
         "refund_card_type_choices": SalonPaymentCard.CARD_TYPE_CHOICES,
         "is_salon_admin": True,  # ← Админ салона всегда видит всё
         "viewer_stylist": None,
+        "appointment_view_style": appointment_view_style,
     }
 
     return render(request, "dashboard.html", context)
@@ -3093,6 +3098,7 @@ def stylist_dayoff_view(request):
     payment_cards = SalonPaymentCard.objects.none()
     product_form = None
     salon_products = None
+    salon_settings_form = None
 
     stylists = []
     stylists_map = {}
@@ -3131,6 +3137,8 @@ def stylist_dayoff_view(request):
         for product in salon_products:
             product.update_form = SalonProductForm(instance=product)
         product_form = SalonProductForm()
+        if profile_salon:
+            salon_settings_form = SalonSettingsForm(instance=profile_salon)
 
         selected_stylist_id = request.POST.get('stylist_id') or request.GET.get('stylist_id')
 
@@ -3348,9 +3356,18 @@ def stylist_dayoff_view(request):
             product.delete()
             messages.success(request, 'Товар удалён из каталога.')
             return redirect(reverse('stylist_dayoff'))
+        elif profile.is_salon_admin and form_type == 'salon_settings_update':
+            if not profile_salon:
+                messages.error(request, 'Настройки салона недоступны: салон не найден.')
+            else:
+                salon_settings_form = SalonSettingsForm(request.POST, instance=profile_salon)
+                if salon_settings_form.is_valid():
+                    salon_settings_form.save()
+                    messages.success(request, 'Настройки отображения записей сохранены.')
+                    return redirect(reverse('stylist_dayoff'))
 
         # Дальнейшие действия требуют выбранного стилиста
-        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'salon_service_update', 'stylist_update', 'stylist_delete', 'product_add', 'product_update', 'product_delete', 'product_toggle'}:
+        if stylist is None and form_type not in {'stylist_add', 'salon_service_add', 'salon_service_delete', 'salon_service_update', 'stylist_update', 'stylist_delete', 'product_add', 'product_update', 'product_delete', 'product_toggle', 'salon_settings_update'}:
             messages.error(request, 'Сначала выберите мастера.')
             return redirect(reverse('stylist_dayoff'))
 
@@ -3613,6 +3630,7 @@ def stylist_dayoff_view(request):
         'is_salon_admin': profile.is_salon_admin,
         'subscription_expires_at': subscription_expires_at,
         'subscription_is_active': subscription_is_active,
+        'salon_settings_form': salon_settings_form,
     }
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest' and request.GET.get('partial') == 'blocks':

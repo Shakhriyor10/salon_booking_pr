@@ -138,6 +138,137 @@
     margin-top: 2rem;
   }
 
+  .appointments-view-toggle .btn {
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .board-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .board-day {
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 1.25rem;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .board-day__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .board-grid {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .board-grid-row {
+    display: grid;
+    gap: 0.35rem;
+    align-items: stretch;
+    margin-bottom: 0.35rem;
+  }
+
+  .board-grid-cell {
+    background: #f8fafc;
+    border: 1px dashed rgba(148, 163, 184, 0.6);
+    border-radius: 14px;
+    padding: 0.75rem;
+    min-height: 82px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .board-grid-cell--head {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(79, 70, 229, 0.18));
+    border: none;
+    font-weight: 700;
+    color: #111827;
+    min-height: auto;
+  }
+
+  .board-grid-cell--empty {
+    justify-content: center;
+    align-items: center;
+    color: #9ca3af;
+    font-size: 0.9rem;
+  }
+
+  .board-time-cell {
+    background: rgba(248, 250, 252, 0.8);
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .board-appointment {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
+  }
+
+  .board-appointment__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+  }
+
+  .board-appointment__status--P {
+    background: rgba(239, 68, 68, 0.12);
+    color: #b91c1c;
+  }
+
+  .board-appointment__status--C {
+    background: rgba(249, 115, 22, 0.12);
+    color: #c2410c;
+  }
+
+  .board-appointment__status--D {
+    background: rgba(34, 197, 94, 0.12);
+    color: #15803d;
+  }
+
+  .board-appointment__client {
+    font-weight: 700;
+    color: #111827;
+  }
+
+  .board-appointment__services {
+    font-size: 0.9rem;
+    color: #4b5563;
+  }
+
+  .board-appointment__price {
+    font-weight: 700;
+    color: #111827;
+    font-size: 0.95rem;
+  }
+
+  .board-appointment__actions {
+    border-top: 1px dashed rgba(148, 163, 184, 0.5);
+    padding-top: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   .calendar-card {
     background: #ffffff;
     border-radius: 22px;
@@ -855,14 +986,33 @@
         </div>
       </div>
 
+      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-2 mt-3 appointments-view-toggle">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="text-muted small">Дизайн записей:</span>
+          <div class="btn-group" role="group" aria-label="Переключатель вида">
+            <button type="button" class="btn btn-outline-primary" data-view-toggle="1">Дизайн 1 (календарь)</button>
+            <button type="button" class="btn btn-outline-primary" data-view-toggle="2">Дизайн 2 (сетка)</button>
+          </div>
+        </div>
+        <div class="text-muted small">По умолчанию берётся из настроек салона</div>
+      </div>
+
       <div id="emptySearchState" class="alert alert-light border rounded-4 shadow-sm mt-4 text-center py-4 d-none">
         <div class="fs-5 fw-semibold mb-1">Ничего не найдено</div>
         <div class="text-muted">Измените фильтры или попробуйте другой поисковый запрос.</div>
       </div>
 
-      <div class="appointments-table" id="appointments-wrapper">
+      <div class="appointments-table" id="appointments-wrapper" data-appointments-view="1">
         <div id="appointments-container">
           {% include "partials/appointments_table_rows.html" %}
+        </div>
+      </div>
+
+      <div class="appointments-board d-none mt-4" id="appointments-board-wrapper" data-appointments-view="2">
+        <div id="appointments-board" class="board-wrapper"></div>
+        <div id="boardEmptyState" class="alert alert-light border rounded-4 shadow-sm d-none">
+          <div class="fw-semibold mb-1">В выбранных фильтрах нет записей</div>
+          <div class="text-muted">Попробуйте другой статус, дату или запрос поиска.</div>
         </div>
       </div>
     </div>
@@ -887,6 +1037,8 @@
   const updatesCheckUrl = "{% url 'dashboard_updates' %}";
   let pendingCountHint = null;
   let defaultVisibleDatesArray = JSON.parse('{{ default_visible_dates_json|escapejs }}');
+  const defaultAppointmentView = Number("{{ appointment_view_style|default:1 }}") || 1;
+  let activeDesignView = defaultAppointmentView === 2 ? 2 : 1;
   if (!Array.isArray(defaultVisibleDatesArray)) {
     defaultVisibleDatesArray = [];
   }
@@ -997,9 +1149,270 @@
     return copied;
   }
 
+  function initializeViewToggle() {
+    document.querySelectorAll('[data-view-toggle]').forEach((button) => {
+      if (button.dataset.bound) {
+        return;
+      }
+      button.addEventListener('click', () => {
+        const targetView = Number(button.dataset.viewToggle) === 2 ? 2 : 1;
+        setActiveDesign(targetView);
+      });
+      button.dataset.bound = 'true';
+    });
+    updateViewToggleState();
+  }
+
+  function setActiveDesign(view) {
+    activeDesignView = view === 2 ? 2 : 1;
+    updateViewToggleState();
+  }
+
+  function updateViewToggleState() {
+    document.querySelectorAll('[data-view-toggle]').forEach((button) => {
+      const buttonView = Number(button.dataset.viewToggle) === 2 ? 2 : 1;
+      const isActive = buttonView === activeDesignView;
+      button.classList.toggle('btn-primary', isActive);
+      button.classList.toggle('btn-outline-primary', !isActive);
+      button.classList.toggle('active', isActive);
+    });
+
+    document.querySelectorAll('[data-appointments-view]').forEach((block) => {
+      const blockView = Number(block.dataset.appointmentsView) === 2 ? 2 : 1;
+      block.classList.toggle('d-none', blockView !== activeDesignView);
+    });
+
+    rebuildBoardView();
+  }
+
+  function rebuildBoardView() {
+    const boardWrapper = document.getElementById('appointments-board');
+    const boardEmptyState = document.getElementById('boardEmptyState');
+    if (!boardWrapper || !boardEmptyState) {
+      return;
+    }
+
+    const visibleRows = Array.from(
+      document.querySelectorAll('#appointments-container tbody tr[data-appointment-row="true"]'),
+    ).filter((row) => {
+      const dayCard = row.closest('[data-day-block]');
+      const isDateHidden = dayCard && dayCard.dataset.dateVisible === 'false';
+      return !row.classList.contains('d-none') && !isDateHidden;
+    });
+
+    boardWrapper.innerHTML = '';
+
+    if (visibleRows.length === 0) {
+      boardEmptyState.classList.remove('d-none');
+      bindAppointmentActionButtons(boardWrapper);
+      bindCopyButtons(boardWrapper);
+      return;
+    }
+
+    boardEmptyState.classList.add('d-none');
+
+    const dateLabels = {};
+    document.querySelectorAll('[data-day-block]').forEach((card) => {
+      if (card.dataset.date) {
+        dateLabels[card.dataset.date] = card.dataset.dateLabel || card.dataset.date;
+      }
+    });
+
+    const boardData = new Map();
+
+    visibleRows.forEach((row) => {
+      const dateKey = row.dataset.date;
+      const timeValue = row.dataset.time;
+      if (!dateKey || !timeValue) {
+        return;
+      }
+
+      const stylistKey = row.dataset.stylist || row.dataset.stylistName || 'unknown';
+      const stylistName = row.dataset.stylistName || 'Без мастера';
+      const status = row.dataset.status || '';
+      const statusLabel = (row.querySelector('.status-badge')?.textContent || '').trim();
+      const statusBadgeHtml = row.querySelector('td[data-label="Статус"] .status-badge')?.outerHTML || '';
+      const client = (row.querySelector('.client-name')?.textContent || '').trim();
+      const clientHtml = row.querySelector('td[data-label="Клиент"]')?.innerHTML || '';
+      const servicesHtml = row.querySelector('td[data-label="Услуга"]')?.innerHTML || '';
+      const services = Array.from(
+        row.querySelectorAll('td[data-label="Услуга"] .service-pill'),
+      ).map((el) => el.textContent.trim()).filter(Boolean).join(', ');
+      const price = (row.querySelector('td[data-label="Цена"] .price-value')?.textContent || '').trim();
+      const priceHtml = row.querySelector('td[data-label="Цена"]')?.innerHTML || '';
+      const actionsHtml = row.querySelector('td[data-label="Действия"]')?.innerHTML || '';
+
+      if (!boardData.has(dateKey)) {
+        boardData.set(dateKey, {
+          label: dateLabels[dateKey] || dateKey,
+          stylists: new Map(),
+          times: new Set(),
+        });
+      }
+
+      const dateData = boardData.get(dateKey);
+      dateData.times.add(timeValue);
+
+        const stylistData = dateData.stylists.get(stylistKey) || { name: stylistName, appointments: {} };
+        const appointmentsAtTime = stylistData.appointments[timeValue] || [];
+        appointmentsAtTime.push({
+          status,
+          statusLabel,
+          statusBadgeHtml,
+          client,
+          clientHtml,
+          servicesHtml,
+          services,
+          price,
+          priceHtml,
+          actionsHtml,
+          time: timeValue,
+        });
+      stylistData.appointments[timeValue] = appointmentsAtTime;
+      dateData.stylists.set(stylistKey, stylistData);
+    });
+
+    const sortedDates = Array.from(boardData.keys()).sort();
+
+    sortedDates.forEach((dateKey) => {
+      const dateData = boardData.get(dateKey);
+      const stylists = Array.from(dateData.stylists.entries()).map(([key, value]) => ({ key, ...value }));
+      stylists.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+      const times = Array.from(dateData.times).sort();
+      const preparedStylists = stylists.length > 0 ? stylists : [{
+        key: 'no-stylist',
+        name: 'Мастер не указан',
+        appointments: {},
+      }];
+
+      const dayCard = document.createElement('div');
+      dayCard.className = 'board-day';
+
+      const header = document.createElement('div');
+      header.className = 'board-day__header';
+      header.innerHTML = `
+        <div class="d-flex align-items-center gap-2">
+          <div class="date-icon d-flex align-items-center justify-content-center">
+            <i class="bi bi-calendar3"></i>
+          </div>
+          <div>
+            <div class="text-muted text-uppercase small fw-semibold">Дата</div>
+            <div class="fs-5 fw-bold">${dateData.label}</div>
+          </div>
+        </div>
+        <span class="badge rounded-pill bg-dark-subtle text-dark fw-semibold px-3 py-2">${times.length} временных слотов</span>
+      `;
+      dayCard.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.className = 'board-grid';
+
+      const gridTable = document.createElement('div');
+      const columns = `140px repeat(${Math.max(preparedStylists.length, 1)}, minmax(190px, 1fr))`;
+
+      const headerRow = document.createElement('div');
+      headerRow.className = 'board-grid-row board-grid-row--header';
+      headerRow.style.gridTemplateColumns = columns;
+
+      const timeHead = document.createElement('div');
+      timeHead.className = 'board-grid-cell board-grid-cell--head board-time-cell';
+      timeHead.textContent = 'Время';
+      headerRow.appendChild(timeHead);
+
+      preparedStylists.forEach((stylist) => {
+        const cell = document.createElement('div');
+        cell.className = 'board-grid-cell board-grid-cell--head';
+        cell.textContent = stylist.name;
+        headerRow.appendChild(cell);
+      });
+
+      gridTable.appendChild(headerRow);
+
+      times.forEach((timeValue) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'board-grid-row';
+        rowEl.style.gridTemplateColumns = columns;
+
+        const timeCell = document.createElement('div');
+        timeCell.className = 'board-grid-cell board-time-cell';
+        timeCell.textContent = timeValue;
+        rowEl.appendChild(timeCell);
+
+        preparedStylists.forEach((stylist) => {
+          const cell = document.createElement('div');
+          cell.className = 'board-grid-cell';
+          const items = stylist.appointments[timeValue] || [];
+          if (items.length === 0) {
+            cell.classList.add('board-grid-cell--empty');
+            cell.innerHTML = '<span class="text-muted small">Свободно</span>';
+          } else {
+            items.forEach((item) => {
+              cell.appendChild(createBoardAppointmentElement(item));
+            });
+          }
+          rowEl.appendChild(cell);
+        });
+
+        gridTable.appendChild(rowEl);
+      });
+
+      grid.appendChild(gridTable);
+      dayCard.appendChild(grid);
+      boardWrapper.appendChild(dayCard);
+    });
+
+    bindAppointmentActionButtons(boardWrapper);
+    bindCopyButtons(boardWrapper);
+  }
+
+  function createBoardAppointmentElement(item) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'board-appointment';
+
+    const status = document.createElement('div');
+    status.className = `board-appointment__status board-appointment__status--${item.status || 'P'}`;
+    if (item.statusBadgeHtml) {
+      status.innerHTML = item.statusBadgeHtml;
+    } else {
+      status.textContent = item.statusLabel || 'Запись';
+    }
+    wrapper.appendChild(status);
+
+    if (item.clientHtml || item.client) {
+      const client = document.createElement('div');
+      client.className = 'board-appointment__client';
+      client.innerHTML = item.clientHtml || item.client;
+      wrapper.appendChild(client);
+    }
+
+    if (item.servicesHtml || item.services) {
+      const services = document.createElement('div');
+      services.className = 'board-appointment__services';
+      services.innerHTML = item.servicesHtml || item.services;
+      wrapper.appendChild(services);
+    }
+
+    if (item.priceHtml || item.price) {
+      const price = document.createElement('div');
+      price.className = 'board-appointment__price';
+      price.innerHTML = item.priceHtml || item.price;
+      wrapper.appendChild(price);
+    }
+
+    if (item.actionsHtml) {
+      const actions = document.createElement('div');
+      actions.className = 'board-appointment__actions';
+      actions.innerHTML = item.actionsHtml;
+      wrapper.appendChild(actions);
+    }
+
+    return wrapper;
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     initializeCalendar();
     attachDashboardControls();
+    initializeViewToggle();
     updateDateVisibility();
     applyFilters();
     updateCalendarResetVisibility();
@@ -1500,6 +1913,7 @@
       }
     });
 
+    bindAppointmentActionButtons();
     const cancelModal = document.getElementById("cancelModal");
     if (cancelModal && !cancelModal.dataset.bound) {
       cancelModal.addEventListener("hidden.bs.modal", () => {
@@ -1535,6 +1949,44 @@
 
     bindCopyButtons(document);
     applyFilters();
+  }
+
+  function bindAppointmentActionButtons(scope = document) {
+    const target = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+    target.querySelectorAll("[data-appointment-action]").forEach((button) => {
+      if (button.dataset.bound) {
+        return;
+      }
+
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        const action = button.dataset.appointmentAction;
+        const appointmentId = button.dataset.appointmentId;
+        if (!action || !appointmentId) {
+          return;
+        }
+
+        if (action === "cancel") {
+          currentAppointmentId = appointmentId;
+          pendingActionButton = button;
+          const modalEl = document.getElementById("cancelModal");
+          if (modalEl) {
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modalInstance.show();
+            stopUpdatePolling();
+          } else {
+            setLoadingState(button, true);
+            submitAction(appointmentId, action)
+              .finally(() => setLoadingState(button, false));
+          }
+        } else {
+          setLoadingState(button, true);
+          submitAction(appointmentId, action)
+            .finally(() => setLoadingState(button, false));
+        }
+      });
+      button.dataset.bound = "true";
+    });
   }
 
   function applyFilters() {
@@ -1599,6 +2051,7 @@
       dateEmptyState.classList.toggle("d-none", !shouldShowDateEmpty);
     }
 
+    rebuildBoardView();
     refreshAppointmentsEmptyState();
   }
 

@@ -42,6 +42,46 @@
     </div>
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Дизайн записей в дашборде</span>
+            <small class="text-muted">Применяется для панели салона</small>
+        </div>
+        <div class="card-body">
+            {% if salon_settings_form %}
+                <form method="post" class="row g-3 align-items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="salon_settings_update">
+                    <div class="col-12 col-lg-8">
+                        {% with field=salon_settings_form.appointment_view_style %}
+                            <label class="form-label" for="{{ field.id_for_label }}">Выберите вид записей по умолчанию</label>
+                            <div class="d-flex flex-column gap-2">
+                                {% for radio in field %}
+                                    <div class="form-check">
+                                        {{ radio.tag }}
+                                        <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                            {{ radio.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="col-12 col-lg-4 text-lg-end">
+                        <button type="submit" class="btn btn-primary mt-2 w-100">Сохранить</button>
+                    </div>
+                </form>
+            {% else %}
+                <p class="mb-0 text-muted">Салон не найден. Привяжите салон к администратору, чтобы выбрать дизайн записей.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <span>Стилисты салона</span>
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addStylistModal">
                 Добавить стилиста
