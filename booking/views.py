@@ -1667,6 +1667,23 @@ def dashboard_view(request):
     ]
 
     calendar_summary = build_calendar_summary(appointments)
+    salon_stylists = []
+    if not user.is_superuser and profile and profile.salon:
+        salon_stylists = [
+            {
+                "id": stylist.id,
+                "name": stylist.user.get_full_name() or stylist.user.username,
+            }
+            for stylist in profile.salon.stylists.select_related("user").all()
+        ]
+    elif user.is_superuser:
+        salon_stylists = [
+            {
+                "id": stylist.id,
+                "name": stylist.user.get_full_name() or stylist.user.username,
+            }
+            for stylist in Stylist.objects.select_related("user").all()
+        ]
 
     context = {
         "grouped_appointments": grouped_appointments,
@@ -1681,6 +1698,7 @@ def dashboard_view(request):
         "is_salon_admin": True,  # ← Админ салона всегда видит всё
         "viewer_stylist": None,
         "appointment_view_style": appointment_view_style,
+        "salon_stylists_json": json.dumps(salon_stylists, ensure_ascii=False),
     }
 
     return render(request, "dashboard.html", context)
