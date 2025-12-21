@@ -1149,6 +1149,14 @@
     return copied;
   }
 
+  function resetBindingFlags(scope = document) {
+    const target = scope && typeof scope.querySelectorAll === 'function' ? scope : document;
+    target.querySelectorAll('[data-bound], [data-copy-bound]').forEach((element) => {
+      element.removeAttribute('data-bound');
+      element.removeAttribute('data-copy-bound');
+    });
+  }
+
   function initializeViewToggle() {
     document.querySelectorAll('[data-view-toggle]').forEach((button) => {
       if (button.dataset.bound) {
@@ -1204,6 +1212,7 @@
 
     if (visibleRows.length === 0) {
       boardEmptyState.classList.remove('d-none');
+      resetBindingFlags(boardWrapper);
       bindAppointmentActionButtons(boardWrapper);
       bindCopyButtons(boardWrapper);
       return;
@@ -1361,6 +1370,7 @@
       boardWrapper.appendChild(dayCard);
     });
 
+    resetBindingFlags(boardWrapper);
     bindAppointmentActionButtons(boardWrapper);
     bindCopyButtons(boardWrapper);
   }
