@@ -261,6 +261,14 @@
     font-size: 0.95rem;
   }
 
+  .board-appointment__actions {
+    border-top: 1px dashed rgba(148, 163, 184, 0.5);
+    padding-top: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   .calendar-card {
     background: #ffffff;
     border-radius: 22px;
@@ -1221,11 +1229,16 @@
       const stylistName = row.dataset.stylistName || 'Без мастера';
       const status = row.dataset.status || '';
       const statusLabel = (row.querySelector('.status-badge')?.textContent || '').trim();
+      const statusBadgeHtml = row.querySelector('td[data-label="Статус"] .status-badge')?.outerHTML || '';
       const client = (row.querySelector('.client-name')?.textContent || '').trim();
+      const clientHtml = row.querySelector('td[data-label="Клиент"]')?.innerHTML || '';
+      const servicesHtml = row.querySelector('td[data-label="Услуга"]')?.innerHTML || '';
       const services = Array.from(
         row.querySelectorAll('td[data-label="Услуга"] .service-pill'),
       ).map((el) => el.textContent.trim()).filter(Boolean).join(', ');
       const price = (row.querySelector('td[data-label="Цена"] .price-value')?.textContent || '').trim();
+      const priceHtml = row.querySelector('td[data-label="Цена"]')?.innerHTML || '';
+      const actionsHtml = row.querySelector('td[data-label="Действия"]')?.innerHTML || '';
 
       if (!boardData.has(dateKey)) {
         boardData.set(dateKey, {
@@ -1238,16 +1251,21 @@
       const dateData = boardData.get(dateKey);
       dateData.times.add(timeValue);
 
-      const stylistData = dateData.stylists.get(stylistKey) || { name: stylistName, appointments: {} };
-      const appointmentsAtTime = stylistData.appointments[timeValue] || [];
-      appointmentsAtTime.push({
-        status,
-        statusLabel,
-        client,
-        services,
-        price,
-        time: timeValue,
-      });
+        const stylistData = dateData.stylists.get(stylistKey) || { name: stylistName, appointments: {} };
+        const appointmentsAtTime = stylistData.appointments[timeValue] || [];
+        appointmentsAtTime.push({
+          status,
+          statusLabel,
+          statusBadgeHtml,
+          client,
+          clientHtml,
+          servicesHtml,
+          services,
+          price,
+          priceHtml,
+          actionsHtml,
+          time: timeValue,
+        });
       stylistData.appointments[timeValue] = appointmentsAtTime;
       dateData.stylists.set(stylistKey, stylistData);
     });
@@ -1340,6 +1358,8 @@
       dayCard.appendChild(grid);
       boardWrapper.appendChild(dayCard);
     });
+
+    attachDashboardControls(true);
   }
 
   function createBoardAppointmentElement(item) {
@@ -1348,28 +1368,39 @@
 
     const status = document.createElement('div');
     status.className = `board-appointment__status board-appointment__status--${item.status || 'P'}`;
-    status.textContent = item.statusLabel || 'Запись';
+    if (item.statusBadgeHtml) {
+      status.innerHTML = item.statusBadgeHtml;
+    } else {
+      status.textContent = item.statusLabel || 'Запись';
+    }
     wrapper.appendChild(status);
 
-    if (item.client) {
+    if (item.clientHtml || item.client) {
       const client = document.createElement('div');
       client.className = 'board-appointment__client';
-      client.textContent = item.client;
+      client.innerHTML = item.clientHtml || item.client;
       wrapper.appendChild(client);
     }
 
-    if (item.services) {
+    if (item.servicesHtml || item.services) {
       const services = document.createElement('div');
       services.className = 'board-appointment__services';
-      services.textContent = item.services;
+      services.innerHTML = item.servicesHtml || item.services;
       wrapper.appendChild(services);
     }
 
-    if (item.price) {
+    if (item.priceHtml || item.price) {
       const price = document.createElement('div');
       price.className = 'board-appointment__price';
-      price.textContent = item.price;
+      price.innerHTML = item.priceHtml || item.price;
       wrapper.appendChild(price);
+    }
+
+    if (item.actionsHtml) {
+      const actions = document.createElement('div');
+      actions.className = 'board-appointment__actions';
+      actions.innerHTML = item.actionsHtml;
+      wrapper.appendChild(actions);
     }
 
     return wrapper;
