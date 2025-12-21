@@ -16,6 +16,7 @@ from .models import (
     Service,
     Category,
     SalonService,
+    Salon,
     SalonPaymentCard,
     SalonProduct,
     Appointment,
@@ -445,6 +446,28 @@ class SalonServiceUpdateForm(forms.ModelForm):
         if position is None:
             return 0
         return position
+
+
+class SalonSettingsForm(forms.ModelForm):
+    class Meta:
+        model = Salon
+        fields = ['appointment_view_style']
+        labels = {
+            'appointment_view_style': 'Дизайн отображения записей',
+        }
+        widgets = {
+            'appointment_view_style': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields.get('appointment_view_style')
+        if field:
+            field.help_text = (
+                'Выберите, как показывать записи в дашборде салона. '
+                'Первый вариант — привычный календарь и список. '
+                'Второй — шахматная сетка с мастерами и временем.'
+            )
 
 
 class SalonPaymentCardForm(forms.ModelForm):

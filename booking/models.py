@@ -48,6 +48,10 @@ class Salon(models.Model):
         ('female', 'Женский'),
         ('both', 'Обе'),
     ]
+    APPOINTMENT_VIEW_CHOICES = [
+        (1, 'Дизайн записей — 1'),
+        (2, 'Дизайн записей — 2'),
+    ]
     city = models.ForeignKey(City, on_delete=models.CASCADE, related_name='salons')
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
@@ -75,6 +79,12 @@ class Salon(models.Model):
         blank=True,
         verbose_name="Подписка действует до",
         help_text="Если не указано, салон будет активен без ограничения",
+    )
+    appointment_view_style = models.PositiveSmallIntegerField(
+        choices=APPOINTMENT_VIEW_CHOICES,
+        default=1,
+        verbose_name="Дизайн отображения записей в дашборде",
+        help_text="По умолчанию используется первый дизайн с календарём и списком. Второй дизайн — шахматное расписание.",
     )
 
     objects = SalonQuerySet.as_manager()
