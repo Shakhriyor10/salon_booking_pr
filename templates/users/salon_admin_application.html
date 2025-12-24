@@ -1,0 +1,101 @@
+{% extends 'base3.html' %}
+{% block title %}Создание салона{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 900px;">
+  <div class="card shadow-sm mt-5 border-0">
+    <div class="card-header text-white" style="background-color: #212529;">
+      <h4 class="mb-0">🛠️ Заявка на создание салона</h4>
+    </div>
+
+    <div class="card-body bg-light">
+      <p class="text-muted">Расскажите о салоне: мы проверим данные и свяжемся с вами, чтобы добавить салон в каталог.</p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="id_salon_name">Название салона</label>
+            {{ form.salon_name }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="id_city">Город / местоположение</label>
+            {{ form.city }}
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="id_address">Адрес</label>
+            {{ form.address }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="id_phone">Контактный номер телефона</label>
+            {{ form.phone }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="id_stylist_count">Сколько мастеров работает</label>
+            {{ form.stylist_count }}
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="id_description">Дополнительные детали</label>
+            {{ form.description }}
+            <div class="form-text">Например, график работы или особенности услуг.</div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="row g-3">
+          <div class="col-12">
+            <h6 class="fw-bold">Фото мастеров</h6>
+            <p class="text-muted small mb-2">Добавьте до 3 фото команды, чтобы мы понимали формат салона.</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="id_master_photo_1">Фото мастера 1</label>
+            {{ form.master_photo_1 }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="id_master_photo_2">Фото мастера 2</label>
+            {{ form.master_photo_2 }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="id_master_photo_3">Фото мастера 3</label>
+            {{ form.master_photo_3 }}
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="row g-3">
+          <div class="col-12">
+            <h6 class="fw-bold">Фотографии салона</h6>
+            <p class="text-muted small mb-2">Загрузите от 1 до 5 фото интерьера или фасада.</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="id_salon_photo_1">Фото салона 1</label>
+            {{ form.salon_photo_1 }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="id_salon_photo_2">Фото салона 2</label>
+            {{ form.salon_photo_2 }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="id_salon_photo_3">Фото салона 3</label>
+            {{ form.salon_photo_3 }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="id_salon_photo_4">Фото салона 4</label>
+            {{ form.salon_photo_4 }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="id_salon_photo_5">Фото салона 5</label>
+            {{ form.salon_photo_5 }}
+          </div>
+        </div>
+
+        <div class="d-grid mt-4">
+          <button type="submit" class="btn btn-dark">Сохранить и отправить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

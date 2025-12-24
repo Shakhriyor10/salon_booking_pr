@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin
 from users.models import Profile
 from .models import Service, Stylist, WorkingHour, Appointment, StylistService, Category, BreakPeriod, Salon, City, \
     SalonService, User, Review, StylistLevel, StylistDayOff, AppointmentService, SalonPaymentCard, FavoriteSalon, \
-    ProductCategory, SalonProduct, ProductOrder, ProductOrderItem, ProductCart, ProductCartItem
+    ProductCategory, SalonProduct, ProductOrder, ProductOrderItem, ProductCart, ProductCartItem, SalonApplication
 
 
 class ProfileInline(admin.StackedInline):
@@ -31,6 +31,14 @@ admin.site.register(User, CustomUserAdmin)
 @admin.register(City)
 class CityAdmin(admin.ModelAdmin):
     list_display = ('name',)
+
+
+@admin.register(SalonApplication)
+class SalonApplicationAdmin(admin.ModelAdmin):
+    list_display = ('salon_name', 'city', 'phone', 'status', 'created_at', 'user')
+    list_filter = ('status', 'city')
+    search_fields = ('salon_name', 'city', 'phone', 'user__username')
+    readonly_fields = ('user', 'created_at')
 
 class SalonAdminForm(forms.ModelForm):
     class Meta:

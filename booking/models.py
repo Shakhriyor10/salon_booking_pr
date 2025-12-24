@@ -33,6 +33,75 @@ class City(models.Model):
         ordering = ['position', 'name']
 
 
+class SalonApplication(models.Model):
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, 'На рассмотрении'),
+        (STATUS_APPROVED, 'Одобрено'),
+        (STATUS_REJECTED, 'Отклонено'),
+    ]
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name='salon_applications',
+        null=True,
+        blank=True,
+        verbose_name='Пользователь',
+    )
+    salon_name = models.CharField('Название салона', max_length=150)
+    city = models.CharField('Город/местоположение', max_length=150)
+    address = models.CharField('Адрес', max_length=255, blank=True)
+    phone = models.CharField('Номер телефона', max_length=32)
+    stylist_count = models.PositiveIntegerField('Количество мастеров', default=0)
+    description = models.TextField('Комментарий', blank=True)
+
+    master_photo_1 = models.ImageField(
+        upload_to='salon_applications/masters/', null=True, blank=True, verbose_name='Фото мастера 1'
+    )
+    master_photo_2 = models.ImageField(
+        upload_to='salon_applications/masters/', null=True, blank=True, verbose_name='Фото мастера 2'
+    )
+    master_photo_3 = models.ImageField(
+        upload_to='salon_applications/masters/', null=True, blank=True, verbose_name='Фото мастера 3'
+    )
+
+    salon_photo_1 = models.ImageField(
+        upload_to='salon_applications/salons/', null=True, blank=True, verbose_name='Фото салона 1'
+    )
+    salon_photo_2 = models.ImageField(
+        upload_to='salon_applications/salons/', null=True, blank=True, verbose_name='Фото салона 2'
+    )
+    salon_photo_3 = models.ImageField(
+        upload_to='salon_applications/salons/', null=True, blank=True, verbose_name='Фото салона 3'
+    )
+    salon_photo_4 = models.ImageField(
+        upload_to='salon_applications/salons/', null=True, blank=True, verbose_name='Фото салона 4'
+    )
+    salon_photo_5 = models.ImageField(
+        upload_to='salon_applications/salons/', null=True, blank=True, verbose_name='Фото салона 5'
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        verbose_name='Статус заявки',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Создано')
+
+    class Meta:
+        verbose_name = 'Заявка на создание салона'
+        verbose_name_plural = 'Заявки на создание салона'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Заявка: {self.salon_name} ({self.city})"
+
+
 class SalonQuerySet(models.QuerySet):
     def active(self):
         today = timezone.localdate()
