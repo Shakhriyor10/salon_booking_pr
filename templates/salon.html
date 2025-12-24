@@ -564,84 +564,84 @@
 </form>
 
 {% if promoted_products %}
-<section class="container my-4 promo-carousel">
-  <div
-    id="promoCarousel"
-    class="carousel slide"
-    data-bs-ride="carousel"
-    data-bs-touch="true"
-    data-bs-keyboard="true"
-  >
-    {% if promoted_products|length > 1 %}
-      <div class="carousel-indicators">
-        {% for product in promoted_products %}
-          <button type="button" data-bs-target="#promoCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} {% if forloop.first %}aria-current="true"{% endif %} aria-label="Товар {{ forloop.counter }}"></button>
-        {% endfor %}
-      </div>
-    {% endif %}
-    <div class="carousel-inner">
-      {% for product in promoted_products %}
-        <div class="carousel-item {% if forloop.first %}active{% endif %}">
-          {% with promo_image=product.photo.url|default:'' %}
-          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}" style="--promo-image: url('{% if promo_image %}{{ promo_image }}{% else %}{% static 'img/default_salon.jpg' %}{% endif %}');">
-            <div class="promo-ambient-dots" aria-hidden="true">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <div class="promo-content {% if forloop.counter0|divisibleby:2 %}promo-content--reversed{% endif %}">
-              <div class="promo-text">
-                <div class="d-flex gap-2 flex-wrap mb-2">
-<!--                  <span class="promo-chip"><i class="bi bi-stars"></i> Выбор администрации</span>-->
-<!--                  {% if product.category %}-->
-<!--                    <span class="promo-chip"><i class="bi bi-tag"></i> {{ product.category.name }}</span>-->
-<!--                  {% endif %}-->
-                </div>
-<!--                <div class="promo-tone mb-3">-->
-<!--                  <span class="tone-dot"></span>-->
-<!--                  <span>Фон подобран под обложку товара</span>-->
+<!--<section class="container my-4 promo-carousel">-->
+<!--  <div-->
+<!--    id="promoCarousel"-->
+<!--    class="carousel slide"-->
+<!--    data-bs-ride="carousel"-->
+<!--    data-bs-touch="true"-->
+<!--    data-bs-keyboard="true"-->
+<!--  >-->
+<!--    {% if promoted_products|length > 1 %}-->
+<!--      <div class="carousel-indicators">-->
+<!--        {% for product in promoted_products %}-->
+<!--          <button type="button" data-bs-target="#promoCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} {% if forloop.first %}aria-current="true"{% endif %} aria-label="Товар {{ forloop.counter }}"></button>-->
+<!--        {% endfor %}-->
+<!--      </div>-->
+<!--    {% endif %}-->
+<!--    <div class="carousel-inner">-->
+<!--      {% for product in promoted_products %}-->
+<!--        <div class="carousel-item {% if forloop.first %}active{% endif %}">-->
+<!--          {% with promo_image=product.photo.url|default:'' %}-->
+<!--          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}" style="&#45;&#45;promo-image: url('{% if promo_image %}{{ promo_image }}{% else %}{% static 'img/default_salon.jpg' %}{% endif %}');">-->
+<!--            <div class="promo-ambient-dots" aria-hidden="true">-->
+<!--              <span></span>-->
+<!--              <span></span>-->
+<!--              <span></span>-->
+<!--            </div>-->
+<!--            <div class="promo-content {% if forloop.counter0|divisibleby:2 %}promo-content&#45;&#45;reversed{% endif %}">-->
+<!--              <div class="promo-text">-->
+<!--                <div class="d-flex gap-2 flex-wrap mb-2">-->
+<!--&lt;!&ndash;                  <span class="promo-chip"><i class="bi bi-stars"></i> Выбор администрации</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                  {% if product.category %}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <span class="promo-chip"><i class="bi bi-tag"></i> {{ product.category.name }}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                  {% endif %}&ndash;&gt;-->
 <!--                </div>-->
-                <h2>{{ product.name }}</h2>
-                <p class="mb-2">Товар из салона <strong>{{ product.salon.name }}</strong>. Заберите свою выгоду, пока действует акция.</p>
-                <div class="promo-price">
-                  <strong>{{ product.get_final_price }} сум</strong>
-                  {% if product.get_display_old_price %}
-                    <del>{{ product.get_display_old_price }} сум</del>
-                  {% endif %}
-                  {% if product.discount_percent %}
-                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> -{{ product.discount_percent }}%</span>
-                  {% elif product.get_display_old_price %}
-                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> Спецпредложение</span>
-                  {% endif %}
-                </div>
-                <div class="d-flex gap-2 flex-wrap align-items-center">
-                  <a href="{% url 'salon_detail' product.salon.pk product.salon.slug %}" class="promo-cta">
-                    В салон
-                    <i class="bi bi-arrow-right-short fs-4 mb-0"></i>
-                  </a>
-                  <span class="promo-meta"><i class="bi bi-box-seam"></i> В наличии: {{ product.quantity }}</span>
-                </div>
-              </div>
-              <div class="promo-image">
-                {% if product.photo %}
-                  <img src="{{ product.photo.url }}" alt="{{ product.name }}">
-                {% else %}
-                  <img src="{% static 'img/default_salon.jpg' %}" alt="{{ product.name }}">
-                {% endif %}
-                {% if product.discount_percent %}
-                  <span class="promo-badge">-{{ product.discount_percent }}%</span>
-                {% elif product.get_display_old_price %}
-                  <span class="promo-badge">SALE</span>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-          {% endwith %}
-        </div>
-      {% endfor %}
-    </div>
-  </div>
-</section>
+<!--&lt;!&ndash;                <div class="promo-tone mb-3">&ndash;&gt;-->
+<!--&lt;!&ndash;                  <span class="tone-dot"></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                  <span>Фон подобран под обложку товара</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--                <h2>{{ product.name }}</h2>-->
+<!--                <p class="mb-2">Товар из салона <strong>{{ product.salon.name }}</strong>. Заберите свою выгоду, пока действует акция.</p>-->
+<!--                <div class="promo-price">-->
+<!--                  <strong>{{ product.get_final_price }} сум</strong>-->
+<!--                  {% if product.get_display_old_price %}-->
+<!--                    <del>{{ product.get_display_old_price }} сум</del>-->
+<!--                  {% endif %}-->
+<!--                  {% if product.discount_percent %}-->
+<!--                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> -{{ product.discount_percent }}%</span>-->
+<!--                  {% elif product.get_display_old_price %}-->
+<!--                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> Спецпредложение</span>-->
+<!--                  {% endif %}-->
+<!--                </div>-->
+<!--                <div class="d-flex gap-2 flex-wrap align-items-center">-->
+<!--                  <a href="{% url 'salon_detail' product.salon.pk product.salon.slug %}" class="promo-cta">-->
+<!--                    В салон-->
+<!--                    <i class="bi bi-arrow-right-short fs-4 mb-0"></i>-->
+<!--                  </a>-->
+<!--                  <span class="promo-meta"><i class="bi bi-box-seam"></i> В наличии: {{ product.quantity }}</span>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--              <div class="promo-image">-->
+<!--                {% if product.photo %}-->
+<!--                  <img src="{{ product.photo.url }}" alt="{{ product.name }}">-->
+<!--                {% else %}-->
+<!--                  <img src="{% static 'img/default_salon.jpg' %}" alt="{{ product.name }}">-->
+<!--                {% endif %}-->
+<!--                {% if product.discount_percent %}-->
+<!--                  <span class="promo-badge">-{{ product.discount_percent }}%</span>-->
+<!--                {% elif product.get_display_old_price %}-->
+<!--                  <span class="promo-badge">SALE</span>-->
+<!--                {% endif %}-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          {% endwith %}-->
+<!--        </div>-->
+<!--      {% endfor %}-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</section>-->
 {% endif %}
 <h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
 <div class="row row-cols-2 row-cols-md-2 row-cols-xl-3 salon-grid">
