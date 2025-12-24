@@ -4,6 +4,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from booking.models import SalonApplication
 from .models import Profile
 
 class SignUpForm(UserCreationForm):
@@ -94,3 +95,49 @@ class ProfileUpdateForm(forms.Form):
         profile.save(update_fields=['phone'])
 
         return user
+
+
+class SalonApplicationForm(forms.ModelForm):
+    class Meta:
+        model = SalonApplication
+        fields = [
+            'salon_name',
+            'city',
+            'address',
+            'phone',
+            'stylist_count',
+            'description',
+            'master_photo_1',
+            'master_photo_2',
+            'master_photo_3',
+            'salon_photo_1',
+            'salon_photo_2',
+            'salon_photo_3',
+            'salon_photo_4',
+            'salon_photo_5',
+        ]
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'stylist_count': forms.NumberInput(attrs={'min': 0, 'class': 'form-control'}),
+            'phone': forms.TextInput(
+                attrs={
+                    'placeholder': '+998 XX XXX-XX-XX',
+                    'class': 'form-control',
+                    'inputmode': 'tel',
+                }
+            ),
+            'salon_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if not isinstance(field.widget, (forms.Textarea, forms.NumberInput, forms.TextInput)):
+                css_class = field.widget.attrs.get('class', '')
+                field.widget.attrs['class'] = f"form-control {css_class}".strip()
+
+    def clean_stylist_count(self):
+        count = self.cleaned_data.get('stylist_count', 0)
+        return max(count, 0)

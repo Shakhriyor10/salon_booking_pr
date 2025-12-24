@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from users.forms import SignUpForm
+from users.forms import SignUpForm, SalonApplicationForm
 
 
 def register_view(request):
@@ -19,6 +19,29 @@ def register_view(request):
     else:
         form = SignUpForm()
     return render(request, 'users/register.html', {'form': form})
+
+
+@login_required
+def salon_admin_application_view(request):
+    initial = {}
+    profile = getattr(request.user, 'profile', None)
+    if profile and profile.phone:
+        initial['phone'] = profile.phone
+
+    if request.method == 'POST':
+        form = SalonApplicationForm(request.POST, request.FILES)
+        if form.is_valid():
+            application = form.save(commit=False)
+            application.user = request.user
+            application.save()
+            messages.success(
+                request,
+                'Заявка отправлена! Администраторы скоро проверят информацию и свяжутся с вами.',
+            )
+            return redirect('home')
+    else:
+        form = SalonApplicationForm(initial=initial)
+    return render(request, 'users/salon_admin_application.html', {'form': form})
 
 
 def login_view(request):
