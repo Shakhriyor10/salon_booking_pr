@@ -183,6 +183,86 @@
     color: #212529;
   }
 
+  .booking-success-modal .modal-dialog {
+    max-width: 820px;
+  }
+
+  .booking-success-modal .modal-content {
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .booking-success-modal .modal-header,
+  .booking-success-modal .modal-footer {
+    padding: 1.25rem 1.75rem;
+  }
+
+  .booking-success-modal .modal-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    position: relative;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-header .btn-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .booking-success-modal .modal-body {
+    padding: 1.75rem;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-footer {
+    border-top: 1px solid #eef0f3;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .booking-success-modal .modal-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    width: 100%;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-message {
+    max-width: 620px;
+    text-align: center;
+    font-size: 1rem;
+    color: #4b5563;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .booking-success-modal .modal-message .booking-success-credentials {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-message .text-start {
+    text-align: center !important;
+  }
+
+  .booking-success-modal .booking-success-credentials .badge {
+    font-size: 1rem;
+    padding: 0.85rem 1.35rem;
+    white-space: normal;
+  }
+
+  .booking-success-modal .booking-success-credentials .copy-credential {
+    min-width: 200px;
+    justify-content: center;
+  }
+
   .modal-content.luxe-celebration .modal-body .display-6 {
     color: #212529;
   }
@@ -388,24 +468,18 @@
         {% if messages %}
           {% for message in messages %}
             {% if 'booking-success-modal' in message.tags %}
-              <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
+              <div class="modal fade booking-success-modal" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
-                  <div class="modal-content border-0 shadow-lg overflow-hidden luxe-celebration">
-                    <div class="position-relative">
-                      <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                      <div class="bg-gradient-success position-absolute top-0 start-0 w-100 h-100"></div>
-                      <div class="position-relative text-white text-center py-5 px-4">
-                        <div class="display-4 fw-semibold mb-3">✨ Спасибо, что выбрали нас!</div>
-<!--                        <p class="lead mb-0 text-white-50">Мы уже уведомили мастеров о вашей записи.</p>-->
-                      </div>
+                  <div class="modal-content shadow-sm">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="bookingSuccessModalLabel">✨ Спасибо, что выбрали нас!</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
-                    <div class="modal-body text-center p-5 bg-white">
-                      <div class="display-6 mb-3">✂️</div>
-                      <h5 class="fw-bold mb-2">Запись успешно создана</h5>
+                    <div class="modal-body">
+                      <p class="text-muted mb-4">Ваша запись успешно создана. Мы уже подготовили все детали.</p>
                       {% if message %}
-                        <div class="text-muted mb-4 modal-message text-start text-break">{{ message|safe }}</div>
+                        <div class="modal-message text-break">{{ message|safe }}</div>
                       {% endif %}
-                      <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
                 </div>
