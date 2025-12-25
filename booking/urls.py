@@ -9,6 +9,7 @@ from .views import StylistDetailView, StylistListView, ServiceListView, Appointm
 urlpatterns = [
     # path('', ServiceListView.as_view(), name='home'),
     path('', HomePageView.as_view(), name='home'),
+    path('add-salon/', views.salon_application, name='salon_application'),
     path('<int:pk>-<slug:slug>/', SalonDetailView.as_view(), name='salon_detail'),
     path('<int:pk>/products/add-to-cart/', views.add_product_to_cart, name='add_product_to_cart'),
     path('<int:pk>/products/cart-item/', views.update_product_cart_item, name='update_product_cart_item'),

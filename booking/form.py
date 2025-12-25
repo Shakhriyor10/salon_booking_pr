@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
+import re
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
@@ -17,6 +18,7 @@ from .models import (
     Category,
     SalonService,
     Salon,
+    SalonApplication,
     SalonPaymentCard,
     SalonProduct,
     Appointment,
@@ -617,6 +619,7 @@ class SalonProductForm(forms.ModelForm):
         return cleaned
 
 
+
 class ProductOrderForm(forms.Form):
     payment_method = forms.ChoiceField(
         label='Способ оплаты',
@@ -632,3 +635,103 @@ class ProductOrderForm(forms.Form):
         self.fields['payment_method'].choices = choices
         if choices:
             self.fields['payment_method'].initial = choices[0][0]
+
+
+class SalonApplicationForm(forms.ModelForm):
+    contact_phone = forms.RegexField(
+        max_length=20,
+        regex=r'^\d{2}-\d{3}-\d{2}-\d{2}$',
+        label='Номер телефона',
+        error_messages={'invalid': 'Введите номер в формате 93-123-45-67.'}
+    )
+
+    class Meta:
+        model = SalonApplication
+        fields = (
+            'contact_phone',
+            'contact_name',
+            'salon_name',
+            'city',
+            'address',
+            'location_link',
+            'masters_count',
+            'salon_type',
+            'photo',
+            'photo_2',
+            'photo_3',
+            'photo_4',
+            'photo_5',
+        )
+        widgets = {
+            'contact_name': forms.TextInput(attrs={'placeholder': 'Как к вам обращаться?'}),
+            'salon_name': forms.TextInput(attrs={'placeholder': 'Название салона'}),
+            'address': forms.TextInput(attrs={'placeholder': 'Город, улица, дом'}),
+            'location_link': forms.TextInput(attrs={'placeholder': 'Ссылка на локацию (необязательно)'}),
+            'masters_count': forms.NumberInput(attrs={'min': 1}),
+            'salon_type': forms.Select(),
+        }
+        labels = {
+            'contact_name': 'Имя',
+            'salon_name': 'Название салона',
+            'city': 'Город',
+            'address': 'Адрес',
+            'location_link': 'Локация',
+            'masters_count': 'Количество мастеров',
+            'salon_type': 'Тип салона',
+            'photo': 'Фото 1',
+            'photo_2': 'Фото 2',
+            'photo_3': 'Фото 3',
+            'photo_4': 'Фото 4',
+            'photo_5': 'Фото 5',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if isinstance(field.widget, forms.FileInput):
+                field.widget.attrs.setdefault('class', 'form-control')
+                field.widget.attrs.setdefault('accept', 'image/*')
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs.setdefault('class', 'form-select')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
+
+        self.fields['city'].queryset = self.fields['city'].queryset.order_by('name')
+        self.fields['photo'].required = True
+        for name in ('photo_2', 'photo_3', 'photo_4', 'photo_5'):
+            self.fields[name].required = False
+
+        phone_field = self.fields['contact_phone']
+        phone_field.widget.attrs.update({
+            'placeholder': '93-123-45-67',
+            'inputmode': 'numeric',
+            'data-uzbek-phone-input': 'true',
+            'autocomplete': 'tel',
+        })
+
+    def clean_contact_phone(self):
+        phone = self.cleaned_data['contact_phone']
+        digits = re.sub(r"\D", "", phone)
+        return f"+998{digits}"
+
+    def clean_masters_count(self):
+        value = self.cleaned_data.get('masters_count')
+        if value is None or value < 1:
+            raise forms.ValidationError('Укажите, сколько мастеров работает в салоне.')
+        return value
+
+    def clean(self):
+        cleaned = super().clean()
+        address = cleaned.get('address', '').strip()
+        location_link = cleaned.get('location_link', '').strip()
+
+        if not address and not location_link:
+            msg = 'Укажите адрес салона или добавьте ссылку на локацию.'
+            self.add_error('address', msg)
+            self.add_error('location_link', msg)
+
+        photos = [cleaned.get(name) for name in ('photo', 'photo_2', 'photo_3', 'photo_4', 'photo_5')]
+        if not any(photos):
+            self.add_error('photo', 'Добавьте хотя бы одно фото салона.')
+
+        return cleaned
