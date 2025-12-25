@@ -183,6 +183,40 @@
     color: #212529;
   }
 
+  .booking-success-modal .modal-dialog {
+    max-width: 720px;
+  }
+
+  .booking-success-modal .modal-content {
+    border-radius: 18px;
+  }
+
+  .booking-success-modal .modal-message {
+    max-width: 560px;
+    text-align: center;
+    font-size: 1rem;
+    color: #4b5563;
+  }
+
+  .booking-success-modal .modal-message .booking-success-credentials {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .booking-success-modal .booking-success-credentials .badge {
+    font-size: 1rem;
+    padding: 0.75rem 1.25rem;
+    white-space: normal;
+  }
+
+  .booking-success-modal .booking-success-credentials .copy-credential {
+    min-width: 180px;
+    justify-content: center;
+  }
+
   .modal-content.luxe-celebration .modal-body .display-6 {
     color: #212529;
   }
@@ -388,21 +422,20 @@
         {% if messages %}
           {% for message in messages %}
             {% if 'booking-success-modal' in message.tags %}
-              <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title" id="bookingSuccessModalLabel">Спасибо, что выбрали нас!</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                    </div>
-                    <div class="modal-body">
-                      <p class="mb-3">Ваша запись успешно создана.</p>
+              <div class="modal fade booking-success-modal" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-content shadow-lg border-0">
+                    <div class="modal-body text-center py-5 px-4 px-md-5">
+                      <div class="mb-4">
+                        <div class="display-5 fw-semibold mb-2" id="bookingSuccessModalLabel">✨ Спасибо, что выбрали нас!</div>
+                        <p class="text-muted mb-0">Ваша запись успешно создана.</p>
+                      </div>
                       {% if message %}
-                        <div class="text-muted modal-message text-break">{{ message|safe }}</div>
+                        <div class="modal-message text-break mx-auto mb-4">{{ message|safe }}</div>
                       {% endif %}
-                    </div>
-                    <div class="modal-footer d-flex gap-2 flex-wrap justify-content-end">
-                      <button type="button" class="btn btn-dark w-100 w-md-auto" data-bs-dismiss="modal">Закрыть</button>
+                      <div class="d-flex justify-content-center">
+                        <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Закрыть</button>
+                      </div>
                     </div>
                   </div>
                 </div>
