@@ -1,0 +1,110 @@
+{% extends 'base3.html' %}
+{% load form_tags %}
+{% block title %}Добавление салона{% endblock %}
+{% block content %}
+<div class="container" style="max-width: 900px;">
+  <div class="card shadow-sm mt-4 border-0">
+    <div class="card-header text-white" style="background-color: #212529;">
+      <h4 class="mb-0">Добавить свой салон</h4>
+    </div>
+    <div class="card-body bg-light">
+      {% if messages %}
+        <div class="mb-3">
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mb-2" role="alert">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <p class="text-muted">Заполните форму, и мы свяжемся с вами для подтверждения. Минимум одно фото обязательно.</p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Номер телефона</label>
+            <div class="input-group">
+              <span class="input-group-text">+998</span>
+              {{ form.contact_phone|add_class:"form-control" }}
+            </div>
+            {{ form.contact_phone.errors }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Имя</label>
+            {{ form.contact_name|add_class:"form-control" }}
+            {{ form.contact_name.errors }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Название салона</label>
+            {{ form.salon_name|add_class:"form-control" }}
+            {{ form.salon_name.errors }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Город</label>
+            {{ form.city|add_class:"form-select" }}
+            {{ form.city.errors }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Адрес (улица, дом)</label>
+            {{ form.address|add_class:"form-control" }}
+            {{ form.address.errors }}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ссылка на локацию (необязательно)</label>
+            {{ form.location_link|add_class:"form-control" }}
+            {{ form.location_link.errors }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Количество мастеров</label>
+            {{ form.masters_count|add_class:"form-control" }}
+            {{ form.masters_count.errors }}
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Тип салона</label>
+            {{ form.salon_type|add_class:"form-select" }}
+            {{ form.salon_type.errors }}
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h6>Фото салона</h6>
+          <p class="text-muted small mb-2">Загрузите от 1 до 5 фото. Первое фото обязательно.</p>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Фото 1 *</label>
+              {{ form.photo|add_class:"form-control" }}
+              {{ form.photo.errors }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Фото 2</label>
+              {{ form.photo_2|add_class:"form-control" }}
+              {{ form.photo_2.errors }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Фото 3</label>
+              {{ form.photo_3|add_class:"form-control" }}
+              {{ form.photo_3.errors }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Фото 4</label>
+              {{ form.photo_4|add_class:"form-control" }}
+              {{ form.photo_4.errors }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Фото 5</label>
+              {{ form.photo_5|add_class:"form-control" }}
+              {{ form.photo_5.errors }}
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 d-grid">
+          <button type="submit" class="btn btn-dark">Отправить заявку</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

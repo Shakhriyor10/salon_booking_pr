@@ -23,6 +23,7 @@ from .form import (
     AppointmentRefundCompleteForm,
     SalonProductForm,
     ProductOrderForm,
+    SalonApplicationForm,
 )
 from .models import Service, Stylist, Appointment, StylistService, Category, BreakPeriod, WorkingHour, Salon, \
     SalonService, City, AppointmentService, StylistDayOff, WEEKDAYS, Review, SalonPaymentCard, FavoriteSalon, \
@@ -251,6 +252,20 @@ def format_duration(duration):
         parts.append(f"{minutes} мин")
 
     return " ".join(parts)
+
+
+def salon_application(request):
+    if request.method == 'POST':
+        form = SalonApplicationForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Салон скоро появится! Мы скоро с вами свяжемся.')
+            return redirect('salon_application')
+    else:
+        form = SalonApplicationForm()
+
+    return render(request, 'salon_application.html', {'form': form})
+
 
 class HomePageView(ListView):
     model = Salon
