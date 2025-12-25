@@ -455,18 +455,15 @@
               <div class="modal fade booking-success-modal" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                   <div class="modal-content shadow-sm">
-                    <div class="modal-header">
+                    <div class="modal-header justify-content-between align-items-center">
                       <h5 class="modal-title" id="bookingSuccessModalLabel">✨ Спасибо, что выбрали нас!</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                      <button type="button" class="btn-close ms-3" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
                       <p class="text-muted mb-4">Ваша запись успешно создана. Мы уже подготовили все детали.</p>
                       {% if message %}
                         <div class="modal-message text-break">{{ message|safe }}</div>
                       {% endif %}
-                    </div>
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
                 </div>
