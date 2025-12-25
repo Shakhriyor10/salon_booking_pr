@@ -197,6 +197,20 @@
     padding: 1.25rem 1.75rem;
   }
 
+  .booking-success-modal .modal-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    position: relative;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-header .btn-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+
   .booking-success-modal .modal-body {
     padding: 1.75rem;
     text-align: center;
@@ -212,6 +226,8 @@
   .booking-success-modal .modal-title {
     font-size: 1.35rem;
     font-weight: 700;
+    width: 100%;
+    text-align: center;
   }
 
   .booking-success-modal .modal-message {
@@ -455,9 +471,9 @@
               <div class="modal fade booking-success-modal" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                   <div class="modal-content shadow-sm">
-                    <div class="modal-header justify-content-between align-items-center">
+                    <div class="modal-header">
                       <h5 class="modal-title" id="bookingSuccessModalLabel">✨ Спасибо, что выбрали нас!</h5>
-                      <button type="button" class="btn-close ms-3" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="modal-body">
                       <p class="text-muted mb-4">Ваша запись успешно создана. Мы уже подготовили все детали.</p>
