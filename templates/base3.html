@@ -389,23 +389,20 @@
           {% for message in messages %}
             {% if 'booking-success-modal' in message.tags %}
               <div class="modal fade" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-lg">
-                  <div class="modal-content border-0 shadow-lg overflow-hidden luxe-celebration">
-                    <div class="position-relative">
-                      <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal" aria-label="Закрыть"></button>
-                      <div class="bg-gradient-success position-absolute top-0 start-0 w-100 h-100"></div>
-                      <div class="position-relative text-white text-center py-5 px-4">
-                        <div class="display-4 fw-semibold mb-3">✨ Спасибо, что выбрали нас!</div>
-<!--                        <p class="lead mb-0 text-white-50">Мы уже уведомили мастеров о вашей записи.</p>-->
-                      </div>
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="bookingSuccessModalLabel">Спасибо, что выбрали нас!</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
-                    <div class="modal-body text-center p-5 bg-white">
-                      <div class="display-6 mb-3">✂️</div>
-                      <h5 class="fw-bold mb-2">Запись успешно создана</h5>
+                    <div class="modal-body">
+                      <p class="mb-3">Ваша запись успешно создана.</p>
                       {% if message %}
-                        <div class="text-muted mb-4 modal-message text-start text-break">{{ message|safe }}</div>
+                        <div class="text-muted modal-message text-break">{{ message|safe }}</div>
                       {% endif %}
-                      <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Закрыть</button>
+                    </div>
+                    <div class="modal-footer d-flex gap-2 flex-wrap justify-content-end">
+                      <button type="button" class="btn btn-dark w-100 w-md-auto" data-bs-dismiss="modal">Закрыть</button>
                     </div>
                   </div>
                 </div>
