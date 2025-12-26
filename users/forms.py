@@ -1,17 +1,15 @@
-import re
-
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from booking.phone_utils import is_valid_phone_input, normalize_phone
 from .models import Profile
 
 class SignUpForm(UserCreationForm):
-    phone = forms.RegexField(
-        max_length=20,
-        regex=r'^\d{2}-\d{3}-\d{2}-\d{2}$',
+    phone = forms.CharField(
+        max_length=32,
         label='Телефон',
-        error_messages={'invalid': 'Введите номер в формате 93-123-45-67.'}
+        help_text='Укажите номер вместе с кодом страны (например, +1 202 555 0199).'
     )
 
     class Meta:
@@ -20,8 +18,9 @@ class SignUpForm(UserCreationForm):
 
     def clean_phone(self):
         phone = self.cleaned_data['phone']
-        digits = re.sub(r"\D", "", phone)
-        return f"+998{digits}"
+        if not is_valid_phone_input(phone):
+            raise forms.ValidationError('Введите корректный номер телефона.')
+        return normalize_phone(phone)
 
     def save(self, commit=True):
         user = super().save(commit)
@@ -37,12 +36,11 @@ class SignUpForm(UserCreationForm):
 class ProfileUpdateForm(forms.Form):
     first_name = forms.CharField(label='Имя', max_length=150, required=False)
     last_name = forms.CharField(label='Фамилия', max_length=150, required=False)
-    phone = forms.RegexField(
+    phone = forms.CharField(
         label='Телефон',
-        regex=r'^\d{2}-\d{3}-\d{2}-\d{2}$',
         required=False,
-        max_length=20,
-        error_messages={'invalid': 'Введите номер в формате 93-123-45-67.'}
+        max_length=32,
+        help_text='Укажите номер вместе с кодом страны (например, +1 202 555 0199).'
     )
 
     def __init__(self, user, *args, **kwargs):
@@ -51,18 +49,9 @@ class ProfileUpdateForm(forms.Form):
         initial.setdefault('first_name', user.first_name)
         initial.setdefault('last_name', user.last_name)
 
-        phone = ''
         profile = getattr(user, 'profile', None)
         if profile and profile.phone:
-            digits = re.sub(r"\D", "", profile.phone)
-            if digits.startswith('998') and len(digits) >= 11:
-                body = digits[-9:]
-                phone = f"{body[0:2]}-{body[2:5]}-{body[5:7]}-{body[7:9]}"
-            elif len(digits) == 9:
-                phone = f"{digits[0:2]}-{digits[2:5]}-{digits[5:7]}-{digits[7:9]}"
-            else:
-                phone = profile.phone
-        initial.setdefault('phone', phone)
+            initial.setdefault('phone', profile.phone)
 
         super().__init__(*args, **kwargs)
 
@@ -71,17 +60,18 @@ class ProfileUpdateForm(forms.Form):
             field.widget.attrs['class'] = f"form-control {css_class}".strip()
 
             if name == 'phone':
-                field.widget.attrs.setdefault('placeholder', '93-123-45-67')
+                field.widget.attrs.setdefault('placeholder', '+998 90 123 45 67')
                 field.widget.attrs.setdefault('data-uzbek-phone-input', 'true')
-                field.widget.attrs.setdefault('inputmode', 'numeric')
+                field.widget.attrs.setdefault('inputmode', 'tel')
                 field.widget.attrs.setdefault('autocomplete', 'tel')
 
     def clean_phone(self):
         phone = self.cleaned_data.get('phone', '')
         if not phone:
             return ''
-        digits = re.sub(r"\D", "", phone)
-        return f"+998{digits}" if digits else ''
+        if not is_valid_phone_input(phone):
+            raise forms.ValidationError('Введите корректный номер телефона.')
+        return normalize_phone(phone)
 
     def save(self):
         user = self.user
