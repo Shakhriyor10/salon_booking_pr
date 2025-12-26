@@ -1,6 +1,5 @@
 from collections import defaultdict
 from datetime import timedelta
-import re
 
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
@@ -9,6 +8,7 @@ from django.contrib.auth.models import User
 from PIL import Image
 
 from users.models import Profile
+from .phone_utils import is_valid_phone_input, normalize_phone
 
 from .models import (
     Review,
@@ -638,11 +638,10 @@ class ProductOrderForm(forms.Form):
 
 
 class SalonApplicationForm(forms.ModelForm):
-    contact_phone = forms.RegexField(
-        max_length=20,
-        regex=r'^\d{2}-\d{3}-\d{2}-\d{2}$',
+    contact_phone = forms.CharField(
+        max_length=32,
         label='Номер телефона',
-        error_messages={'invalid': 'Введите номер в формате 93-123-45-67.'}
+        help_text='Укажите номер вместе с кодом страны (например, +7 999 123 45 67).'
     )
 
     class Meta:
@@ -703,16 +702,17 @@ class SalonApplicationForm(forms.ModelForm):
 
         phone_field = self.fields['contact_phone']
         phone_field.widget.attrs.update({
-            'placeholder': '93-123-45-67',
-            'inputmode': 'numeric',
+            'placeholder': '+998 90 123 45 67',
+            'inputmode': 'tel',
             'data-uzbek-phone-input': 'true',
             'autocomplete': 'tel',
         })
 
     def clean_contact_phone(self):
         phone = self.cleaned_data['contact_phone']
-        digits = re.sub(r"\D", "", phone)
-        return f"+998{digits}"
+        if not is_valid_phone_input(phone):
+            raise forms.ValidationError('Введите корректный номер телефона.')
+        return normalize_phone(phone)
 
     def clean_masters_count(self):
         value = self.cleaned_data.get('masters_count')

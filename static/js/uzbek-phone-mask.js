@@ -1,75 +1,83 @@
 (function () {
-  const GROUP_SIZES = [2, 3, 2, 2];
-  const MAX_DIGITS = GROUP_SIZES.reduce((sum, size) => sum + size, 0);
+  const DEFAULT_COUNTRY_CODE = '+998';
 
-  const formatDigits = (digits) => {
-    const clean = (digits || '').replace(/\D/g, '').slice(0, MAX_DIGITS);
-    const parts = [];
-    let index = 0;
+  const cleanDigits = (value) => (value || '').replace(/\D/g, '');
 
-    for (const size of GROUP_SIZES) {
-      if (clean.length > index) {
-        const nextIndex = index + size;
-        parts.push(clean.slice(index, nextIndex));
-      }
-      index += size;
+  const normalizeValue = (rawValue, defaultCode = DEFAULT_COUNTRY_CODE) => {
+    const trimmed = (rawValue || '').trim();
+    const digits = cleanDigits(trimmed);
+
+    if (!digits) {
+      return '';
     }
 
-    return parts.join('-');
+    if (trimmed.startsWith('+')) {
+      return `+${digits}`;
+    }
+
+    if (digits.length <= 9) {
+      const defaultDigits = cleanDigits(defaultCode) || cleanDigits(DEFAULT_COUNTRY_CODE);
+      return `+${defaultDigits}${digits}`;
+    }
+
+    return `+${digits}`;
   };
 
-  const applyMask = (input) => {
-    if (!input) {
-      return;
+  const formatNumber = (normalized) => {
+    const digits = cleanDigits(normalized);
+    if (!digits) {
+      return '';
     }
 
-    const formatted = formatDigits(input.value);
-    if (input.value !== formatted) {
-      input.value = formatted;
+    if (digits.startsWith('998') && digits.length >= 9) {
+      const body = digits.slice(-9);
+      return `+998 ${body.slice(0, 2)} ${body.slice(2, 5)} ${body.slice(5, 7)} ${body.slice(7)}`.trim();
     }
-    return formatted;
-  };
 
-  const handleInput = (event) => {
-    const input = event.target;
-    const formatted = formatDigits(input.value);
-    if (input.value !== formatted) {
-      const selectionPosition = formatted.length;
-      input.value = formatted;
-
-      if (document.activeElement === input && typeof input.setSelectionRange === 'function') {
-        try {
-          input.setSelectionRange(selectionPosition, selectionPosition);
-        } catch (error) {
-          // Ignore browsers that do not support selection updates on this input type.
-        }
-      }
+    if (digits.length > 10) {
+      const country = digits.slice(0, digits.length - 10);
+      const body = digits.slice(-10);
+      return `+${country} ${body.slice(0, 3)} ${body.slice(3, 6)} ${body.slice(6, 10)}`.trim();
     }
+
+    if (digits.length > 7) {
+      const country = digits.slice(0, digits.length - 7);
+      const body = digits.slice(-7);
+      return `+${country} ${body.slice(0, 3)} ${body.slice(3, 5)} ${body.slice(5)}`.trim();
+    }
+
+    return `+${digits}`;
   };
 
   const enhanceInput = (input) => {
-    if (!input || input.dataset.uzbekPhoneMaskApplied === 'true') {
+    if (!input || input.dataset.phoneEnhancementApplied === 'true') {
       return;
     }
 
-    input.dataset.uzbekPhoneMaskApplied = 'true';
-    applyMask(input);
+    input.dataset.phoneEnhancementApplied = 'true';
+    const defaultCode = input.dataset.defaultCountryCode || DEFAULT_COUNTRY_CODE;
 
-    input.addEventListener('input', handleInput);
-    input.addEventListener('blur', () => applyMask(input));
-    input.addEventListener('focus', () => applyMask(input));
+    if (!input.placeholder) {
+      input.placeholder = `${defaultCode.startsWith('+') ? defaultCode : `+${defaultCode}`} 90 123 45 67`;
+    }
+
+    const syncValue = () => {
+      const normalized = normalizeValue(input.value, defaultCode);
+      input.value = normalized ? formatNumber(normalized) : '';
+    };
+
+    syncValue();
+    input.addEventListener('blur', syncValue);
+    input.addEventListener('change', syncValue);
   };
 
   const scanForInputs = (root = document) => {
-    if (!root) {
-      return;
-    }
-
-    if (root instanceof Element && root.matches('[data-uzbek-phone-input]')) {
+    const selector = '[data-uzbek-phone-input], [data-phone-input]';
+    if (root instanceof Element && root.matches(selector)) {
       enhanceInput(root);
     }
 
-    const candidates = root.querySelectorAll ? root.querySelectorAll('[data-uzbek-phone-input]') : [];
+    const candidates = root.querySelectorAll ? root.querySelectorAll(selector) : [];
     candidates.forEach(enhanceInput);
   };
 

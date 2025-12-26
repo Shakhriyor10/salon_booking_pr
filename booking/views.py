@@ -58,7 +58,7 @@ from users.forms import ProfileUpdateForm
 
 User = get_user_model()
 
-PHONE_INPUT_RE = re.compile(r'^\d{2}-\d{3}-\d{2}-\d{2}$')
+from .phone_utils import is_valid_phone_input, normalize_phone
 
 
 def add_months(source_date, months):
@@ -68,12 +68,6 @@ def add_months(source_date, months):
     month = month % 12 + 1
     day = min(source_date.day, monthrange(year, month)[1])
     return date(year, month, day)
-
-
-def normalize_uzbek_phone(phone_value: str) -> str:
-    """Convert a masked Uzbek phone (xx-xxx-xx-xx) to +998XXXXXXXXX format."""
-    digits = re.sub(r"\D", "", phone_value or "")
-    return f"+998{digits}" if digits else ""
 
 
 def transliterate_to_latin(name: str) -> str:
@@ -708,17 +702,17 @@ def checkout_salon_products(request, pk):
             profile_phone = getattr(getattr(customer, 'profile', None), 'phone', '')
             guest_phone_input = profile_phone
 
-        if not guest_phone_input or not PHONE_INPUT_RE.match(guest_phone_input):
-            return _error_response('Введите телефон в формате 93-123-45-67 для доставки.')
+        if not is_valid_phone_input(guest_phone_input):
+            return _error_response('Введите корректный номер телефона для доставки.')
 
-        normalized_phone = normalize_uzbek_phone(guest_phone_input)
+        normalized_phone = normalize_phone(guest_phone_input)
         profile, _ = Profile.objects.get_or_create(user=customer)
         profile.phone = normalized_phone
         profile.save(update_fields=['phone'])
     else:
-        if not guest_name or not PHONE_INPUT_RE.match(guest_phone_input):
-            return _error_response('Укажите имя и телефон в формате 93-123-45-67 для оформления заказа.')
-        normalized_phone = normalize_uzbek_phone(guest_phone_input)
+        if not guest_name or not is_valid_phone_input(guest_phone_input):
+            return _error_response('Укажите имя и корректный телефон для оформления заказа.')
+        normalized_phone = normalize_phone(guest_phone_input)
         customer, credentials_data = ensure_guest_account(guest_name, normalized_phone)
 
     cleaned_items = []
@@ -1140,11 +1134,11 @@ class AppointmentCreateView(View):
             customer = request.user
             if not hasattr(customer, 'profile') or not customer.profile.phone:
                 guest_phone_input = request.POST.get('guest_phone', '').strip()
-                if not PHONE_INPUT_RE.match(guest_phone_input):
-                    messages.error(request, 'Укажите корректный номер телефона в формате 93-123-45-67.')
+                if not is_valid_phone_input(guest_phone_input):
+                    messages.error(request, 'Укажите корректный номер телефона.')
                     return redirect('home')
 
-                guest_phone = normalize_uzbek_phone(guest_phone_input)
+                guest_phone = normalize_phone(guest_phone_input)
 
                 if not hasattr(customer, 'profile'):
                     Profile.objects.create(user=customer, phone=guest_phone)
@@ -1155,11 +1149,11 @@ class AppointmentCreateView(View):
             guest_name = request.POST.get('guest_name', '').strip()
             guest_phone_input = request.POST.get('guest_phone', '').strip()
 
-            if not guest_name or not PHONE_INPUT_RE.match(guest_phone_input):
-                messages.error(request, 'Укажите имя и корректный номер телефона в формате 93-123-45-67.')
+            if not guest_name or not is_valid_phone_input(guest_phone_input):
+                messages.error(request, 'Укажите имя и корректный номер телефона.')
                 return redirect('home')
 
-            guest_phone = normalize_uzbek_phone(guest_phone_input)
+            guest_phone = normalize_phone(guest_phone_input)
             customer, credentials_data = ensure_guest_account(guest_name, guest_phone)
             auto_login_user = customer
 
@@ -2730,11 +2724,11 @@ class ManualAppointmentCreateView(View):
             messages.error(request, "Мастер занят в это время.")
             return redirect('manual_appointment')
 
-        if guest_phone_input and not PHONE_INPUT_RE.match(guest_phone_input):
-            messages.error(request, "Введите телефон в формате 93-123-45-67.")
+        if guest_phone_input and not is_valid_phone_input(guest_phone_input):
+            messages.error(request, "Введите корректный номер телефона.")
             return redirect('manual_appointment')
 
-        guest_phone = normalize_uzbek_phone(guest_phone_input) if guest_phone_input else ''
+        guest_phone = normalize_phone(guest_phone_input) if guest_phone_input else ''
 
         # Создаём запись
         appointment = Appointment.objects.create(
@@ -2930,11 +2924,11 @@ class StylistManualAppointmentCreateView(View):
             messages.error(request, "Выбранное время занято.")
             return redirect('stylist_manual_appointment')
 
-        if guest_phone_input and not PHONE_INPUT_RE.match(guest_phone_input):
-            messages.error(request, "Введите телефон в формате 93-123-45-67.")
+        if guest_phone_input and not is_valid_phone_input(guest_phone_input):
+            messages.error(request, "Введите корректный номер телефона.")
             return redirect('stylist_manual_appointment')
 
-        guest_phone = normalize_uzbek_phone(guest_phone_input) if guest_phone_input else ''
+        guest_phone = normalize_phone(guest_phone_input) if guest_phone_input else ''
 
         # ✅ Создаём Appointment
         appointment = Appointment.objects.create(
