@@ -1851,7 +1851,7 @@
   {% if stylists %}
     <section id="salon-stylists" class="stylists-section">
       <h2 class="section-heading">Наши мастера</h2>
-      <div class="row g-4">
+      <div class="row g-3">
       {% for stylist in stylists %}
         <div class="col-6 col-md-6 col-lg-4">
           <div class="card stylist-card h-100">
@@ -1941,7 +1941,7 @@
 
   {% if uncategorized_services %}
     <h2 class="section-heading">Популярные услуги</h2>
-    <div class="row g-4">
+    <div class="row g-3">
       {% for salon_service in uncategorized_services %}
         <div class="col-6 col-md-6 col-lg-4">
           <div class="card service-card h-100">
@@ -1964,7 +1964,7 @@
 
   {% if categories %}
     <h2 class="section-heading">Категории услуг</h2>
-    <div class="row g-4">
+    <div class="row g-3">
       {% for category in categories %}
         <div class="col-6 col-md-6 col-lg-4">
           <div class="card category-card h-100">
@@ -2008,7 +2008,7 @@
               <h5 class="mb-0">{{ category_group.grouper.name|default:'Без категории' }}</h5>
               <span class="badge bg-light text-dark border">{{ category_group.list|length }} товаров</span>
             </div>
-            <div class="row g-4">
+            <div class="row g-3">
               {% for product in category_group.list %}
                 <div class="col-6 col-md-6 col-lg-4 col-xl-4">
                   <div class="product-card">
