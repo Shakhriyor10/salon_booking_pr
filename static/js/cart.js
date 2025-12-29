@@ -250,6 +250,8 @@
     const warning = document.getElementById('cart-warning');
     const cartCount = document.getElementById('cart-count');
     const clearCartButton = document.getElementById('clear-cart');
+    const addLabel = '<i class="bi bi-plus-circle me-2"></i><span>Добавить услугу</span>';
+    const addedLabel = '<i class="bi bi-check-circle-fill me-2"></i><span>Добавлено</span>';
 
     if (!floatingCart || !bookingButton || !cartCount) {
       return;
@@ -290,10 +292,10 @@
 
         if (cartItems.includes(serviceId)) {
           button.classList.add('added');
-          button.textContent = '✅ Добавлено (нажмите, чтобы удалить)';
+          button.innerHTML = addedLabel;
         } else {
           button.classList.remove('added');
-          button.textContent = '➕ Добавить услугу';
+          button.innerHTML = addLabel;
         }
       });
     }
