@@ -1783,7 +1783,7 @@
       <h2 class="section-heading">Наши мастера</h2>
       <div class="row g-4">
       {% for stylist in stylists %}
-        <div class="col-lg-4 col-md-6">
+        <div class="col-6 col-md-6 col-lg-4">
           <div class="card stylist-card h-100">
             <div class="card-body d-flex flex-column text-center">
               {% with name=stylist.user.get_full_name|default:stylist.user.username %}
@@ -1873,7 +1873,7 @@
     <h2 class="section-heading">Популярные услуги</h2>
     <div class="row g-4">
       {% for salon_service in uncategorized_services %}
-        <div class="col-lg-4 col-md-6">
+        <div class="col-6 col-md-6 col-lg-4">
           <div class="card service-card h-100">
             {% if salon_service.service.photo %}
               <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
@@ -1896,7 +1896,7 @@
     <h2 class="section-heading">Категории услуг</h2>
     <div class="row g-4">
       {% for category in categories %}
-        <div class="col-lg-4 col-md-6">
+        <div class="col-6 col-md-6 col-lg-4">
           <div class="card category-card h-100">
             {% if category.photo %}
               <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.name }}">
@@ -1940,7 +1940,7 @@
             </div>
             <div class="row g-4">
               {% for product in category_group.list %}
-                <div class="col-xl-4 col-lg-4 col-md-6">
+                <div class="col-6 col-md-6 col-lg-4 col-xl-4">
                   <div class="product-card">
                     {% if product.photo %}
                       <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
