@@ -290,10 +290,10 @@
 
         if (cartItems.includes(serviceId)) {
           button.classList.add('added');
-          button.textContent = '✅ Добавлено (нажмите, чтобы удалить)';
+          button.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>Добавлено';
         } else {
           button.classList.remove('added');
-          button.textContent = '➕ Добавить услугу';
+          button.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Добавить услугу';
         }
       });
     }
