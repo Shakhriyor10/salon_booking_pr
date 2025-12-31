@@ -2,8 +2,9 @@
 import asyncio
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
+from django.conf import settings
 
-BOT_TOKEN = "7539711094:AAFhfqw5i8kLrGZoMlpiAYQM4JS5XMn9Cys"
+BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
 
 async def _send(chat_id_or_username: str, text: str):
     bot = Bot(

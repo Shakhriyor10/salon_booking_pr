@@ -1,6 +1,7 @@
 import requests
+from django.conf import settings
 
-TELEGRAM_BOT_TOKEN = '7539711094:AAFhfqw5i8kLrGZoMlpiAYQM4JS5XMn9Cys'
+TELEGRAM_BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
 
 def send_telegram_by_username(username, text):
     if not username.startswith('@'):
