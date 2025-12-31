@@ -1,10 +1,17 @@
 import os
-import django
+import sys
 import asyncio
+from pathlib import Path
+
+import django
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 
-# --- инициализируем Django ---
+# --- добавляем корень проекта в PYTHONPATH и инициализируем Django ---
+BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR_STR = str(BASE_DIR)
+if BASE_DIR_STR not in sys.path:
+    sys.path.insert(0, BASE_DIR_STR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "salon_booking.settings")
 django.setup()
 
