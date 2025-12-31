@@ -4,7 +4,7 @@ import asyncio
 from pathlib import Path
 
 import django
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from aiogram import Bot, Dispatcher, Router, types
 from aiogram.client.default import DefaultBotProperties
@@ -47,6 +47,18 @@ def _save_stylist_chat(stylist: Stylist, chat_id: int):
     stylist.save(update_fields=["telegram_chat_id"])
 
 
+def _is_valid_public_url(base_url: str) -> bool:
+    parsed = urlparse(base_url)
+    if parsed.scheme not in {"http", "https"}:
+        return False
+
+    host = parsed.hostname
+    if not host:
+        return False
+
+    return host not in {"localhost", "127.0.0.1"}
+
+
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
     tg_user = message.from_user
@@ -70,13 +82,22 @@ async def cmd_start(message: types.Message):
     else:
         registration_url = urljoin(PUBLIC_BASE_URL, "register/")
         booking_url = urljoin(PUBLIC_BASE_URL, "booking/")
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [InlineKeyboardButton(text="Зарегистрироваться", url=registration_url)],
-                [InlineKeyboardButton(text="Записаться", url=booking_url)],
-            ]
-        )
-        await message.answer(text_fail, reply_markup=keyboard)
+        if _is_valid_public_url(PUBLIC_BASE_URL):
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [InlineKeyboardButton(text="Зарегистрироваться", url=registration_url)],
+                    [InlineKeyboardButton(text="Записаться", url=booking_url)],
+                ]
+            )
+            await message.answer(text_fail, reply_markup=keyboard)
+        else:
+            hint = (
+                "\n\n"
+                "Зарегистрироваться: {reg}\n"
+                "Записаться: {book}\n"
+                "Укажите PUBLIC_BASE_URL на публичный домен, чтобы кнопки работали."
+            ).format(reg=registration_url, book=booking_url)
+            await message.answer(text_fail + hint)
 
 
 async def main():

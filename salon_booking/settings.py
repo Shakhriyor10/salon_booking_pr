@@ -36,7 +36,7 @@ TELEGRAM_BOT_TOKEN = os.getenv(
 
 # Base URL that will be used for Telegram deep links (registration, booking, etc.).
 # Override in production to point at the public site domain.
-PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000")
+PUBLIC_BASE_URL = os.getenv("PUBLIC_BASE_URL", "https://example.com")
 
 
 # Application definition
