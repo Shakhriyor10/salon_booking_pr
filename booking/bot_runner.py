@@ -4,14 +4,16 @@ import asyncio
 from pathlib import Path
 
 import django
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, Router, types
 from aiogram.client.default import DefaultBotProperties
+from aiogram.filters import CommandStart
 
 # --- добавляем корень проекта в PYTHONPATH и инициализируем Django ---
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_STR = str(BASE_DIR)
 if BASE_DIR_STR not in sys.path:
     sys.path.insert(0, BASE_DIR_STR)
+os.chdir(BASE_DIR_STR)
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "salon_booking.settings")
 django.setup()
 
@@ -25,9 +27,11 @@ bot = Bot(
     default=DefaultBotProperties(parse_mode="HTML")
 )
 dp = Dispatcher()
+router = Router()
+dp.include_router(router)
 
 
-@dp.message(commands=["start"])
+@router.message(CommandStart())
 async def cmd_start(message: types.Message):
     tg_user = message.from_user
     username = tg_user.username
