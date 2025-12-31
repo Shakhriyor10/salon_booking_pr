@@ -4,9 +4,12 @@ import asyncio
 from pathlib import Path
 
 import django
+from urllib.parse import urljoin
+
 from aiogram import Bot, Dispatcher, Router, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import CommandStart
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from asgiref.sync import sync_to_async
 
 # --- добавляем корень проекта в PYTHONPATH и инициализируем Django ---
@@ -22,6 +25,7 @@ from django.conf import settings  # noqa: E402
 from booking.models import Stylist  # noqa: E402  (после django.setup)
 
 BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
+PUBLIC_BASE_URL = settings.PUBLIC_BASE_URL.rstrip("/") + "/"
 
 bot = Bot(
     BOT_TOKEN,
@@ -64,7 +68,15 @@ async def cmd_start(message: types.Message):
         await _save_stylist_chat(stylist, chat_id)
         await message.answer(text_ok)
     else:
-        await message.answer(text_fail)
+        registration_url = urljoin(PUBLIC_BASE_URL, "register/")
+        booking_url = urljoin(PUBLIC_BASE_URL, "booking/")
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="Зарегистрироваться", url=registration_url)],
+                [InlineKeyboardButton(text="Записаться", url=booking_url)],
+            ]
+        )
+        await message.answer(text_fail, reply_markup=keyboard)
 
 
 async def main():
