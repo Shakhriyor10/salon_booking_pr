@@ -7,6 +7,7 @@ import django
 from aiogram import Bot, Dispatcher, Router, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import CommandStart
+from asgiref.sync import sync_to_async
 
 # --- добавляем корень проекта в PYTHONPATH и инициализируем Django ---
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,6 +32,17 @@ router = Router()
 dp.include_router(router)
 
 
+@sync_to_async
+def _get_stylist_by_username(username: str):
+    return Stylist.objects.filter(telegram_username=username).first()
+
+
+@sync_to_async
+def _save_stylist_chat(stylist: Stylist, chat_id: int):
+    stylist.telegram_chat_id = chat_id
+    stylist.save(update_fields=["telegram_chat_id"])
+
+
 @router.message(CommandStart())
 async def cmd_start(message: types.Message):
     tg_user = message.from_user
@@ -47,10 +59,9 @@ async def cmd_start(message: types.Message):
         "что ваш username указан в профиле."
     )
 
-    stylist = Stylist.objects.filter(telegram_username=username).first()
+    stylist = await _get_stylist_by_username(username)
     if stylist:
-        stylist.telegram_chat_id = chat_id
-        stylist.save(update_fields=["telegram_chat_id"])
+        await _save_stylist_chat(stylist, chat_id)
         await message.answer(text_ok)
     else:
         await message.answer(text_fail)
