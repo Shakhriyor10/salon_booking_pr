@@ -8,9 +8,10 @@ from aiogram.client.default import DefaultBotProperties
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "salon_booking.settings")
 django.setup()
 
+from django.conf import settings  # noqa: E402
 from booking.models import Stylist  # noqa: E402  (после django.setup)
 
-BOT_TOKEN = "7539711094:AAFhfqw5i8kLrGZoMlpiAYQM4JS5XMn9Cys"
+BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
 
 bot = Bot(
     BOT_TOKEN,
