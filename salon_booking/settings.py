@@ -27,6 +27,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Telegram bot token used for notifications and Telegram WebApp auth.
+# Override via the TELEGRAM_BOT_TOKEN environment variable in production.
+TELEGRAM_BOT_TOKEN = os.getenv(
+    "TELEGRAM_BOT_TOKEN",
+    "7539711094:AAFhfqw5i8kLrGZoMlpiAYQM4JS5XMn9Cys",
+)
+
 
 # Application definition
 
