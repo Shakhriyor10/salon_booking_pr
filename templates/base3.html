@@ -266,10 +266,11 @@
 
   .overdue-modal .modal-content {
     border-radius: 20px;
-    border: none;
+    border: 1px solid #e5e7eb;
     overflow: hidden;
-    background: linear-gradient(145deg, #0f172a, #111827);
-    color: #e5e7eb;
+    background: linear-gradient(145deg, #ffffff, #f4f7ff);
+    color: #0f172a;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
   }
 
   .overdue-modal .modal-body {
@@ -280,11 +281,11 @@
   .overdue-modal .glow-accent {
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.3), transparent 35%),
-      radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.25), transparent 35%),
-      radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.06), transparent 40%);
+    background: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.14), transparent 36%),
+      radial-gradient(circle at 80% 8%, rgba(16, 185, 129, 0.12), transparent 36%),
+      radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.1), transparent 42%);
     filter: blur(18px);
-    opacity: 0.65;
+    opacity: 0.75;
   }
 
   .overdue-modal .content-wrap {
@@ -295,29 +296,31 @@
   .overdue-modal .modal-title {
     font-weight: 800;
     letter-spacing: -0.02em;
+    color: #0f172a;
   }
 
   .overdue-modal .badge-pill {
-    background: rgba(255, 255, 255, 0.08);
-    color: #c7d2fe;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
     padding: 0.45rem 0.9rem;
     border-radius: 999px;
     font-weight: 600;
   }
 
   .overdue-modal .stat-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
     border-radius: 14px;
     padding: 1rem 1.25rem;
-    color: #e5e7eb;
+    color: #111827;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
   }
 
   .overdue-modal .stat-card h6 {
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #9ca3af;
+    color: #6b7280;
     font-size: 0.78rem;
     margin-bottom: 0.35rem;
   }
@@ -325,17 +328,18 @@
   .overdue-modal .stat-card .value {
     font-size: 1.45rem;
     font-weight: 700;
-    color: #fbbf24;
+    color: #2563eb;
   }
 
   .overdue-modal .btn-ghost {
-    background: rgba(255, 255, 255, 0.04);
-    color: #e5e7eb;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #f8fafc;
+    color: #111827;
+    border: 1px solid #d1d5db;
   }
 
   .overdue-modal .btn-ghost:hover {
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: #9ca3af;
+    background: #f1f5f9;
   }
 
   .modal-content.luxe-celebration .modal-body .display-6 {
@@ -576,15 +580,15 @@
                   <div class="content-wrap">
                     <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                       <span class="badge badge-pill"><i class="bi bi-exclamation-circle me-1"></i> Незавершённые записи прошлого месяца</span>
-                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
                     </div>
                     <div class="d-flex align-items-center gap-3 mb-2">
-                      <div class="rounded-circle bg-white bg-opacity-10 p-3">
-                        <i class="bi bi-calendar-week text-warning" style="font-size: 1.6rem;"></i>
+                      <div class="rounded-circle bg-white border p-3 shadow-sm">
+                        <i class="bi bi-calendar-week text-primary" style="font-size: 1.6rem;"></i>
                       </div>
                       <div>
                         <h4 class="modal-title mb-1">Есть записи без отметки о выполнении</h4>
-                        <p class="mb-0 text-muted text-opacity-75">Закройте их единым действием или обработайте вручную.</p>
+                        <p class="mb-0 text-secondary">Закройте их единым действием или обработайте вручную.</p>
                       </div>
                     </div>
                     <div class="row g-3 mb-3">
