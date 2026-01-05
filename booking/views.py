@@ -2542,6 +2542,38 @@ def stylist_dashboard_updates(request):
 
 @require_POST
 @login_required
+def complete_overdue_appointments(request):
+    profile = getattr(request.user, "profile", None)
+
+    if not (profile and profile.is_salon_admin and profile.salon):
+        return JsonResponse({"ok": False, "error": "forbidden"}, status=403)
+
+    today = timezone.localdate()
+    current_month_start = today.replace(day=1)
+    previous_month_end = current_month_start - timedelta(days=1)
+    previous_month_start = previous_month_end.replace(day=1)
+
+    appointments = Appointment.objects.select_for_update().filter(
+        stylist__salon=profile.salon,
+        status__in=[Appointment.Status.PENDING, Appointment.Status.CONFIRMED],
+        start_time__date__gte=previous_month_start,
+        start_time__date__lte=previous_month_end,
+    )
+
+    updated = 0
+    with transaction.atomic():
+        for appointment in appointments:
+            appointment.status = Appointment.Status.DONE
+            updates = appointment.update_payment_status_for_status(Appointment.Status.DONE)
+            update_fields = ["status"] + updates
+            appointment.save(update_fields=list(dict.fromkeys(update_fields)))
+            updated += 1
+
+    return JsonResponse({"ok": True, "updated": updated})
+
+
+@require_POST
+@login_required
 def appointment_update_status(request, appointment_id):
     appointment = get_object_or_404(Appointment, id=appointment_id)
 

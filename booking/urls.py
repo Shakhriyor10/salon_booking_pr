@@ -25,6 +25,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('dashboard/ajax/', views.dashboard_ajax, name='dashboard_ajax'),
     path('dashboard/updates/', views.dashboard_updates, name='dashboard_updates'),
+    path('appointments/overdue/complete/', views.complete_overdue_appointments, name='complete_overdue_appointments'),
     path("appointment/<int:pk>/action/", views.AppointmentActionView.as_view(), name="appointment_action"),
     path("reports/", ReportView.as_view(), name="reports"),
     path("my-appointments/", my_appointments, name="my_appointments"),

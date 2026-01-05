@@ -264,6 +264,80 @@
     justify-content: center;
   }
 
+  .overdue-modal .modal-content {
+    border-radius: 20px;
+    border: none;
+    overflow: hidden;
+    background: linear-gradient(145deg, #0f172a, #111827);
+    color: #e5e7eb;
+  }
+
+  .overdue-modal .modal-body {
+    position: relative;
+    padding: 2rem;
+  }
+
+  .overdue-modal .glow-accent {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.3), transparent 35%),
+      radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.25), transparent 35%),
+      radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.06), transparent 40%);
+    filter: blur(18px);
+    opacity: 0.65;
+  }
+
+  .overdue-modal .content-wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  .overdue-modal .modal-title {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .overdue-modal .badge-pill {
+    background: rgba(255, 255, 255, 0.08);
+    color: #c7d2fe;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .overdue-modal .stat-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    color: #e5e7eb;
+  }
+
+  .overdue-modal .stat-card h6 {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    font-size: 0.78rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .overdue-modal .stat-card .value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #fbbf24;
+  }
+
+  .overdue-modal .btn-ghost {
+    background: rgba(255, 255, 255, 0.04);
+    color: #e5e7eb;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .overdue-modal .btn-ghost:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+  }
+
   .modal-content.luxe-celebration .modal-body .display-6 {
     color: #212529;
   }
@@ -493,6 +567,58 @@
             {% endif %}
           {% endfor %}
         {% endif %}
+        {% if overdue_appointments_prompt %}
+          <div class="modal fade overdue-modal" id="overdueAppointmentsModal" tabindex="-1" aria-hidden="true" data-complete-url="{% url 'complete_overdue_appointments' %}" data-count="{{ overdue_appointments_prompt.count }}">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content shadow-lg">
+                <div class="modal-body">
+                  <div class="glow-accent"></div>
+                  <div class="content-wrap">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                      <span class="badge badge-pill"><i class="bi bi-exclamation-circle me-1"></i> Незавершённые записи прошлого месяца</span>
+                      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                      <div class="rounded-circle bg-white bg-opacity-10 p-3">
+                        <i class="bi bi-calendar-week text-warning" style="font-size: 1.6rem;"></i>
+                      </div>
+                      <div>
+                        <h4 class="modal-title mb-1">Есть записи без отметки о выполнении</h4>
+                        <p class="mb-0 text-muted text-opacity-75">Закройте их единым действием или обработайте вручную.</p>
+                      </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-6">
+                        <div class="stat-card h-100">
+                          <h6>Количество</h6>
+                          <div class="d-flex align-items-baseline gap-2">
+                            <div class="value" data-overdue-count>{{ overdue_appointments_prompt.count }}</div>
+                            <span class="text-muted">записей</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="stat-card h-100">
+                          <h6>Период</h6>
+                          <div class="fw-semibold">{{ overdue_appointments_prompt.start_date|date:"d E" }} — {{ overdue_appointments_prompt.end_date|date:"d E" }}</div>
+                          <small class="text-muted">Предыдущий месяц</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                      <button type="button" class="btn btn-warning px-4" data-complete-overdue>
+                        <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" data-loading-spinner></span>
+                        Выполнить все записи
+                      </button>
+                      <button type="button" class="btn btn-ghost px-3" data-bs-dismiss="modal" data-dismiss-overdue>Обработать позже</button>
+                      <div class="text-success fw-semibold ms-sm-3" data-overdue-status role="status"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
       {% block content %}{% endblock %}
     </div>
   </section>
@@ -665,6 +791,106 @@
           }
         });
 
+      });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('overdueAppointmentsModal');
+        if (!modalEl || !window.bootstrap) {
+          return;
+        }
+
+        const count = Number(modalEl.dataset.count || 0);
+        if (!count) {
+          return;
+        }
+
+        const modal = new window.bootstrap.Modal(modalEl, {
+          backdrop: 'static',
+          keyboard: false,
+        });
+        modal.show();
+
+        const completeBtn = modalEl.querySelector('[data-complete-overdue]');
+        const dismissBtn = modalEl.querySelector('[data-dismiss-overdue]');
+        const statusEl = modalEl.querySelector('[data-overdue-status]');
+        const spinner = modalEl.querySelector('[data-loading-spinner]');
+        const countEl = modalEl.querySelector('[data-overdue-count]');
+        const completeUrl = modalEl.dataset.completeUrl;
+
+        const toggleLoading = (isLoading) => {
+          if (spinner) {
+            spinner.classList.toggle('d-none', !isLoading);
+          }
+          if (completeBtn) {
+            completeBtn.disabled = isLoading;
+          }
+          if (dismissBtn) {
+            dismissBtn.disabled = isLoading;
+          }
+        };
+
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) {
+            return parts.pop().split(';').shift();
+          }
+          return null;
+        };
+
+        completeBtn?.addEventListener('click', () => {
+          if (!completeUrl) {
+            return;
+          }
+
+          toggleLoading(true);
+          statusEl?.classList.remove('text-danger');
+          statusEl?.classList.add('text-success');
+
+          fetch(completeUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken') || '',
+            },
+          })
+            .then((response) => response.json().then((data) => ({ response, data })))
+            .then(({ response, data }) => {
+              if (!response.ok || !data?.ok) {
+                const message = data?.error || 'Не удалось обновить записи';
+                throw new Error(message);
+              }
+
+              if (statusEl) {
+                statusEl.textContent = `${data.updated} записей отмечено как выполненные`;
+              }
+
+              if (countEl) {
+                countEl.textContent = '0';
+              }
+
+              if (completeBtn) {
+                completeBtn.classList.remove('btn-warning');
+                completeBtn.classList.add('btn-success');
+                completeBtn.textContent = 'Готово';
+              }
+
+              setTimeout(() => {
+                modal.hide();
+                window.location.reload();
+              }, 700);
+            })
+            .catch((error) => {
+              if (statusEl) {
+                statusEl.classList.remove('text-success');
+                statusEl.classList.add('text-danger');
+                statusEl.textContent = error.message;
+              }
+            })
+            .finally(() => {
+              toggleLoading(false);
+            });
+        });
       });
     </script>
     <script>
