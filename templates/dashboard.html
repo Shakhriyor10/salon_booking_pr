@@ -1072,6 +1072,7 @@
 
   let visibleDates = new Set(defaultVisibleDatesArray);
   let activeCalendarDate = null;
+  let calendarMonthManuallyChanged = false;
   let todayDate = "{{ today|date:'Y-m-d' }}";
   const monthNames = [
     "Январь",
@@ -1613,6 +1614,7 @@
   function changeCalendarMonth(delta) {
     const current = calendarState.currentMonth;
     calendarState.currentMonth = new Date(current.getFullYear(), current.getMonth() + delta, 1);
+    calendarMonthManuallyChanged = true;
     renderCalendar();
   }
 
@@ -1720,6 +1722,7 @@
   function resetCalendarSelection() {
     activeCalendarDate = null;
     visibleDates = new Set(defaultVisibleDatesArray);
+    calendarMonthManuallyChanged = false;
     if (todayDate) {
       calendarState.currentMonth = createMonthStart(todayDate);
     }
@@ -1873,7 +1876,7 @@
       if (data.today) {
         todayDate = data.today;
         baseToday = createDateFromString(todayDate);
-        if (!activeCalendarDate) {
+        if (!activeCalendarDate && !calendarMonthManuallyChanged) {
           calendarState.currentMonth = createMonthStart(todayDate);
         }
       }
