@@ -16,7 +16,8 @@ from __future__ import annotations
 import asyncio
 import os
 import json
-from datetime import datetime
+import calendar
+from datetime import date, datetime, timedelta
 import html
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse, urljoin
@@ -31,7 +32,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", " https://subcommissarial-paris-untensely.ngrok-free.dev/api/")
+API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", "https://subcommissarial-paris-untensely.ngrok-free.dev/api/")
 _parsed_base = urlparse(API_BASE_URL)
 API_ROOT = f"{_parsed_base.scheme}://{_parsed_base.netloc}" if _parsed_base.netloc else ""
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7916518008:AAEULpvz8GS9mYnWsO_FWOXEXv6qzSxTcts")
@@ -39,6 +40,7 @@ BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7916518008:AAEULpvz8GS9mYnWsO_FWOXE
 router = Router()
 auth_tokens: Dict[int, str] = {}
 salon_cache: Dict[int, Dict[str, Any]] = {}
+admin_profiles: Dict[int, Dict[str, Any]] = {}
 
 
 def normalize_media_url(url: str) -> str:
@@ -104,13 +106,112 @@ async def api_request(
             return resp.status, data
 
 
+def get_status_label(status_code: str) -> str:
+    return {
+        "P": "Ожидает подтверждения",
+        "C": "Подтверждена",
+        "X": "Отменена",
+        "D": "Выполнена",
+    }.get(status_code, status_code or "—")
+
+
+def add_months(base_date: date, delta: int) -> date:
+    month = base_date.month - 1 + delta
+    year = base_date.year + month // 12
+    month = month % 12 + 1
+    return date(year, month, 1)
+
+
+def build_month_keyboard(target_date: date) -> InlineKeyboardMarkup:
+    month_calendar = calendar.Calendar(firstweekday=0).monthdayscalendar(target_date.year, target_date.month)
+    month_title = target_date.strftime("%B %Y")
+
+    keyboard: List[List[InlineKeyboardButton]] = [
+        [InlineKeyboardButton(text=month_title, callback_data="noop")],
+        [InlineKeyboardButton(text=day, callback_data="noop") for day in ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]],
+    ]
+
+    for week in month_calendar:
+        row = []
+        for day in week:
+            if day == 0:
+                row.append(InlineKeyboardButton(text=" ", callback_data="noop"))
+            else:
+                day_date = date(target_date.year, target_date.month, day)
+                row.append(
+                    InlineKeyboardButton(
+                        text=str(day), callback_data=f"admin_day:{day_date.isoformat()}"
+                    )
+                )
+        keyboard.append(row)
+
+    prev_month = add_months(target_date, -1)
+    next_month = add_months(target_date, 1)
+    keyboard.append(
+        [
+            InlineKeyboardButton(text="⬅️", callback_data=f"admin_month:{prev_month.isoformat()}"),
+            InlineKeyboardButton(text="Сегодня", callback_data="admin_today"),
+            InlineKeyboardButton(text="➡️", callback_data=f"admin_month:{next_month.isoformat()}"),
+        ]
+    )
+    keyboard.append([InlineKeyboardButton(text="⬅️ Назад", callback_data="admin_panel")])
+    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+
+
+async def refresh_admin_profile(user_id: int, token: str) -> None:
+    status, data = await api_request("GET", "admin/profile/", token=token)
+    if status == 200 and isinstance(data, dict) and data.get("is_salon_admin"):
+        admin_profiles[user_id] = data
+    else:
+        admin_profiles.pop(user_id, None)
+
+
+def get_admin_profile(user_id: int) -> Optional[Dict[str, Any]]:
+    return admin_profiles.get(user_id)
+
+
+async def send_admin_panel(message: Message):
+    profile = get_admin_profile(message.from_user.id)
+    if not profile:
+        await message.answer("Админ-панель доступна только салон-админам.")
+        return
+
+    salon_name = profile.get("salon", {}).get("name", "салон")
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🗓 Записи салона", callback_data="admin_appointments")],
+            [InlineKeyboardButton(text="📊 Отчёты", callback_data="admin_reports")],
+        ]
+    )
+    await message.answer(
+        f"Вы вошли как админ салона «{salon_name}». Выберите раздел:", reply_markup=keyboard
+    )
+
+
+def format_admin_appointment(appointment: Dict[str, Any]) -> str:
+    services = ", ".join(appointment.get("services") or []) or "—"
+    phone = appointment.get("client_phone") or "—"
+    start_time_local = appointment.get("start_time_local") or appointment.get("start_time")
+    return (
+        f"#{appointment.get('id')} — {start_time_local}\n"
+        f"Клиент: {appointment.get('client_name') or '—'} ({phone})\n"
+        f"Мастер: {appointment.get('stylist_name') or '—'}\n"
+        f"Услуги: {services}\n"
+        f"Статус: {get_status_label(appointment.get('status'))}"
+    )
+
+
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     """Приветствие и выбор между входом и регистрацией."""
 
     await state.clear()
 
-    if auth_tokens.get(message.from_user.id):
+    token = auth_tokens.get(message.from_user.id)
+    if token:
+        await refresh_admin_profile(message.from_user.id, token)
+        if get_admin_profile(message.from_user.id):
+            await send_admin_panel(message)
         await message.answer(
             "Привет! Я помогу записаться в салон. Ниже подборка доступных салонов:"
         )
@@ -177,9 +278,12 @@ async def register_password(message: Message, state: FSMContext):
     status, data = await api_request("POST", "auth/register/", json=payload)
     if status == 201 and "token" in data:
         auth_tokens[message.from_user.id] = data["token"]
+        await refresh_admin_profile(message.from_user.id, data["token"])
         await message.answer(
             "🎉 Регистрация успешна! Токен сохранён. Давай сразу посмотрим, какие салоны есть рядом:"
         )
+        if get_admin_profile(message.from_user.id):
+            await send_admin_panel(message)
         await send_salons_overview(message)
     else:
         error_text = data.get("detail") if isinstance(data, dict) else "Неизвестная ошибка"
@@ -213,9 +317,12 @@ async def login_password(message: Message, state: FSMContext):
     status, data = await api_request("POST", "auth/token/", json=payload)
     if status == 200 and "token" in data:
         auth_tokens[message.from_user.id] = data["token"]
+        await refresh_admin_profile(message.from_user.id, data["token"])
         await message.answer(
             "Успешный вход. Доступные салоны ниже — выберите подходящий:"
         )
+        if get_admin_profile(message.from_user.id):
+            await send_admin_panel(message)
         await send_salons_overview(message)
     else:
         await message.answer("Неверные данные или сервер недоступен.")
@@ -620,6 +727,176 @@ async def booking_finalize(callback: CallbackQuery, state: FSMContext):
         await callback.message.edit_text(f"Не удалось создать запись: {detail}")
 
     await state.clear()
+    await callback.answer()
+
+
+@router.message(Command("admin"))
+async def admin_entry(message: Message):
+    token = auth_tokens.get(message.from_user.id)
+    if not token:
+        await message.answer("Сначала выполните /login или /register.")
+        return
+
+    await refresh_admin_profile(message.from_user.id, token)
+    if not get_admin_profile(message.from_user.id):
+        await message.answer("Похоже, у вашего аккаунта нет прав салон-админа.")
+        return
+
+    await send_admin_panel(message)
+
+
+@router.callback_query(F.data == "admin_panel")
+async def admin_panel_callback(callback: CallbackQuery):
+    await send_admin_panel(callback.message)
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_appointments")
+async def admin_appointments(callback: CallbackQuery):
+    if not get_admin_profile(callback.from_user.id):
+        await callback.message.answer("Админ-панель доступна только салон-админам.")
+        await callback.answer()
+        return
+
+    await callback.message.answer(
+        "Выберите дату, чтобы увидеть записи этого дня:",
+        reply_markup=build_month_keyboard(date.today()),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_today")
+async def admin_today(callback: CallbackQuery):
+    await callback.message.edit_reply_markup(reply_markup=build_month_keyboard(date.today()))
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_month:"))
+async def admin_month(callback: CallbackQuery):
+    try:
+        target = date.fromisoformat(callback.data.split(":", 1)[1])
+    except ValueError:
+        target = date.today().replace(day=1)
+
+    await callback.message.edit_reply_markup(reply_markup=build_month_keyboard(target))
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_day:"))
+async def admin_day(callback: CallbackQuery):
+    token = auth_tokens.get(callback.from_user.id)
+    if not token:
+        await callback.message.answer("Сначала выполните вход через /login.")
+        await callback.answer()
+        return
+
+    day_str = callback.data.split(":", 1)[1]
+    status_code, payload = await api_request(
+        "GET", "admin/appointments/", token=token, params={"date": day_str}
+    )
+
+    if status_code == 403:
+        await callback.message.answer("У вашего аккаунта нет прав салон-админа.")
+        await callback.answer()
+        return
+
+    if status_code != 200 or not isinstance(payload, dict):
+        await callback.message.answer("Не удалось получить записи за выбранный день.")
+        await callback.answer()
+        return
+
+    appointments = payload.get("appointments") or []
+    if not appointments:
+        await callback.message.answer(f"На {day_str} записей нет.")
+        await callback.answer()
+        return
+
+    await callback.message.answer(f"Записи на {day_str}:")
+    for appointment in appointments:
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="✅ Подтвердить",
+                        callback_data=f"admin_status:{appointment['id']}:confirm",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Отменить",
+                        callback_data=f"admin_status:{appointment['id']}:cancel",
+                    )
+                ],
+            ]
+        )
+        await callback.message.answer(format_admin_appointment(appointment), reply_markup=keyboard)
+
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_status:"))
+async def admin_status_update(callback: CallbackQuery):
+    token = auth_tokens.get(callback.from_user.id)
+    if not token:
+        await callback.message.answer("Сначала выполните вход через /login.")
+        await callback.answer()
+        return
+
+    try:
+        _, appointment_id, action = callback.data.split(":", 2)
+    except ValueError:
+        await callback.answer()
+        return
+
+    status_code, data = await api_request(
+        "POST",
+        f"admin/appointments/{appointment_id}/status/",
+        token=token,
+        json={"status": action},
+    )
+
+    if status_code == 200 and isinstance(data, dict):
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="✅ Подтвердить",
+                        callback_data=f"admin_status:{data['id']}:confirm",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="❌ Отменить",
+                        callback_data=f"admin_status:{data['id']}:cancel",
+                    )
+                ],
+            ]
+        )
+        await callback.message.edit_text(format_admin_appointment(data), reply_markup=keyboard)
+        await callback.answer("Статус обновлён")
+        return
+
+    detail = data.get("detail") if isinstance(data, dict) else "Не удалось изменить статус."
+    await callback.message.answer(str(detail))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_reports")
+async def admin_reports(callback: CallbackQuery):
+    profile = get_admin_profile(callback.from_user.id)
+    if not profile:
+        await callback.message.answer("Раздел доступен только салон-админам.")
+        await callback.answer()
+        return
+
+    await callback.message.answer(
+        "Отчёты по салону доступны в веб-кабинете. Мы сообщим, когда появится сводка прямо в боте."
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data == "noop")
+async def ignore_noop(callback: CallbackQuery):
     await callback.answer()
 
 

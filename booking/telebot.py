@@ -6,15 +6,19 @@ from django.conf import settings
 
 BOT_TOKEN = settings.TELEGRAM_BOT_TOKEN
 
+ASYNC_DEFAULT_PROPERTIES = DefaultBotProperties(parse_mode="HTML")
+
+
 async def _send(chat_id_or_username: str, text: str):
     bot = Bot(
         BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode="HTML")
+        default=ASYNC_DEFAULT_PROPERTIES,
     )
     try:
         await bot.send_message(chat_id_or_username, text)
     finally:
         await bot.session.close()
+
 
 def send_telegram(chat_id: int = None, username: str = None, text: str = ""):
     """

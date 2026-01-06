@@ -1,6 +1,9 @@
 from django.urls import path
 
 from booking.api.views import (
+    AdminAppointmentStatusView,
+    AdminAppointmentsView,
+    AdminProfileView,
     AppointmentListCreateView,
     AvailableSlotsView,
     CityListView,
@@ -22,4 +25,11 @@ urlpatterns = [
     path("stylists/<int:stylist_id>/services/", StylistServiceListView.as_view(), name="api-stylist-services"),
     path("stylists/<int:stylist_id>/slots/", AvailableSlotsView.as_view(), name="api-available-slots"),
     path("appointments/", AppointmentListCreateView.as_view(), name="api-appointments"),
+    path("admin/profile/", AdminProfileView.as_view(), name="api-admin-profile"),
+    path("admin/appointments/", AdminAppointmentsView.as_view(), name="api-admin-appointments"),
+    path(
+        "admin/appointments/<int:pk>/status/",
+        AdminAppointmentStatusView.as_view(),
+        name="api-admin-appointment-status",
+    ),
 ]
