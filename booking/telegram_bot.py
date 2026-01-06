@@ -234,26 +234,41 @@ def format_admin_appointment(appointment: Dict[str, Any]) -> str:
     )
 
 
-def admin_status_keyboard(appointment_id: int) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
+def admin_status_keyboard(appointment: Dict[str, Any]) -> InlineKeyboardMarkup | None:
+    status_code = str(appointment.get("status") or "").upper()
+    appointment_id = appointment.get("id")
+    if not appointment_id:
+        return None
+
+    if status_code in {"D", "X"}:  # DONE or CANCELLED
+        return None
+
+    buttons: List[List[InlineKeyboardButton]] = []
+    if status_code == "P":
+        buttons.append(
             [
                 InlineKeyboardButton(
                     text="✅ Подтвердить", callback_data=f"admin_status:{appointment_id}:confirm"
                 )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="✅ Выполнено", callback_data=f"admin_status:{appointment_id}:done"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    text="❌ Отменить", callback_data=f"admin_status:{appointment_id}:cancel"
-                )
-            ],
+            ]
+        )
+
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text="✅ Выполнено", callback_data=f"admin_status:{appointment_id}:done"
+            )
         ]
     )
+    buttons.append(
+        [
+            InlineKeyboardButton(
+                text="❌ Отменить", callback_data=f"admin_status:{appointment_id}:cancel"
+            )
+        ]
+    )
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def format_new_appointment_notice(appointment: Dict[str, Any]) -> str:
@@ -286,11 +301,7 @@ async def notify_admins_about_new_booking(bot: Bot, appointment: Dict[str, Any])
         return
 
     message_text = format_new_appointment_notice(appointment)
-    keyboard = (
-        admin_status_keyboard(appointment.get("id"))
-        if appointment.get("id")
-        else None
-    )
+    keyboard = admin_status_keyboard(appointment)
 
     for chat_id in chat_ids:
         try:
@@ -948,7 +959,7 @@ async def admin_day(callback: CallbackQuery):
 
     await callback.message.answer(f"Записи на {day_str}:")
     for appointment in appointments:
-        keyboard = admin_status_keyboard(appointment["id"])
+        keyboard = admin_status_keyboard(appointment)
         await callback.message.answer(format_admin_appointment(appointment), reply_markup=keyboard)
 
     await callback.answer()
@@ -968,6 +979,24 @@ async def admin_status_update(callback: CallbackQuery):
         await callback.answer()
         return
 
+    if action == "cancel":
+        confirm_keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="Да, отменить",
+                        callback_data=f"admin_cancel_yes:{appointment_id}:{callback.message.message_id}",
+                    )
+                ],
+                [InlineKeyboardButton(text="Нет", callback_data="admin_cancel_no")],
+            ]
+        )
+        await callback.message.answer(
+            f"Вы точно хотите отменить запись #{appointment_id}?", reply_markup=confirm_keyboard
+        )
+        await callback.answer()
+        return
+
     status_code, data = await api_request(
         "POST",
         f"admin/appointments/{appointment_id}/status/",
@@ -976,7 +1005,7 @@ async def admin_status_update(callback: CallbackQuery):
     )
 
     if status_code == 200 and isinstance(data, dict):
-        keyboard = admin_status_keyboard(data["id"])
+        keyboard = admin_status_keyboard(data)
         await callback.message.edit_text(format_admin_appointment(data), reply_markup=keyboard)
         await callback.answer("Статус обновлён")
         return
@@ -984,6 +1013,54 @@ async def admin_status_update(callback: CallbackQuery):
     detail = data.get("detail") if isinstance(data, dict) else "Не удалось изменить статус."
     await callback.message.answer(str(detail))
     await callback.answer()
+
+
+@router.callback_query(F.data.startswith("admin_cancel_yes:"))
+async def admin_cancel_yes(callback: CallbackQuery):
+    token = auth_tokens.get(callback.from_user.id)
+    if not token:
+        await callback.message.answer("Сначала выполните вход через /login.")
+        await callback.answer()
+        return
+
+    try:
+        _, appointment_id, origin_message_id = callback.data.split(":", 2)
+    except ValueError:
+        await callback.answer()
+        return
+
+    status_code, data = await api_request(
+        "POST",
+        f"admin/appointments/{appointment_id}/status/",
+        token=token,
+        json={"status": "cancel"},
+    )
+
+    if status_code == 200 and isinstance(data, dict):
+        keyboard = admin_status_keyboard(data)
+        try:
+            await callback.message.bot.edit_message_text(
+                format_admin_appointment(data),
+                chat_id=callback.message.chat.id,
+                message_id=int(origin_message_id),
+                reply_markup=keyboard,
+            )
+        except Exception:
+            await callback.message.answer(format_admin_appointment(data), reply_markup=keyboard)
+
+        await callback.message.edit_text("Запись отменена")
+        await callback.answer("Запись отменена")
+        return
+
+    detail = data.get("detail") if isinstance(data, dict) else "Не удалось отменить запись."
+    await callback.message.answer(str(detail))
+    await callback.answer()
+
+
+@router.callback_query(F.data == "admin_cancel_no")
+async def admin_cancel_no(callback: CallbackQuery):
+    await callback.message.edit_text("Отмена записи отменена.")
+    await callback.answer("Оставляем без изменений")
 
 
 async def admin_reports_message(target_message: Message | CallbackQuery):

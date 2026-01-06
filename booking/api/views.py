@@ -437,6 +437,11 @@ class AdminAppointmentStatusView(APIView):
             return Response({"detail": "Недопустимый статус."}, status=status.HTTP_400_BAD_REQUEST)
 
         new_status = status_map[action]
+        if appointment.status in {Appointment.Status.CANCELLED, Appointment.Status.DONE} and appointment.status != new_status:
+            return Response(
+                {"detail": "Статус уже финальный и не может быть изменён."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         appointment.status = new_status
         updates = appointment.update_payment_status_for_status(new_status)
         update_fields = ["status"] + updates
