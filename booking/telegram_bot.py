@@ -18,6 +18,7 @@ import os
 from datetime import datetime
 import html
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 
 import aiohttp
 from aiogram import Bot, Dispatcher, F, Router
@@ -30,11 +31,30 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", "http://localhost:8000/api/")
+_parsed_base = urlparse(API_BASE_URL)
+API_ROOT = f"{_parsed_base.scheme}://{_parsed_base.netloc}" if _parsed_base.netloc else ""
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7916518008:AAEULpvz8GS9mYnWsO_FWOXEXv6qzSxTcts")
 
 router = Router()
 auth_tokens: Dict[int, str] = {}
 salon_cache: Dict[int, Dict[str, Any]] = {}
+
+
+def normalize_media_url(url: str) -> str:
+    """Return absolute URL for Telegram uploads, falling back to original."""
+
+    if not url:
+        return ""
+
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+
+    if API_ROOT:
+        if not url.startswith("/"):
+            url = f"/{url}"
+        return f"{API_ROOT}{url}"
+
+    return url
 
 
 class RegisterStates(StatesGroup):
@@ -236,7 +256,11 @@ async def send_salons_overview(message: Message):
     salon_cache.update({item["id"]: item for item in salons})
 
     for item in salons:
-        photos = item.get("photos") or []
+        photos: List[str] = []
+        for photo in item.get("photos") or []:
+            normalized = normalize_media_url(photo)
+            if normalized.startswith("http"):
+                photos.append(normalized)
         city = html.escape(item.get("city", {}).get("name", ""))
         description = html.escape(item.get("description") or "")
         caption = (
@@ -277,7 +301,7 @@ async def send_stylists_cards(target_message: Message, salon_id: str):
         )
         avatar = stylist.get("avatar")
         if avatar:
-            await target_message.answer_photo(avatar, caption=caption)
+            await target_message.answer_photo(normalize_media_url(avatar), caption=caption)
         else:
             await target_message.answer(caption)
 
