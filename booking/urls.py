@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-from . import telegram_api
 from .views import StylistDetailView, StylistListView, ServiceListView, AppointmentCreateView, dashboard_view, \
     dashboard_ajax, ReportView, my_appointments, cancel_appointment, ManualAppointmentCreateView, \
     get_stylists_by_service, get_available_times, StylistManualAppointmentCreateView, get_available_times_for_stylist, \
@@ -53,9 +52,4 @@ urlpatterns = [
     path('stylist/ajax/<int:stylist_id>/', views.ajax_stylist_data, name='ajax_stylist_data'),
     path('stylist/ajax/price/', views.ajax_update_price, name='ajax_update_price'),
     path('favorites/toggle/', toggle_favorite_salon, name='toggle_favorite'),
-    # Telegram WebApp API
-    path('telegram/api/bootstrap/', telegram_api.telegram_bootstrap, name='telegram_bootstrap'),
-    path('telegram/api/salons/<int:salon_id>/', telegram_api.telegram_salon_detail, name='telegram_salon_detail'),
-    path('telegram/api/available-times/', telegram_api.telegram_available_times, name='telegram_available_times'),
-    path('telegram/api/appointments/', telegram_api.telegram_create_appointment, name='telegram_create_appointment'),
 ]
