@@ -148,6 +148,58 @@ class AppointmentSerializer(serializers.ModelSerializer):
         return localtime(obj.end_time)
 
 
+class AdminAppointmentSerializer(serializers.ModelSerializer):
+    services = serializers.SerializerMethodField()
+    start_time_local = serializers.SerializerMethodField()
+    client_name = serializers.SerializerMethodField()
+    client_phone = serializers.SerializerMethodField()
+    stylist_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Appointment
+        fields = [
+            "id",
+            "start_time",
+            "start_time_local",
+            "status",
+            "client_name",
+            "client_phone",
+            "stylist_name",
+            "services",
+            "notes",
+        ]
+        read_only_fields = fields
+
+    def get_services(self, obj: Appointment):
+        return [
+            s.stylist_service.salon_service.service.name
+            for s in obj.services.all()
+            if s.stylist_service
+            and s.stylist_service.salon_service
+            and s.stylist_service.salon_service.service
+        ]
+
+    def get_start_time_local(self, obj: Appointment):
+        return localtime(obj.start_time)
+
+    def get_client_name(self, obj: Appointment):
+        if obj.customer:
+            full_name = obj.customer.get_full_name() or obj.customer.username
+            return full_name.strip()
+        return (obj.guest_name or "").strip() or "Гость"
+
+    def get_client_phone(self, obj: Appointment):
+        if obj.customer and hasattr(obj.customer, "profile"):
+            return obj.customer.profile.phone
+        return obj.guest_phone
+
+    def get_stylist_name(self, obj: Appointment):
+        if obj.stylist and obj.stylist.user:
+            full_name = obj.stylist.user.get_full_name() or obj.stylist.user.username
+            return full_name.strip()
+        return ""
+
+
 class RegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import List, Tuple
 from decimal import Decimal
+from datetime import datetime
 
 import pytz
 from django.conf import settings
@@ -25,6 +26,7 @@ from booking.models import (
     WorkingHour,
 )
 from booking.api.serializers import (
+    AdminAppointmentSerializer,
     AppointmentCreateSerializer,
     AppointmentSerializer,
     CitySerializer,
@@ -354,3 +356,90 @@ class AppointmentListCreateView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+class AdminProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = getattr(request.user, "profile", None)
+        is_admin = bool(profile and profile.is_salon_admin and profile.salon)
+        salon_data = None
+        if is_admin:
+            salon_data = {"id": profile.salon.id, "name": profile.salon.name}
+
+        return Response({
+            "is_salon_admin": is_admin,
+            "salon": salon_data,
+        })
+
+
+class AdminAppointmentsView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = getattr(request.user, "profile", None)
+        if not (profile and profile.is_salon_admin and profile.salon):
+            return Response({"detail": "Недостаточно прав."}, status=status.HTTP_403_FORBIDDEN)
+
+        date_param = request.query_params.get("date")
+        if date_param:
+            try:
+                target_date = datetime.strptime(date_param, "%Y-%m-%d").date()
+            except ValueError:
+                return Response(
+                    {"detail": "Неверный формат даты. Используйте YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            target_date = timezone.localdate()
+
+        appointments = (
+            Appointment.objects
+            .filter(stylist__salon=profile.salon, start_time__date=target_date)
+            .select_related("customer", "customer__profile", "stylist", "stylist__user")
+            .prefetch_related(
+                "services",
+                "services__stylist_service",
+                "services__stylist_service__salon_service",
+                "services__stylist_service__salon_service__service",
+            )
+            .order_by("start_time")
+        )
+
+        data = AdminAppointmentSerializer(appointments, many=True).data
+        return Response({"date": target_date.isoformat(), "appointments": data})
+
+
+class AdminAppointmentStatusView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        profile = getattr(request.user, "profile", None)
+        if not (profile and profile.is_salon_admin and profile.salon):
+            return Response({"detail": "Недостаточно прав."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            appointment = Appointment.objects.select_related("stylist", "stylist__salon").get(
+                pk=pk, stylist__salon=profile.salon
+            )
+        except Appointment.DoesNotExist:
+            return Response({"detail": "Запись не найдена."}, status=status.HTTP_404_NOT_FOUND)
+
+        action = str(request.data.get("status", "")).lower()
+        status_map = {
+            "confirm": Appointment.Status.CONFIRMED,
+            "cancel": Appointment.Status.CANCELLED,
+        }
+
+        if action not in status_map:
+            return Response({"detail": "Недопустимый статус."}, status=status.HTTP_400_BAD_REQUEST)
+
+        new_status = status_map[action]
+        appointment.status = new_status
+        updates = appointment.update_payment_status_for_status(new_status)
+        update_fields = ["status"] + updates
+        appointment.save(update_fields=update_fields)
+
+        serialized = AdminAppointmentSerializer(appointment).data
+        return Response(serialized)
