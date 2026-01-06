@@ -28,6 +28,7 @@ class CitySerializer(serializers.ModelSerializer):
 
 class SalonSerializer(serializers.ModelSerializer):
     city = CitySerializer()
+    photos = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -40,7 +41,18 @@ class SalonSerializer(serializers.ModelSerializer):
             "city",
             "type",
             "slug",
+            "photos",
         ]
+
+    def get_photos(self, obj: Salon):
+        request = self.context.get("request")
+        urls = []
+        for field in ["photo", "photo_2", "photo_3", "photo_4", "photo_5"]:
+            image = getattr(obj, field)
+            if image:
+                url = image.url
+                urls.append(request.build_absolute_uri(url) if request else url)
+        return urls
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -57,16 +69,34 @@ class SalonServiceSerializer(serializers.ModelSerializer):
         fields = ["id", "service", "duration", "category", "is_active", "position"]
 
 
+class StylistServicePublicSerializer(serializers.ModelSerializer):
+    salon_service = SalonServiceSerializer()
+
+    class Meta:
+        model = StylistService
+        fields = ["id", "salon_service", "price"]
+
+
 class StylistSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     level = serializers.StringRelatedField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Stylist
-        fields = ["id", "full_name", "salon", "level"]
+        fields = ["id", "full_name", "salon", "level", "avatar", "bio"]
 
     def get_full_name(self, obj: Stylist) -> str:
         return obj.user.get_full_name() or obj.user.username
+
+    def get_avatar(self, obj: Stylist) -> str:
+        avatar = obj.avatar
+        if not avatar:
+            return ""
+
+        request = self.context.get("request")
+        url = avatar.url
+        return request.build_absolute_uri(url) if request else url
 
 
 class AppointmentServiceSerializer(serializers.ModelSerializer):
@@ -120,7 +150,7 @@ class RegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
-    phone = serializers.CharField(max_length=20)
+    phone = serializers.CharField(max_length=20, write_only=True)
     password = serializers.CharField(write_only=True, min_length=3)
 
     def validate_username(self, value: str) -> str:

@@ -8,6 +8,7 @@ from booking.api.views import (
     RegistrationView,
     SalonListView,
     SalonServiceListView,
+    StylistServiceListView,
     StylistListView,
 )
 
@@ -18,6 +19,7 @@ urlpatterns = [
     path("salons/", SalonListView.as_view(), name="api-salons"),
     path("salons/<int:pk>/services/", SalonServiceListView.as_view(), name="api-salon-services"),
     path("stylists/", StylistListView.as_view(), name="api-stylists"),
+    path("stylists/<int:stylist_id>/services/", StylistServiceListView.as_view(), name="api-stylist-services"),
     path("stylists/<int:stylist_id>/slots/", AvailableSlotsView.as_view(), name="api-available-slots"),
     path("appointments/", AppointmentListCreateView.as_view(), name="api-appointments"),
 ]
