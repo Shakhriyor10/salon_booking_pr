@@ -75,17 +75,29 @@ async def api_request(
 
 
 @router.message(Command("start"))
-async def cmd_start(message: Message):
+async def cmd_start(message: Message, state: FSMContext):
+    """Приветствие. Если токена нет — запускаем регистрацию сразу."""
+
+    await state.clear()
+
+    if auth_tokens.get(message.from_user.id):
+        await message.answer(
+            "Привет! Я помогу записаться в салон. Доступные команды:\n"
+            "• /register — регистрация\n"
+            "• /login — вход, если уже есть аккаунт\n"
+            "• /salons — посмотреть салоны\n"
+            "• /services &lt;salon_id&gt; — услуги выбранного салона\n"
+            "• /stylists &lt;salon_id&gt; — мастера в салоне\n"
+            "• /book — записаться\n"
+            "• /appointments — мои записи"
+        )
+        return
+
+    await state.set_state(RegisterStates.username)
     await message.answer(
-        "Привет! Я помогу записаться в салон. Доступные команды:\n"
-        "• /register — регистрация\n"
-        "• /login — вход, если уже есть аккаунт\n"
-        "• /salons — посмотреть салоны\n"
-        "• /services <salon_id> — услуги выбранного салона\n"
-        "• /stylists <salon_id> — мастера в салоне\n"
-        "• /book — записаться\n"
-        "• /appointments — мои записи"
+        "Привет! Давай зарегистрируемся, чтобы можно было записываться через бота."
     )
+    await message.answer("Введите логин для нового аккаунта:")
 
 
 @router.message(Command("register"))
