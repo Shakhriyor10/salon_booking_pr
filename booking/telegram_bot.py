@@ -25,6 +25,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 
 API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", "http://localhost:8000/api/")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -411,9 +413,13 @@ async def booking_finalize(callback: CallbackQuery, state: FSMContext):
 
 async def main():
     if not BOT_TOKEN:
-        raise RuntimeError("TELEGRAM_BOT_TOKEN не задан в переменных окружения.")
+        print(
+            "TELEGRAM_BOT_TOKEN не задан в переменных окружения. "
+            "Установите переменную или экспортируйте её перед запуском скрипта."
+        )
+        return
 
-    bot = Bot(BOT_TOKEN, parse_mode="HTML")
+    bot = Bot(BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(router)
     await dp.start_polling(bot)
