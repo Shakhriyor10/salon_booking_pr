@@ -37,6 +37,8 @@ class SalonSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "address",
+            "latitude",
+            "longitude",
             "phone",
             "city",
             "type",

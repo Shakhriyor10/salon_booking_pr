@@ -15,9 +15,11 @@ from __future__ import annotations
 
 import asyncio
 import os
+import json
 from datetime import datetime
 import html
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse, urljoin
 
 import aiohttp
 from aiogram import Bot, Dispatcher, F, Router
@@ -30,10 +32,34 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 API_BASE_URL = os.getenv("TELEGRAM_API_BASE_URL", "http://localhost:8000/api/")
+_parsed_base = urlparse(API_BASE_URL)
+API_ROOT = f"{_parsed_base.scheme}://{_parsed_base.netloc}" if _parsed_base.netloc else ""
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7916518008:AAEULpvz8GS9mYnWsO_FWOXEXv6qzSxTcts")
 
 router = Router()
 auth_tokens: Dict[int, str] = {}
+salon_cache: Dict[int, Dict[str, Any]] = {}
+
+
+def normalize_media_url(url: str) -> str:
+    """Return a Telegram-safe absolute media URL or empty string if invalid."""
+
+    if not url:
+        return ""
+
+    cleaned = str(url).strip()
+    parsed = urlparse(cleaned)
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        return cleaned
+
+    base_parsed = urlparse(API_BASE_URL)
+    if base_parsed.scheme in {"http", "https"} and base_parsed.netloc:
+        candidate = urljoin(API_BASE_URL, cleaned)
+        joined = urlparse(candidate)
+        if joined.scheme in {"http", "https"} and joined.netloc:
+            return candidate
+
+    return ""
 
 
 class RegisterStates(StatesGroup):
@@ -71,40 +97,48 @@ async def api_request(
 
     async with aiohttp.ClientSession() as session:
         async with session.request(method, url, json=json, params=params, headers=headers) as resp:
-            data = await resp.json(content_type=None)
+            try:
+                data = await resp.json(content_type=None)
+            except (aiohttp.ContentTypeError, json.JSONDecodeError):
+                data = await resp.text()
             return resp.status, data
 
 
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
-    """Приветствие. Если токена нет — запускаем регистрацию сразу."""
+    """Приветствие и выбор между входом и регистрацией."""
 
     await state.clear()
 
     if auth_tokens.get(message.from_user.id):
         await message.answer(
-            "Привет! Я помогу записаться в салон. Доступные команды:\n"
-            "• /register — регистрация\n"
-            "• /login — вход, если уже есть аккаунт\n"
-            "• /salons — посмотреть салоны\n"
-            "• /services &lt;salon_id&gt; — услуги выбранного салона\n"
-            "• /stylists &lt;salon_id&gt; — мастера в салоне\n"
-            "• /book — записаться\n"
-            "• /appointments — мои записи"
+            "Привет! Я помогу записаться в салон. Ниже подборка доступных салонов:"
         )
+        await send_salons_overview(message)
         return
 
-    await state.set_state(RegisterStates.username)
-    await message.answer(
-        "Привет! Давай зарегистрируемся, чтобы можно было записываться через бота."
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="🔐 Войти", callback_data="start_login")],
+            [InlineKeyboardButton(text="🆕 Регистрация", callback_data="start_register")],
+        ]
     )
-    await message.answer("Введите логин для нового аккаунта:")
+    await message.answer(
+        "Привет! Для записи через бот войдите в свой аккаунт или создайте новый.",
+        reply_markup=keyboard,
+    )
 
 
 @router.message(Command("register"))
 async def start_register(message: Message, state: FSMContext):
     await state.set_state(RegisterStates.username)
     await message.answer("Введите логин для нового аккаунта:")
+
+
+@router.callback_query(F.data == "start_register")
+async def callback_start_register(callback: CallbackQuery, state: FSMContext):
+    await start_register(callback.message, state)
+    await callback.answer()
 
 
 @router.message(RegisterStates.username)
@@ -159,6 +193,12 @@ async def start_login(message: Message, state: FSMContext):
     await message.answer("Введите логин:")
 
 
+@router.callback_query(F.data == "start_login")
+async def callback_start_login(callback: CallbackQuery, state: FSMContext):
+    await start_login(callback.message, state)
+    await callback.answer()
+
+
 @router.message(LoginStates.username)
 async def login_username(message: Message, state: FSMContext):
     await state.update_data(username=message.text.strip())
@@ -173,7 +213,10 @@ async def login_password(message: Message, state: FSMContext):
     status, data = await api_request("POST", "auth/token/", json=payload)
     if status == 200 and "token" in data:
         auth_tokens[message.from_user.id] = data["token"]
-        await message.answer("Успешный вход. Теперь можно записываться через /book")
+        await message.answer(
+            "Успешный вход. Доступные салоны ниже — выберите подходящий:"
+        )
+        await send_salons_overview(message)
     else:
         await message.answer("Неверные данные или сервер недоступен.")
     await state.clear()
@@ -192,20 +235,7 @@ async def list_services(message: Message):
         return
 
     salon_id = parts[1]
-    status, data = await api_request("GET", f"salons/{salon_id}/services/")
-    if status != 200:
-        await message.answer("Не удалось получить услуги.")
-        return
-
-    if not data:
-        await message.answer("В этом салоне пока нет активных услуг.")
-        return
-
-    lines = [
-        f"#{item['id']}: {item['service']['name']} — длительность {item['duration']} мин"
-        for item in data
-    ]
-    await message.answer("\n".join(lines))
+    await send_services_keyboard(message, salon_id)
 
 
 @router.message(Command("stylists"))
@@ -230,8 +260,15 @@ async def send_salons_overview(message: Message):
         await message.answer("Салоны не найдены.")
         return
 
+    salon_cache.clear()
+    salon_cache.update({item["id"]: item for item in salons})
+
     for item in salons:
-        photos = item.get("photos") or []
+        photos: List[str] = []
+        for photo in item.get("photos") or []:
+            normalized = normalize_media_url(photo)
+            if normalized.startswith("http"):
+                photos.append(normalized)
         city = html.escape(item.get("city", {}).get("name", ""))
         description = html.escape(item.get("description") or "")
         caption = (
@@ -243,6 +280,7 @@ async def send_salons_overview(message: Message):
 
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[
+                [InlineKeyboardButton(text="ℹ️ Подробнее", callback_data=f"salon_info:{item['id']}")],
                 [InlineKeyboardButton(text="🧑‍🎨 Мастера", callback_data=f"show_stylists:{item['id']}")],
                 [InlineKeyboardButton(text="💇‍♀️ Услуги", callback_data=f"show_services:{item['id']}")],
             ]
@@ -270,8 +308,9 @@ async def send_stylists_cards(target_message: Message, salon_id: str):
             f"{html.escape(stylist.get('bio') or 'Без описания')}"
         )
         avatar = stylist.get("avatar")
-        if avatar:
-            await target_message.answer_photo(avatar, caption=caption)
+        avatar_url = normalize_media_url(avatar) if avatar else ""
+        if avatar_url:
+            await target_message.answer_photo(avatar_url, caption=caption)
         else:
             await target_message.answer(caption)
 
@@ -283,25 +322,111 @@ async def callback_show_stylists(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("show_services:"))
-async def callback_show_services(callback: CallbackQuery):
-    salon_id = callback.data.split(":", 1)[1]
+@router.callback_query(F.data.startswith("salon_info:"))
+async def callback_salon_info(callback: CallbackQuery):
+    salon_id = int(callback.data.split(":", 1)[1])
+    salon = salon_cache.get(salon_id)
+
+    if salon is None:
+        status, data = await api_request("GET", "salons/")
+        if status == 200:
+            salon_cache.update({item["id"]: item for item in data or []})
+            salon = salon_cache.get(salon_id)
+
+    if salon is None:
+        await callback.message.answer("Не удалось найти информацию о салоне.")
+        await callback.answer()
+        return
+
+    city = html.escape(salon.get("city", {}).get("name", ""))
+    caption = (
+        f"<b>{html.escape(salon['name'])}</b> (#{salon['id']})\n"
+        f"📍 {city}, {html.escape(salon.get('address') or 'Адрес не указан')}\n"
+        f"☎️ {html.escape(salon.get('phone') or '—')}\n\n"
+        f"{html.escape(salon.get('description') or 'Описание скоро появится.')}"
+    )
+    await callback.message.answer(caption)
+
+    latitude = salon.get("latitude")
+    longitude = salon.get("longitude")
+    if latitude is not None and longitude is not None:
+        try:
+            await callback.message.answer_location(float(latitude), float(longitude))
+        except (TypeError, ValueError):
+            pass
+
+    await send_services_keyboard(
+        callback.message,
+        str(salon_id),
+        heading="Выберите услугу и запишитесь:",
+    )
+    await callback.answer()
+
+
+async def send_services_keyboard(target_message: Message, salon_id: str, heading: str | None = None):
     status, data = await api_request("GET", f"salons/{salon_id}/services/")
     if status != 200:
-        await callback.message.answer("Не удалось получить услуги.")
-        await callback.answer()
+        await target_message.answer("Не удалось получить услуги.")
         return
 
     if not data:
-        await callback.message.answer("В этом салоне пока нет активных услуг.")
-        await callback.answer()
+        await target_message.answer("В этом салоне пока нет активных услуг.")
         return
 
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"{item['service']['name']} — {item['duration']} мин",
+                    callback_data=f"service_select:{salon_id}:{item['id']}",
+                )
+            ]
+            for item in data[:10]
+        ]
+    )
+
+    title = heading if heading is not None else "Выберите услугу:"
     lines = [
         f"#{item['id']}: {item['service']['name']} — {item['duration']} мин"
         for item in data
     ]
-    await callback.message.answer("Список услуг:\n" + "\n".join(lines))
+    await target_message.answer("\n".join([title] + lines), reply_markup=keyboard)
+
+
+@router.callback_query(F.data.startswith("show_services:"))
+async def callback_show_services(callback: CallbackQuery):
+    salon_id = callback.data.split(":", 1)[1]
+    await send_services_keyboard(callback.message, salon_id, heading="Список услуг:")
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("service_select:"))
+async def callback_service_select(callback: CallbackQuery, state: FSMContext):
+    _, salon_id, service_id = callback.data.split(":", 2)
+    token = auth_tokens.get(callback.from_user.id)
+    if not token:
+        await callback.message.answer("Сначала войдите через /login или зарегистрируйтесь через /register.")
+        await callback.answer()
+        return
+
+    status, data = await api_request("GET", "stylists/", params={"salon": salon_id})
+    if status != 200 or not data:
+        await callback.message.answer("Для салона не найдено мастеров.")
+        await callback.answer()
+        return
+
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text=f"{item['full_name']} ({item['level']})", callback_data=f"stylist:{item['id']}")]
+            for item in data
+        ]
+    )
+
+    await state.update_data(salon_id=int(salon_id), services=[int(service_id)])
+    await state.set_state(BookingStates.stylist)
+    await callback.message.answer(
+        "Выберите мастера для выбранной услуги:", reply_markup=keyboard
+    )
     await callback.answer()
 
 
@@ -391,14 +516,23 @@ async def booking_choose_stylist(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
         return
 
-    lines = [
-        f"#{item['salon_service']['id']}: {item['salon_service']['service']['name']} — {item['price']} сум, {item['salon_service']['duration']} мин"
-        for item in data
-    ]
-    await state.set_state(BookingStates.services)
-    await callback.message.edit_text(
-        "Выберите услуги (перечислите ID через запятую):\n" + "\n".join(lines)
-    )
+    selected_services = (await state.get_data()).get("services") or []
+    available_ids = {item["salon_service"]["id"] for item in data}
+
+    if selected_services and set(selected_services).issubset(available_ids):
+        await state.update_data(services=selected_services)
+        await state.set_state(BookingStates.date)
+        await callback.message.edit_text("Укажите дату в формате ГГГГ-ММ-ДД:")
+    else:
+        await state.update_data(services=[])
+        lines = [
+            f"#{item['salon_service']['id']}: {item['salon_service']['service']['name']} — {item['price']} сум, {item['salon_service']['duration']} мин"
+            for item in data
+        ]
+        await state.set_state(BookingStates.services)
+        await callback.message.edit_text(
+            "Выберите услуги (перечислите ID через запятую):\n" + "\n".join(lines)
+        )
     await callback.answer()
 
 
