@@ -1,0 +1,1641 @@
+{% extends 'base3.html' %}
+{% load static humanize %}
+
+{% block content %}
+<style>
+  .appointments-wrapper {
+    background: linear-gradient(180deg, #f8f7ff 0%, #ffffff 80%);
+    border-radius: 32px;
+    padding: clamp(28px, 4vw, 48px);
+    box-shadow: 0 32px 70px rgba(15, 23, 42, 0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .appointments-wrapper::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 48%),
+                radial-gradient(circle at bottom left, rgba(244, 114, 182, 0.1), transparent 55%);
+    pointer-events: none;
+  }
+
+  .appointments-hero {
+    position: relative;
+    z-index: 1;
+    margin-bottom: clamp(32px, 4vw, 56px);
+  }
+
+  .hero-grid {
+    display: grid;
+    gap: clamp(24px, 4vw, 40px);
+  }
+
+  @media (min-width: 992px) {
+    .hero-grid {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      align-items: stretch;
+    }
+  }
+
+  .hero-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(17, 24, 39, 0.08);
+    color: #111827;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  .hero-title {
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+  }
+
+  .hero-description {
+    color: #4b5563;
+    max-width: 520px;
+    font-size: 1.05rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    margin-top: clamp(16px, 3vw, 28px);
+  }
+
+  .hero-actions .cta-btn {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border-radius: 999px;
+    padding: 12px 28px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    box-shadow: 0 18px 35px rgba(99, 102, 241, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .hero-actions .cta-btn:hover {
+    transform: translateY(-2px);
+    color: #fff;
+    box-shadow: 0 24px 45px rgba(99, 102, 241, 0.35);
+  }
+
+  .favorite-salons {
+    margin-top: clamp(20px, 3vw, 32px);
+  }
+
+  .favorite-salons__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .favorite-salons__kicker {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    color: #4338ca;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+  }
+
+  .favorite-salons__title {
+    margin: 0;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .favorite-salons__description {
+    margin: 6px 0 0;
+    color: #6b7280;
+    max-width: 640px;
+  }
+
+  .favorite-card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .favorite-card__image {
+    position: relative;
+    height: 160px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(99, 102, 241, 0.28));
+  }
+
+  .favorite-card__image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .favorite-card__badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #fff;
+    color: #111827;
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-weight: 700;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .favorite-card__body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .favorite-card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #4b5563;
+    font-size: 0.95rem;
+    gap: 10px;
+  }
+
+  .favorite-card__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(248, 113, 113, 0.12);
+    color: #b91c1c;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .favorite-empty {
+    border: 1px dashed rgba(99, 102, 241, 0.4);
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #4b5563;
+  }
+
+  .favorite-empty__icon {
+    font-size: 1.4rem;
+    margin-right: 6px;
+  }
+
+  .next-appointment-card {
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 16px 20px;
+    border: 1px solid rgba(99, 102, 241, 0.16);
+    box-shadow: 0 16px 32px rgba(15, 23, 42, 0.08);
+    min-width: 260px;
+  }
+
+  .next-appointment-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: #4338ca;
+    margin-bottom: 6px;
+  }
+
+  .next-appointment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #111827;
+  }
+
+  .next-appointment-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-card {
+    background: rgba(17, 24, 39, 0.92);
+    color: #f8fafc;
+    border-radius: 26px;
+    padding: clamp(20px, 3vw, 28px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 24px 50px rgba(15, 23, 42, 0.35);
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .profile-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(129, 140, 248, 0.85));
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .profile-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .profile-meta small {
+    color: rgba(226, 232, 240, 0.8);
+  }
+
+  .profile-details {
+    margin: 18px 0;
+    padding: 16px;
+    border-radius: 18px;
+    background: rgba(148, 163, 184, 0.12);
+    font-size: 0.95rem;
+  }
+
+  .profile-details div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .profile-details span:first-child {
+    color: rgba(226, 232, 240, 0.7);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+  }
+
+  .profile-update-btn {
+    background: rgba(248, 250, 252, 0.12);
+    color: #fff;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .payment-section {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  @media (min-width: 992px) {
+    .payment-section {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: stretch;
+    }
+  }
+
+  .payment-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .payment-summary-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .payment-method-form {
+    margin: 0;
+  }
+
+  .payment-method-inline {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .payment-method-chip {
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    background: #fff;
+    color: #4338ca;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  }
+
+  .payment-method-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(99, 102, 241, 0.18);
+    background: rgba(99, 102, 241, 0.06);
+  }
+
+  .payment-method-chip.is-active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.18));
+    border-color: rgba(99, 102, 241, 0.55);
+    color: #312e81;
+    box-shadow: 0 12px 26px rgba(99, 102, 241, 0.25);
+  }
+
+  .payment-method-helper {
+    margin: 6px 0 0;
+    color: #6b7280;
+    font-size: 0.92rem;
+  }
+
+  .btn-gradient {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    padding: 10px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-gradient.btn-sm {
+    padding: 8px 18px;
+    font-size: 0.85rem;
+  }
+
+  .btn-gradient:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 14px 30px rgba(99, 102, 241, 0.35);
+  }
+
+  .payment-details-card {
+    background: linear-gradient(135deg, rgba(236, 233, 255, 0.92), rgba(255, 255, 255, 0.95));
+    border-radius: 22px;
+    padding: 20px;
+    border: 1px solid rgba(99, 102, 241, 0.16);
+    box-shadow: 0 20px 38px rgba(15, 23, 42, 0.12);
+  }
+
+  .payment-details-card__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .payment-details-card__badge {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .payment-details-card__title {
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: #6366f1;
+    font-weight: 700;
+  }
+
+  .payment-details-card__hint {
+    color: #4b5563;
+    font-size: 0.9rem;
+    margin: 4px 0 0;
+  }
+
+  .virtual-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 28px;
+    padding: clamp(20px, 3vw, 28px);
+    border-radius: 24px;
+    background: radial-gradient(circle at top left, rgba(99, 102, 241, 0.55), transparent 60%),
+                radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.55), transparent 65%),
+                linear-gradient(135deg, #111827, #1f2937 55%, #0f172a 100%);
+    box-shadow: 0 22px 45px rgba(15, 23, 42, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .virtual-card::after {
+    content: "";
+    position: absolute;
+    inset: 18px -120px -120px 18px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, transparent 68%);
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .virtual-card__top,
+  .virtual-card__footer,
+  .virtual-card__number,
+  .virtual-card__holder {
+    position: relative;
+    z-index: 1;
+  }
+
+  .virtual-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .virtual-card__chip {
+    width: 52px;
+    height: 36px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8), rgba(148, 163, 184, 0.5));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #111827;
+    font-size: 1.25rem;
+  }
+
+  .virtual-card__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
+    color: rgba(226, 232, 240, 0.92);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .virtual-card__number {
+    margin: clamp(12px, 3vw, 24px) 0 clamp(4px, 2vw, 12px);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: #f8fafc;
+  }
+
+  .virtual-card__number-groups {
+    display: flex;
+    gap: clamp(12px, 3vw, 20px);
+    font-size: clamp(1.35rem, 3.5vw, 1.8rem);
+    letter-spacing: 0.12em;
+    font-family: 'Fira Code', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  .virtual-card__number-groups span {
+    display: inline-block;
+    min-width: 3.4ch;
+    text-align: center;
+  }
+
+  .virtual-card__holder {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    color: rgba(226, 232, 240, 0.78);
+  }
+
+  .virtual-card__holder strong {
+    font-size: clamp(0.95rem, 2.6vw, 1.1rem);
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .virtual-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .virtual-card__amount {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: clamp(1rem, 2.8vw, 1.25rem);
+    font-weight: 600;
+    color: #f8fafc;
+  }
+
+  .virtual-card__helper {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(226, 232, 240, 0.7);
+  }
+
+  .virtual-card .copy-btn {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(15, 23, 42, 0.45);
+    color: rgba(226, 232, 240, 0.92);
+  }
+
+  .virtual-card .copy-btn:hover {
+    background: rgba(15, 23, 42, 0.7);
+    color: #fff;
+  }
+
+  .copy-btn {
+    border: none;
+    background: rgba(99, 102, 241, 0.16);
+    color: #4338ca;
+    border-radius: 999px;
+    padding: 6px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .copy-btn:hover {
+    background: rgba(99, 102, 241, 0.28);
+    transform: translateY(-1px);
+  }
+
+  .copy-btn.copied {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+  }
+
+  .copy-btn i {
+    font-size: 1rem;
+  }
+
+  .profile-update-btn:hover {
+    background: rgba(248, 250, 252, 0.2);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 575.98px) {
+    .virtual-card {
+      padding: 14px;
+      gap: 16px;
+      border-radius: 18px;
+    }
+
+    .virtual-card__top,
+    .virtual-card__footer {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .virtual-card__chip {
+      width: 42px;
+      height: 30px;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .virtual-card__brand {
+      padding: 4px 10px;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+    }
+
+    .virtual-card__number {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .virtual-card__number-groups {
+      font-size: clamp(0.9rem, 5vw, 1.05rem);
+      gap: 8px;
+      letter-spacing: 0.06em;
+    }
+
+    .virtual-card__number-groups span {
+      min-width: 2.8ch;
+    }
+
+    .virtual-card__number .copy-btn {
+      padding: 6px 12px;
+      gap: 4px;
+      font-size: 0.72rem;
+    }
+
+    .virtual-card__holder {
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      gap: 2px;
+    }
+
+    .virtual-card__holder strong {
+      font-size: clamp(0.82rem, 4vw, 0.95rem);
+      letter-spacing: 0.1em;
+    }
+
+    .virtual-card__amount {
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: clamp(0.9rem, 4.8vw, 1.05rem);
+    }
+
+    .virtual-card__amount .copy-btn {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      gap: 4px;
+    }
+
+    .copy-btn i {
+      font-size: 0.85rem;
+    }
+  }
+
+  .profile-form {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(148, 163, 184, 0.25);
+  }
+
+  .profile-form label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(148, 163, 184, 0.8);
+  }
+
+  .profile-form .form-control {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #f8fafc;
+  }
+
+  .profile-form .form-control:focus {
+    border-color: rgba(129, 140, 248, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(129, 140, 248, 0.25);
+  }
+
+  .profile-form .invalid-feedback {
+    color: #fecdd3;
+  }
+
+  .summary-grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-bottom: clamp(32px, 4vw, 48px);
+  }
+
+  .summary-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 22px;
+    padding: 22px 24px;
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .summary-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+  }
+
+  .summary-card h3 {
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #1f2937;
+  }
+
+  .summary-card p {
+    margin: 0;
+    color: #6b7280;
+  }
+
+  .summary-card.total .summary-icon {
+    background: rgba(99, 102, 241, 0.18);
+    color: #4338ca;
+  }
+
+  .summary-card.pending .summary-icon {
+    background: rgba(253, 230, 138, 0.28);
+    color: #b45309;
+  }
+
+  .summary-card.confirmed .summary-icon {
+    background: rgba(167, 243, 208, 0.32);
+    color: #047857;
+  }
+
+  .summary-card.done .summary-icon {
+    background: rgba(191, 219, 254, 0.32);
+    color: #1d4ed8;
+  }
+
+  .summary-card.canceled .summary-icon {
+    background: rgba(254, 202, 202, 0.32);
+    color: #b91c1c;
+  }
+
+  .appointments-section {
+    margin-top: clamp(30px, 4vw, 48px);
+  }
+
+  .appointments-section__head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .appointments-section__title {
+    margin: 0;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .appointments-section__hint {
+    color: #6b7280;
+    margin: 0;
+  }
+
+  .appointments-grid {
+    display: grid;
+    gap: clamp(16px, 3vw, 22px);
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+
+  .appointment-card {
+    position: relative;
+    background: #ffffff;
+    border-radius: 22px;
+    padding: clamp(22px, 3vw, 28px);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 24px 44px rgba(148, 163, 184, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+  }
+
+  .appointment-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, rgba(99, 102, 241, 0.08), rgba(232, 121, 249, 0.08));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .appointment-card::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(90deg, #6366f1, #ec4899);
+  }
+
+  .appointment-card > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .appointment-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 32px 55px rgba(15, 23, 42, 0.16);
+  }
+
+  .appointment-card:hover::before {
+    opacity: 1;
+  }
+
+  .appointment-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .appointment-header .salon-name {
+    font-weight: 700;
+    color: #111827;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+
+  .appointment-subtitle {
+    color: #6b7280;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .status-pending {
+    background: rgba(253, 230, 138, 0.28);
+    color: #92400e;
+  }
+
+  .status-confirmed {
+    background: rgba(134, 239, 172, 0.28);
+    color: #047857;
+  }
+
+  .status-done {
+    background: rgba(191, 219, 254, 0.32);
+    color: #1d4ed8;
+  }
+
+  .status-canceled {
+    background: rgba(254, 202, 202, 0.32);
+    color: #b91c1c;
+  }
+
+  .services-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .services-list li {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4338ca;
+    border-radius: 14px;
+    padding: 6px 14px;
+    font-size: 0.92rem;
+    font-weight: 500;
+  }
+
+  .appointment-footer {
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .appointment-footer .time-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #4b5563;
+    font-weight: 600;
+  }
+
+  .appointment-footer .time-block .badge {
+    background: rgba(15, 23, 42, 0.08);
+    color: #1f2937;
+    border-radius: 999px;
+  }
+
+  .appointment-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 12px 0;
+  }
+
+  .appointment-meta__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.05);
+    color: #374151;
+    font-weight: 600;
+  }
+
+  .appointment-divider {
+    border: 0;
+    border-top: 1px dashed rgba(148, 163, 184, 0.5);
+    margin: 18px 0;
+  }
+
+  .aftercare {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(40px, 5vw, 60px);
+  }
+
+  .aftercare-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .aftercare-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid rgba(226, 232, 240, 0.7);
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
+  }
+
+  .aftercare-card .icon {
+    font-size: 1.6rem;
+    margin-bottom: 10px;
+  }
+
+  .aftercare-card h6 {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+  }
+
+  .aftercare-card p {
+    color: #6b7280;
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .empty-state {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: clamp(40px, 6vw, 64px) clamp(24px, 4vw, 48px);
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 28px;
+    border: 1px dashed rgba(129, 140, 248, 0.4);
+    box-shadow: 0 20px 44px rgba(99, 102, 241, 0.12);
+  }
+
+  .empty-state .emoji {
+    font-size: 3rem;
+    margin-bottom: 16px;
+  }
+
+  .empty-state p {
+    color: #4b5563;
+    max-width: 480px;
+    margin: 0 auto 24px;
+  }
+
+  .empty-state .tips {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 768px) {
+    .appointments-wrapper {
+      padding: 24px 18px;
+    }
+
+    .appointments-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .appointment-card {
+      padding: 18px;
+    }
+
+    .profile-card {
+      border-radius: 24px;
+    }
+  }
+</style>
+
+<div class="appointments-wrapper">
+  <section class="appointments-hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="hero-kicker"><i class="bi bi-stars"></i> Ваш бьюти-план</span>
+        <h1 class="hero-title">✨ Мои записи</h1>
+        <p class="hero-description">Следите за статусами, планируйте новые визиты и держите важные детали под рукой в одном месте.</p>
+
+        <div class="hero-actions">
+          <a href="{% url 'home' %}" class="cta-btn">Записаться ещё <i class="bi bi-arrow-right-short fs-4"></i></a>
+
+          {% if upcoming_appointment %}
+          <div class="next-appointment-card">
+            <span class="next-appointment-label"><i class="bi bi-clock-history"></i> Ближайшая запись</span>
+            <div class="next-appointment-meta">
+              <span><i class="bi bi-calendar3"></i> {{ upcoming_appointment.start_time|date:"d E" }} • {{ upcoming_appointment.start_time|date:"H:i" }}</span>
+              {% with first_service=upcoming_appointment.services.all|first %}
+                <span><i class="bi bi-geo-alt"></i>
+                  {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                    {{ first_service.stylist_service.salon_service.salon.name }}
+                  {% else %}
+                    {{ upcoming_appointment.stylist.salon.name|default:"Салон уточняется" }}
+                  {% endif %}
+                </span>
+              {% endwith %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <aside class="profile-card">
+        <div>
+          <div class="profile-header">
+            <div class="profile-avatar">
+              {% firstof request.user.first_name|slice:":1" request.user.username|slice:":1" %}
+            </div>
+            <div class="profile-meta">
+              <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+              <small>Персональный профиль</small>
+            </div>
+          </div>
+
+          <div class="profile-details mt-3">
+            <div class="mt-2">
+              <span>Телефон</span>
+              <span>{{ request.user.profile.phone|default:"Добавьте номер" }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="profile-update-btn" type="button" data-bs-toggle="collapse" data-bs-target="#profileForm" aria-expanded="false" aria-controls="profileForm">
+          <i class="bi bi-sliders"></i> Обновить профиль
+        </button>
+
+        <div class="collapse profile-form" id="profileForm">
+          <form method="post" novalidate>
+            {% csrf_token %}
+            <input type="hidden" name="profile_form" value="1">
+            {% if profile_form.non_field_errors %}
+              <div class="invalid-feedback d-block mb-2">
+                {{ profile_form.non_field_errors|join:", " }}
+              </div>
+            {% endif %}
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">{{ profile_form.first_name.label }}</label>
+                {{ profile_form.first_name }}
+                {% if profile_form.first_name.errors %}
+                  <div class="invalid-feedback d-block">{{ profile_form.first_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">{{ profile_form.last_name.label }}</label>
+                {{ profile_form.last_name }}
+                {% if profile_form.last_name.errors %}
+                  <div class="invalid-feedback d-block">{{ profile_form.last_name.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ profile_form.phone.label }}</label>
+                {{ profile_form.phone }}
+                {% if profile_form.phone.errors %}
+                  <div class="invalid-feedback d-block">{{ profile_form.phone.errors|join:", " }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="d-grid mt-3">
+              <button type="submit" class="btn btn-light text-dark fw-semibold">Сохранить изменения</button>
+            </div>
+          </form>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="favorite-salons">
+    <div class="favorite-salons__header">
+      <div>
+        <div class="favorite-salons__kicker">Избранные салоны</div>
+        <h4 class="favorite-salons__title">Ваши фавориты</h4>
+        <p class="favorite-salons__description">Сохраняйте салоны, которые вам нравятся, чтобы записываться к ним быстрее.</p>
+      </div>
+      <a href="{% url 'home' %}" class="btn btn-outline-dark d-flex align-items-center gap-2">
+        <i class="bi bi-search-heart"></i> Найти новый салон
+      </a>
+    </div>
+
+    {% if favorite_salons %}
+      <div class="row g-3">
+        {% for salon in favorite_salons %}
+          <div class="col-md-6 col-lg-4">
+            <div class="favorite-card h-100">
+              <div class="favorite-card__image">
+                {% with photos=salon.get_photos %}
+                  {% if photos %}
+                    <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
+                  {% else %}
+                    <img src="{% static 'img/default_salon.jpg' %}" alt="{{ salon.name }}">
+                  {% endif %}
+                {% endwith %}
+                <span class="favorite-card__badge"><i class="bi bi-heart-fill text-danger me-1"></i>Избранное</span>
+              </div>
+              <div class="favorite-card__body">
+                <div class="favorite-card__meta">
+                  <span><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ salon.city.name }}</span>
+                  <span class="favorite-card__rating"><i class="bi bi-star-fill"></i>{{ salon.rating_value|default:"0.0" }}/5</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="fw-bold text-dark">{{ salon.name }}</div>
+                  <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn btn-dark btn-sm">Перейти</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="favorite-empty d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="favorite-empty__icon">❤️</div>
+          <div>Добавляйте салоны в избранное на странице каталога, чтобы они появлялись здесь.</div>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+
+  {% if appointments %}
+  <section class="appointments-section">
+    <div class="appointments-section__head">
+      <div>
+        <h4 class="appointments-section__title">Записи</h4>
+        <p class="appointments-section__hint mb-0">Все визиты разбиты на аккуратные карточки с оплатой, чеками и действиями.</p>
+      </div>
+      <span class="badge bg-dark d-flex align-items-center gap-2 px-3 py-2">
+        <i class="bi bi-journal-check"></i> {{ appointments|length }} шт.
+      </span>
+    </div>
+
+    <div class="appointments-grid">
+      {% for appointment in appointments %}
+        <article class="appointment-card">
+          <header class="appointment-header">
+            <div>
+              <div class="appointment-meta">
+                <span class="appointment-meta__item">
+                  <i class="bi bi-calendar-event"></i> {{ appointment.start_time|date:"d E" }}
+                </span>
+                <span class="appointment-meta__item">
+                  <i class="bi bi-clock"></i> {{ appointment.start_time|date:"H:i" }}
+                </span>
+                <span class="appointment-meta__item">
+                  <i class="bi bi-wallet2"></i> {{ appointment.get_payment_method_display }}
+                </span>
+              </div>
+              <div class="salon-name">
+                {{ appointment.stylist.user.get_full_name|default:appointment.stylist.user.username }}
+              </div>
+              {% with first_service=appointment.services.all|first %}
+                <p class="appointment-subtitle">
+                  <i class="bi bi-geo-alt"></i>
+                  {% if first_service and first_service.stylist_service and first_service.stylist_service.salon_service %}
+                    {{ first_service.stylist_service.salon_service.salon.name }}
+                  {% else %}
+                    {% if appointment.stylist.salon %}
+                      {{ appointment.stylist.salon.name }}
+                    {% else %}
+                      Салон уточняется
+                    {% endif %}
+                  {% endif %}
+                </p>
+              {% endwith %}
+            </div>
+            <span class="status-chip {% if appointment.status == 'P' %}status-pending{% elif appointment.status == 'C' %}status-confirmed{% elif appointment.status == 'D' %}status-done{% elif appointment.status == 'X' %}status-canceled{% endif %}">
+              {% if appointment.status == 'P' %}
+                <i class="bi bi-hourglass-split"></i> Ожидает
+              {% elif appointment.status == 'C' %}
+                <i class="bi bi-check2-circle"></i> Принято
+              {% elif appointment.status == 'D' %}
+                <i class="bi bi-stars"></i> Выполнено
+              {% elif appointment.status == 'X' %}
+                <i class="bi bi-x-octagon"></i> Отменено
+              {% endif %}
+            </span>
+          </header>
+
+          <section>
+            <h6 class="fw-semibold text-uppercase text-secondary mb-3">Услуги</h6>
+            <ul class="services-list">
+              {% for service in appointment.services.all %}
+                {% if service.stylist_service and service.stylist_service.salon_service %}
+                  <li>{{ service.stylist_service.salon_service.service.name }}</li>
+                {% else %}
+                  <li class="bg-light text-muted">Услуга уточняется</li>
+                {% endif %}
+              {% empty %}
+                <li class="bg-light text-muted">Услуги не указаны</li>
+              {% endfor %}
+            </ul>
+          </section>
+
+          <hr class="appointment-divider">
+
+          <section>
+            <div class="payment-section">
+              <div class="payment-summary">
+                <h6 class="fw-semibold text-uppercase text-secondary mb-2">Оплата</h6>
+                <div class="payment-summary-badges">
+                  <span class="badge bg-dark text-uppercase">{{ appointment.get_payment_method_display }}</span>
+                  <span class="badge {% if appointment.payment_status == 'paid' %}bg-success{% elif appointment.payment_status == 'awaiting_payment' %}bg-warning text-dark{% elif appointment.payment_status == 'awaiting_confirmation' %}bg-info text-dark{% elif appointment.payment_status == 'refund_requested' %}bg-danger{% else %}bg-secondary{% endif %}">
+                    {{ appointment.get_payment_status_display }}
+                  </span>
+                </div>
+              </div>
+              {% if appointment.can_change_payment_method %}
+                <form method="post" class="payment-method-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="payment_action" value="change_method">
+                  <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                  <div class="payment-method-inline" role="group" aria-label="Способ оплаты">
+                    {% for value, label in appointment.payment_method_choices %}
+                      <button type="submit"
+                        name="payment_method"
+                        value="{{ value }}"
+                        class="payment-method-chip {% if value == appointment.payment_method %}is-active{% endif %}">
+                        {% if value == 'cash' %}
+                          <i class="bi bi-cash-stack"></i>
+                        {% else %}
+                          <i class="bi bi-credit-card-2-back"></i>
+                        {% endif %}
+                        {{ label }}
+                      </button>
+                    {% endfor %}
+                  </div>
+                  <p class="payment-method-helper">Нажмите вариант — способ оплаты обновится сразу.</p>
+                </form>
+              {% elif appointment.payment_receipt %}
+                <p class="small text-muted mb-0">После отправки чека изменить способ оплаты нельзя.</p>
+              {% endif %}
+            </div>
+
+            {% if appointment.payment_method == 'card' %}
+              {% if appointment.show_card_details %}
+                <div class="payment-details-card mt-3 mb-0">
+                  <div class="payment-details-card__head">
+                    <div>
+                      <div class="payment-details-card__title">Реквизиты салона для перевода</div>
+                      <p class="payment-details-card__hint mb-0">После перевода загрузите чек, чтобы мастер быстрее подтвердил оплату.</p>
+                    </div>
+                    <div class="payment-details-card__badge">
+                      <i class="bi bi-shield-lock"></i>
+                      Безопасный перевод
+                    </div>
+                  </div>
+                  <div class="virtual-card mt-4">
+                    <div class="virtual-card__top">
+                      <div class="virtual-card__chip">
+                        <i class="bi bi-credit-card-2-front"></i>
+                      </div>
+                      <div class="virtual-card__brand">
+                        <i class="bi bi-bank"></i>
+                        {{ appointment.active_payment_card.get_card_type_display|default:"Карта" }}
+                      </div>
+                    </div>
+                    {% with card_number=appointment.active_payment_card.card_number|default_if_none:''|cut:' '|cut:'-' %}
+                      {% with group_one=card_number|slice:":4" group_two=card_number|slice:"4:8" group_three=card_number|slice:"8:12" group_four=card_number|slice:"12:16" %}
+                        <div class="virtual-card__number">
+                          <div class="virtual-card__number-groups">
+                            <span>{{ group_one|default:"••••" }}</span>
+                            <span>{{ group_two|default:"••••" }}</span>
+                            <span>{{ group_three|default:"••••" }}</span>
+                            <span>{{ group_four|default:"••••" }}</span>
+                            {% if card_number|length > 16 %}
+                              <span>{{ card_number|slice:"16:20"|default:"••••" }}</span>
+                            {% endif %}
+                          </div>
+                          <button type="button" class="copy-btn" data-copy="{{ card_number }}" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                            <i class="bi bi-clipboard"></i>
+                            <span class="copy-btn__text">Копировать</span>
+                          </button>
+                        </div>
+                      {% endwith %}
+                    {% endwith %}
+                    <div class="virtual-card__holder">
+                      <span>Владелец карты</span>
+                      <strong>{{ appointment.active_payment_card.cardholder_name|default:"—" }}</strong>
+                    </div>
+                    <div class="virtual-card__footer">
+                      <div class="virtual-card__helper">Сумма перевода</div>
+                      <div class="virtual-card__amount">
+                        <span>{{ appointment.get_total_price|floatformat:0|intcomma }} сум</span>
+                        <button type="button" class="copy-btn" data-copy="{{ appointment.get_total_price|floatformat:0|intcomma }} сум" data-copy-label="Скопировать" data-copy-success="Скопировано!">
+                          <i class="bi bi-clipboard"></i>
+                          <span class="copy-btn__text">Копировать</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% elif not appointment.active_payment_card and appointment.status != 'X' %}
+                <div class="alert alert-warning mt-3 mb-0">
+                  Реквизиты салона временно недоступны. Пожалуйста, уточните возможность оплаты картой у администратора.
+                </div>
+              {% endif %}
+
+              {% if appointment.can_upload_receipt %}
+                <form method="post" enctype="multipart/form-data" class="mt-3">
+                  {% csrf_token %}
+                  <input type="hidden" name="payment_action" value="upload_receipt">
+                  <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-md-8">
+                      <label class="form-label small text-uppercase text-muted">Загрузить чек</label>
+                      <input type="file" name="receipt" class="form-control form-control-sm" accept="image/*" required>
+                    </div>
+                    <div class="col-md-4 d-grid d-md-flex justify-content-md-end">
+                      <button type="submit" class="btn btn-success btn-sm">Отправить чек</button>
+                    </div>
+                  </div>
+                </form>
+              {% elif appointment.payment_receipt %}
+                <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                  <a href="{{ appointment.payment_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Просмотреть загруженный чек</a>
+                  {% if appointment.payment_status == 'awaiting_confirmation' %}
+                    <span class="text-muted small">Чек отправлен и ожидает подтверждения мастером.</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {% if appointment.status == 'X' and appointment.payment_method == 'card' %}
+                {% if appointment.refund_card_number %}
+                  <div class="alert alert-secondary mt-3 mb-0">
+                    <div class="small text-uppercase text-muted">Карта для возврата</div>
+                    <div class="fw-semibold mt-1">{{ appointment.refund_cardholder_name }}</div>
+                    <div class="text-muted">
+                      {% for value, label in card_type_choices %}
+                        {% if value == appointment.refund_card_type %}
+                          {{ label }}
+                        {% endif %}
+                      {% endfor %}
+                      • <code>{{ appointment.refund_card_number }}</code>
+                    </div>
+                  </div>
+                {% endif %}
+
+                {% if appointment.can_edit_refund_details %}
+                  <form method="post" class="mt-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="payment_action" value="provide_refund">
+                    <input type="hidden" name="appointment_id" value="{{ appointment.id }}">
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <label class="form-label small text-uppercase text-muted">Тип карты</label>
+                        <select name="refund_card_type" class="form-select form-select-sm" required>
+                          {% for value, label in card_type_choices %}
+                            <option value="{{ value }}" {% if value == appointment.refund_card_type %}selected{% endif %}>{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small text-uppercase text-muted">Имя владельца</label>
+                        <input type="text" name="refund_cardholder_name" class="form-control form-control-sm" value="{{ appointment.refund_cardholder_name|default_if_none:'' }}" required>
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small text-uppercase text-muted">Номер карты</label>
+                        <input type="text" name="refund_card_number" class="form-control form-control-sm" value="{{ appointment.refund_card_number|default_if_none:'' }}" required>
+                      </div>
+                      <div class="col-12 d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                          {% if appointment.refund_card_number %}
+                            Можно обновлять данные до выполнения возврата.
+                          {% else %}
+                            Укажите реквизиты карты, чтобы мы могли вернуть оплату.
+                          {% endif %}
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                          {% if appointment.refund_card_number %}
+                            Обновить данные для возврата
+                          {% else %}
+                            Отправить данные для возврата
+                          {% endif %}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                {% elif not appointment.refund_card_number %}
+                  <div class="alert alert-warning mt-3 mb-0">
+                    Для возврата средств укажите реквизиты карты. Обратитесь к администратору, если нужна помощь.
+                  </div>
+                {% endif %}
+
+                {% if appointment.refund_receipt %}
+                  <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                    <a href="{{ appointment.refund_receipt.url }}" target="_blank" class="btn btn-outline-secondary btn-sm">Посмотреть чек возврата</a>
+                  </div>
+                {% endif %}
+              {% endif %}
+            {% endif %}
+          </section>
+
+          <footer class="appointment-footer">
+            <div class="time-block">
+              <span class="badge px-3 py-2 fw-semibold"><i class="bi bi-clock"></i> {{ appointment.start_time|date:"d E" }} • {{ appointment.start_time|date:"H:i" }}</span>
+              <span class="text-muted">{{ appointment.start_time|date:"l"|capfirst }}</span>
+            </div>
+            <div class="actions">
+              {% if appointment.status == 'P' or appointment.status == 'C' %}
+                <form method="post" action="{% url 'cancel_appointment' appointment.id %}" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger btn-sm px-4" onclick="return confirm('Точно отменить запись?')">
+                    Отменить запись
+                  </button>
+                </form>
+              {% else %}
+                <span class="text-muted fst-italic">Действия недоступны</span>
+              {% endif %}
+            </div>
+          </footer>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% else %}
+    <div class="empty-state">
+      <div class="emoji">💫</div>
+      <h3 class="fw-bold mb-3">У вас пока нет записей</h3>
+      <p>Создайте первую запись, чтобы составить персональный план ухода и получать напоминания о самых важных процедурах.</p>
+      <a href="{% url 'home' %}" class="btn btn-dark btn-lg rounded-pill px-5">Найти услугу</a>
+      <div class="tips">
+        <span><i class="bi bi-lightning-charge"></i> Подсказка: заполните профиль, чтобы мастера знали, как с вами связаться.</span>
+      </div>
+    </div>
+  {% endif %}
+
+<!--  <section class="aftercare">-->
+<!--    <h4 class="fw-bold mb-3">Как сделать следующий визит ещё приятнее</h4>-->
+<!--    <div class="aftercare-grid">-->
+<!--      <div class="aftercare-card">-->
+<!--        <div class="icon">🗓️</div>-->
+<!--        <h6>Запланируйте заранее</h6>-->
+<!--        <p>Выбирайте удобные окна, пока они свободны, и получайте подтверждение от мастера без ожидания.</p>-->
+<!--      </div>-->
+<!--      <div class="aftercare-card">-->
+<!--        <div class="icon">💬</div>-->
+<!--        <h6>Делитесь ожиданиями</h6>-->
+<!--        <p>Добавляйте комментарии при записи — это поможет мастеру подготовиться и подобрать лучшее решение.</p>-->
+<!--      </div>-->
+<!--      <div class="aftercare-card">-->
+<!--        <div class="icon">🎁</div>-->
+<!--        <h6>Сохраняйте любимых</h6>-->
+<!--        <p>Возвращайтесь к мастерам и услугам, которые вам понравились, чтобы поддерживать идеальный образ.</p>-->
+<!--      </div>-->
+<!--    </div>-->
+<!--  </section>-->
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const copyButtons = document.querySelectorAll('.copy-btn[data-copy]');
+
+    async function copyValue(value) {
+      if (!value) {
+        return false;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(value);
+          return true;
+        } catch (error) {
+          // fallback will run below
+        }
+      }
+
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+
+      let copied = false;
+      try {
+        copied = document.execCommand('copy');
+      } catch (error) {
+        copied = false;
+      }
+
+      document.body.removeChild(textarea);
+      return copied;
+    }
+
+    copyButtons.forEach(function (button) {
+      const labelEl = button.querySelector('.copy-btn__text');
+
+      if (labelEl && !labelEl.dataset.defaultText) {
+        labelEl.dataset.defaultText = labelEl.textContent.trim();
+      }
+
+      if (!button.dataset.copyLabel && labelEl && labelEl.dataset.defaultText) {
+        button.dataset.copyLabel = labelEl.dataset.defaultText;
+      }
+
+      button.addEventListener('click', async function () {
+        const value = button.getAttribute('data-copy');
+        const successText = button.dataset.copySuccess || 'Скопировано!';
+        const errorText = button.dataset.copyError || 'Не удалось';
+        const defaultLabel = button.dataset.copyLabel || (labelEl ? labelEl.dataset.defaultText || '' : '');
+
+        try {
+          const wasCopied = await copyValue(value);
+          if (!wasCopied) {
+            throw new Error('copy-failed');
+          }
+
+          button.classList.add('copied');
+          if (labelEl) {
+            labelEl.textContent = successText;
+          }
+
+          setTimeout(function () {
+            button.classList.remove('copied');
+            if (labelEl) {
+              labelEl.textContent = defaultLabel;
+            }
+          }, 2000);
+        } catch (error) {
+          if (labelEl) {
+            labelEl.textContent = errorText;
+          }
+
+          setTimeout(function () {
+            button.classList.remove('copied');
+            if (labelEl) {
+              labelEl.textContent = defaultLabel;
+            }
+          }, 2000);
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

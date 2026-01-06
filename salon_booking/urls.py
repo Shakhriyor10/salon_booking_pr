@@ -1,0 +1,14 @@
+from django.contrib import admin
+from django.urls import include, path
+from django.conf.urls.static import static
+
+from salon_booking import settings
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', include('booking.urls')),
+    path('', include('users.urls')),
+    path('support/', include('support.urls')),
+]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,2903 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% load form_tags %}
+{% load widget_tweaks %}
+{% load custom_filters %}
+{% load humanize %}
+
+{% block content %}
+<style>
+  .contact-icon {
+  width: 44px;           /* фиксированная ширина */
+  height: 44px;          /* фиксированная высота */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(72, 107, 113, 0.12);
+  color: #486b71;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  flex-shrink: 0;        /* НЕ сжимается при длинном тексте */
+}
+  .salon-detail-page {
+    color: #2c3e50;
+    padding: 3.5rem 0 4rem;
+  }
+
+  .salon-hero {
+    --hero-primary: rgba(72, 107, 113, 0.95);
+    --hero-secondary: rgba(19, 41, 45, 0.92);
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--hero-primary), var(--hero-secondary));
+    color: #fff;
+    padding: 3rem;
+    box-shadow: 0 25px 45px rgba(10, 25, 28, 0.25);
+    transition: background 0.6s ease;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .salon-hero::before {
+    content: "";
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+    top: -160px;
+    right: -140px;
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .salon-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url('https://www.transparenttextures.com/patterns/asfalt-dark.png');
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .salon-hero .hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .salon-hero .hero-info {
+    flex: 1 1 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .hero-info-inner {
+    position: relative;
+    padding: 2.25rem;
+    border-radius: 26px;
+    background: linear-gradient(135deg, rgba(14, 32, 35, 0.65), rgba(14, 32, 35, 0.35));
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 22px 55px rgba(10, 25, 28, 0.32);
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.8rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero-eyebrow i {
+    font-size: 1rem;
+  }
+
+  .hero-info-inner h1 {
+    font-size: clamp(2.4rem, 3.2vw, 3.2rem);
+    font-weight: 700;
+    margin-bottom: 1.1rem;
+  }
+
+  .salon-hero .salon-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .salon-hero .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(6px);
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 14px 30px rgba(10, 25, 28, 0.22);
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.2rem;
+  }
+
+  .hero-actions__hint {
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .hero-actions__hint i {
+    font-size: 1.1rem;
+  }
+
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+
+  .hero-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.05rem 1.3rem;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 18px 38px rgba(10, 25, 28, 0.28);
+  }
+
+  .hero-stat .stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(15, 34, 36, 0.3);
+    font-size: 1.25rem;
+  }
+
+  .hero-stat .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .hero-stat .stat-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .salon-gallery {
+    margin: 3rem auto 0;
+    max-width: 1180px;
+  }
+
+  .salon-gallery__header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    text-align: center;
+  }
+
+  .salon-gallery__title {
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+  }
+
+  .salon-gallery__grid {
+    display: grid;
+    gap: 1.1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .salon-gallery__item {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 18px 35px rgba(12, 28, 31, 0.18);
+    background: #0e2023;
+    min-height: 180px;
+    transition: transform 0.6s ease, opacity 0.45s ease;
+  }
+
+  .salon-gallery__item::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(14, 32, 35, 0) 55%, rgba(14, 32, 35, 0.4) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .salon-gallery__item:hover::after {
+    opacity: 1;
+  }
+
+  .salon-gallery__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+  }
+
+  .salon-gallery__item:hover img {
+    transform: scale(1.05);
+  }
+
+  .salon-products {
+    margin-top: 3rem;
+  }
+
+  .salon-products__heading {
+    margin-bottom: 0.5rem;
+  }
+
+  .product-card {
+    border: 1px solid rgba(15, 32, 35, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 16px 36px rgba(15, 32, 35, 0.12);
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 44px rgba(15, 32, 35, 0.18);
+  }
+
+  .product-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    background: #0e2023;
+  }
+
+  .product-body {
+    padding: 1.1rem 1.2rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .product-price {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #102326;
+  }
+
+  .product-old-price {
+    color: #94a3b8;
+    text-decoration: line-through;
+    margin-left: 0.5rem;
+  }
+
+  .product-meta {
+    font-size: 0.95rem;
+    color: #6b7b84;
+  }
+
+  .product-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .product-description.is-truncated {
+    cursor: pointer;
+  }
+
+  .product-description__more {
+    color: #486b71;
+    font-weight: 600;
+  }
+
+  .product-description__more:hover {
+    text-decoration: underline;
+  }
+
+  .discount-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(22, 163, 74, 0.12);
+    color: #15803d;
+    border: 1px solid rgba(22, 163, 74, 0.22);
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .cart-card {
+    border: 1px solid rgba(15, 32, 35, 0.08);
+    border-radius: 18px;
+    box-shadow: 0 16px 32px rgba(15, 32, 35, 0.1);
+    background: #fff;
+  }
+
+  .cart-item-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(15, 32, 35, 0.06);
+  }
+
+  .cart-item-row:last-child {
+    border-bottom: none;
+  }
+
+  .cart-total {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0f2023;
+  }
+
+  .product-eta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+    background: rgba(72, 107, 113, 0.08);
+    color: #1f3438;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .payment-badge {
+    background: rgba(10, 151, 90, 0.1);
+    border: 1px solid rgba(10, 151, 90, 0.25);
+    color: #0a995a;
+    padding: 0.25rem 0.6rem;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .salon-gallery {
+      display: none;
+      margin-top: 2.5rem;
+    }
+
+    .salon-gallery__grid {
+      display: block;
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      min-height: 260px;
+    }
+
+    .salon-gallery__item {
+      border-radius: 16px;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      opacity: 0;
+      transform: translateX(100%);
+    }
+
+    .salon-gallery__item:first-child {
+      opacity: 1;
+      transform: translateX(0);
+      position: relative;
+    }
+
+    .salon-gallery__item img {
+      height: 100%;
+    }
+  }
+
+  .stylists-section {
+    scroll-margin-top: 120px;
+  }
+
+  .stylist-services-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 0.75rem;
+    max-width: 260px;
+  }
+
+  .salon-service-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border: 1px solid rgba(13, 110, 253, 0.25);
+    backdrop-filter: blur(8px);
+  }
+
+  .salon-service-chip--more {
+    background: rgba(32, 201, 151, 0.15);
+    border-color: rgba(32, 201, 151, 0.32);
+    color: #198754;
+  }
+
+  .btn-service-modal {
+    border: none;
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f3b4c;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(12, 38, 44, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-service-modal:hover,
+  .btn-service-modal:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 25px rgba(12, 38, 44, 0.25);
+    color: #0d6efd;
+  }
+
+  .stylist-services-modal .modal-content {
+    border-radius: 24px;
+    border: none;
+    box-shadow: 0 25px 50px rgba(10, 25, 28, 0.25);
+  }
+
+  .stylist-services-modal .modal-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 1.2rem 1.5rem;
+  }
+
+  .stylist-services-modal .modal-body {
+    padding: 1.5rem;
+  }
+
+  .stylist-services-modal .service-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .stylist-services-modal .service-list-item {
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+    background: rgba(13, 110, 253, 0.08);
+    color: #0b4561;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .stylist-services-modal .service-list-item i {
+    color: #0d6efd;
+  }
+
+  .meta-chip--accent {
+    background: rgba(255, 193, 7, 0.25);
+    border-color: rgba(255, 193, 7, 0.4);
+    color: #fffbe6;
+  }
+
+  .salon-hero .hero-image-wrapper {
+    flex: 0 0 420px;
+    max-width: 520px;
+    aspect-ratio: 4 / 3;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 18px 35px rgba(0, 0, 0, 0.35);
+    position: relative;
+    isolation: isolate;
+  }
+
+  .salon-hero .hero-image-wrapper::before {
+    content: "";
+    position: absolute;
+    inset: -18px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+    z-index: -1;
+    opacity: 0.7;
+  }
+
+  .salon-hero .hero-image-wrapper::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(10, 10, 10, 0) 40%, rgba(10, 10, 10, 0.35));
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .salon-hero .hero-image-wrapper:hover::after {
+    opacity: 0.35;
+  }
+
+  .hero-image-slider,
+  .salon-hero .hero-image-wrapper > img {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .hero-image-slider {
+    overflow: hidden;
+  }
+
+  .salon-hero .hero-image-wrapper > img {
+    object-fit: cover;
+  }
+
+  .hero-image-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .hero-image-slide.is-active {
+    opacity: 1;
+  }
+
+  .section-heading {
+    position: relative;
+    font-weight: 700;
+    text-align: center;
+    margin: 4rem 0 2.5rem;
+    font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+    color: #152a2d;
+  }
+
+  .section-heading::after {
+    content: "";
+    display: block;
+    width: 80px;
+    height: 3px;
+    margin: 0.75rem auto 0;
+    background: linear-gradient(90deg, #486b71, #82a7ad);
+    border-radius: 999px;
+  }
+
+  .info-paragraph {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .category-card,
+  .service-card,
+  .stylist-card,
+  .contact-card,
+  .reviews-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(15, 34, 36, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #fff;
+  }
+
+  .category-card:hover,
+  .service-card:hover,
+  .stylist-card:hover,
+  .reviews-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 45px rgba(15, 34, 36, 0.12);
+  }
+
+  .category-card img,
+  .service-card img {
+    height: 220px;
+    object-fit: cover;
+  }
+
+  .category-card .card-body,
+  .service-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .btn-theme {
+    background: linear-gradient(135deg, #486b71, #355257);
+    color: #fff !important;
+    border: none;
+    border-radius: 999px;
+    padding: 0.6rem 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .btn-theme:hover,
+  .btn-theme:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(72, 107, 113, 0.25);
+  }
+
+  .btn-outline-theme {
+    border-radius: 999px;
+    border: 1px solid #486b71;
+    color: #486b71;
+    padding: 0.55rem 1.3rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+  }
+
+  .btn-outline-theme:hover,
+  .btn-outline-theme.added {
+    color: #fff;
+    background: linear-gradient(135deg, #4caf50, #3c8c40);
+    border-color: transparent;
+  }
+
+  .btn-outline-theme.added:hover {
+    background: linear-gradient(135deg, #e2574c, #cc473d);
+  }
+
+  .stylist-card .avatar-wrapper {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 1.5rem;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 6px solid rgba(72, 107, 113, 0.12);
+    box-shadow: 0 10px 25px rgba(19, 41, 45, 0.12);
+  }
+
+  .stylist-card .avatar-wrapper img,
+  .stylist-card .avatar-wrapper .placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 600;
+    background: linear-gradient(135deg, #f0f4f5, #e5eced);
+    color: #486b71;
+  }
+
+  .stylist-card .badge-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: rgba(72, 107, 113, 0.12);
+    color: #2c3e50;
+  }
+
+  .stylist-card ul {
+    background: #f7f9fa;
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    min-height: 120px;
+  }
+
+  .contact-card {
+    padding: 2rem;
+  }
+
+  .contact-card .contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .contact-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(72, 107, 113, 0.12);
+    color: #486b71;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .reviews-card {
+    margin-top: 3rem;
+    background: linear-gradient(145deg, #f6f9fa, #edf2f3);
+    border: 1px solid rgba(72, 107, 113, 0.1);
+  }
+
+  .reviews-card .card-body {
+    padding: clamp(1.75rem, 3vw, 2.75rem);
+  }
+
+  .reviews-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+
+  .reviews-header__info {
+    max-width: 580px;
+  }
+
+  .reviews-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(72, 107, 113, 0.12);
+    color: #355257;
+    font-size: 0.75rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 0.85rem;
+  }
+
+  .reviews-title {
+    font-size: clamp(1.9rem, 2.5vw, 2.35rem);
+    margin-bottom: 1rem;
+    color: #152a2d;
+    font-weight: 700;
+  }
+
+  .reviews-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 1.35rem;
+    color: #f4b400;
+  }
+
+  .reviews-stars span {
+    margin-left: 0.6rem;
+    color: #5f7579;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .reviews-summary {
+    background: linear-gradient(135deg, rgba(72, 107, 113, 0.92), rgba(33, 56, 60, 0.94));
+    border-radius: 22px;
+    padding: 1.6rem 1.9rem;
+    color: #fff;
+    display: grid;
+    gap: 0.65rem;
+    box-shadow: 0 18px 40px rgba(15, 34, 36, 0.25);
+    align-self: stretch;
+  }
+
+  .reviews-score {
+    font-size: clamp(2.3rem, 3vw, 2.8rem);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .reviews-summary small {
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .reviews-count {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .reviews-summary .btn-theme {
+    justify-self: start;
+    padding-inline: 1.6rem;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .review-form-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.9rem;
+    margin: 2rem 0 1.5rem;
+    box-shadow: 0 18px 45px rgba(15, 34, 36, 0.12);
+    border: 1px solid rgba(72, 107, 113, 0.08);
+  }
+
+  .review-form-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .review-form-card__header i {
+    font-size: 2rem;
+    color: rgba(72, 107, 113, 0.8);
+  }
+
+  .review-form-card__header p {
+    margin-bottom: 0;
+    color: #5f7579;
+  }
+
+  .review-form .form-label {
+    font-weight: 600;
+    color: #1d3236;
+  }
+
+  .review-form .form-control {
+    border-radius: 16px;
+    border-color: rgba(72, 107, 113, 0.25);
+    padding: 0.75rem 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .review-form .form-control:focus {
+    border-color: rgba(72, 107, 113, 0.75);
+    box-shadow: 0 0 0 0.2rem rgba(72, 107, 113, 0.18);
+  }
+
+  .rating-select {
+    background: rgba(72, 107, 113, 0.08);
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  #star-rating {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  #star-rating i {
+    cursor: pointer;
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+
+  #star-rating i:hover {
+    transform: translateY(-2px) scale(1.08);
+    filter: drop-shadow(0 4px 8px rgba(244, 180, 0, 0.35));
+  }
+
+  .review-list {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .review-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.2rem;
+    padding: 1.3rem 1.6rem;
+    border-radius: 18px;
+    background: #fff;
+    border: 1px solid rgba(72, 107, 113, 0.08);
+    box-shadow: 0 15px 35px rgba(15, 34, 36, 0.08);
+  }
+
+  .review-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(72, 107, 113, 0.85), rgba(19, 41, 45, 0.85));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    box-shadow: 0 12px 30px rgba(15, 34, 36, 0.18);
+  }
+
+  .review-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .review-meta__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .review-meta strong {
+    font-size: 1.05rem;
+    color: #1d3236;
+  }
+
+  .review-date {
+    color: #7a9094;
+    font-size: 0.85rem;
+  }
+
+  .review-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .review-delete-btn {
+    border: none;
+    background: rgba(72, 107, 113, 0.08);
+    color: #446063;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .review-delete-btn:hover,
+  .review-delete-btn:focus {
+    background: rgba(196, 64, 64, 0.12);
+    color: #c64242;
+    outline: none;
+  }
+
+  .review-delete-btn:focus-visible {
+    box-shadow: 0 0 0 3px rgba(196, 64, 64, 0.28);
+  }
+
+  .review-rating {
+    color: #f4b400;
+    display: inline-flex;
+    gap: 0.2rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .review-comment {
+    margin-bottom: 0;
+    color: #2c3e50;
+    line-height: 1.55;
+  }
+
+  .reviews-empty {
+    margin-bottom: 0;
+    color: #5f7579;
+    background: rgba(255, 255, 255, 0.75);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    border: 1px dashed rgba(72, 107, 113, 0.25);
+  }
+
+  @media (min-width: 768px) {
+    .reviews-header {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .reviews-summary {
+      max-width: 320px;
+    }
+
+    .review-form-card {
+      padding: 2.25rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .reviews-summary {
+      padding: 1.3rem 1.4rem;
+    }
+
+    .salon-detail-page .row.g-4 {
+      --bs-gutter-x: 0.75rem !important;
+      --bs-gutter-y: 0.9rem !important;
+      margin-right: calc(-0.5 * 0.75rem);
+      margin-left: calc(-0.5 * 0.75rem);
+    }
+
+    .salon-detail-page .row.g-4 > [class*="col"] {
+      padding-right: calc(0.75rem * 0.5);
+      padding-left: calc(0.75rem * 0.5);
+      margin-top: 0.9rem;
+    }
+
+    .review-item {
+      grid-template-columns: 1fr;
+      text-align: left;
+    }
+
+    .review-meta {
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+
+    .review-actions {
+      align-self: flex-end;
+    }
+
+    .review-avatar {
+      width: 48px;
+      height: 48px;
+      font-size: 1.1rem;
+    }
+  }
+
+  .floating-cart {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    box-shadow: 0 18px 35px rgba(18, 42, 45, 0.18);
+    gap: 0.75rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .floating-cart.d-none {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 30px);
+  }
+
+  .floating-cart .btn-custom {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #486b71, #36565a);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.5rem;
+    font-weight: 600;
+  }
+
+  .floating-cart .btn-outline-danger {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 991px) {
+    .salon-hero {
+      padding: 2.2rem;
+      border-radius: 18px;
+    }
+
+    .salon-hero .hero-content {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .salon-hero .salon-meta {
+      justify-content: center;
+    }
+
+    .hero-info-inner {
+      padding: 2rem;
+    }
+
+    .hero-actions {
+      justify-content: center;
+    }
+
+    .hero-actions__hint {
+      justify-content: center;
+      text-align: center;
+    }
+
+    .hero-stats {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .salon-hero .hero-image-wrapper {
+      flex: 1 1 100%;
+      width: 100%;
+      max-width: none;
+      aspect-ratio: 16 / 11;
+    }
+
+    .hero-image-slider {
+      height: 100%;
+    }
+
+    .hero-image-slide {
+      position: absolute;
+      inset: 0;
+    }
+  }
+
+  @media (max-width: 575px) {
+    .salon-detail-page {
+      padding: 2.5rem 0 3rem;
+    }
+
+    .salon-hero {
+      padding: 1.8rem;
+    }
+
+    .hero-info-inner {
+      padding: 1.6rem;
+    }
+
+    .hero-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .hero-actions__hint {
+      font-size: 0.9rem;
+    }
+
+    .hero-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .salon-hero .hero-image-wrapper {
+      width: calc(100% + 1.6rem);
+      margin: 0 -0.8rem;
+    }
+
+    .floating-cart {
+      left: 50%;
+      right: auto;
+      transform: translate(-50%, 0);
+      width: min(240px, calc(100vw - 48px));
+      border-radius: 50px;
+      padding: 0.6rem 0.85rem 0.6rem 1rem;
+    }
+
+    .floating-cart.d-none {
+      transform: translate(-50%, 30px);
+    }
+
+    .stylist-card .card-body {
+      padding: 1.25rem 1rem;
+    }
+
+    .stylist-card .avatar-wrapper {
+      width: 110px;
+      height: 110px;
+      margin-bottom: 1rem;
+      border-width: 5px;
+    }
+
+    .stylist-card h5,
+    .service-card .card-title,
+    .product-card .h5 {
+      font-size: 1rem;
+    }
+
+    .stylist-card .badge-level {
+      font-size: 0.82rem;
+      padding: 0.4rem 0.9rem;
+    }
+
+    .salon-service-chip {
+      font-size: 0.78rem;
+      padding: 0.35rem 0.65rem;
+    }
+
+    .category-card img,
+    .service-card img,
+    .product-image {
+      height: auto;
+      max-height: 170px;
+      aspect-ratio: 16 / 10;
+    }
+
+    .category-card .card-body,
+    .service-card .card-body {
+      padding: 1rem;
+      gap: 0.65rem;
+    }
+
+    .product-body {
+      padding: 0.95rem 1rem 1.05rem;
+      gap: 0.45rem;
+    }
+
+    .product-price {
+      font-size: 1rem;
+    }
+
+    .product-old-price,
+    .product-meta,
+    .product-description,
+    .product-description__more {
+      font-size: 0.9rem;
+    }
+
+    .product-meta {
+      line-height: 1.4;
+    }
+
+    .card .btn-theme,
+    .card .btn-outline-theme,
+    .service-card .btn,
+    .stylist-card .btn,
+    .product-card .btn {
+      font-size: 0.95rem;
+      padding: 0.55rem 1rem;
+    }
+  }
+</style>
+
+<div class="salon-detail-page">
+  <section class="salon-hero">
+    <div class="hero-content">
+      <div class="hero-info">
+        <div class="">
+<!--          <span class="hero-eyebrow"><i class="bi bi-stars"></i>Салон красоты</span>-->
+          <h1>{{ salon.name }}</h1>
+          <div class="salon-meta">
+            <div class="meta-chip"><i class="bi bi-geo-alt"></i> {{ salon.address }}</div>
+            {% if salon.phone %}
+              <div class="meta-chip"><i class="bi bi-telephone"></i> {{ salon.phone }}</div>
+            {% endif %}
+            <div class="meta-chip meta-chip--accent"><i class="bi bi-star-fill text-warning"></i> {{ average_rating|floatformat:1 }}/5 рейтинг</div>
+          </div>
+          {% if salon.description %}
+            <p class="info-paragraph mb-4">{{ salon.description }}</p>
+          {% endif %}
+          <div class="hero-actions">
+            <a href="{% url 'service_booking' %}?salon={{ salon.id }}" class="btn btn-theme btn-lg px-4">
+              Забронировать услугу
+            </a>
+            <a href="#salon-stylists" class="btn btn-theme btn-lg px-4" data-scroll-target="#salon-stylists">
+              Выбрать стилиста
+            </a>
+<!--            <span class="hero-actions__hint"><i class="bi bi-lightning-charge"></i>Записывайтесь онлайн за пару кликов</span>-->
+          </div>
+        </div>
+<!--        <div class="hero-stats">-->
+<!--          <div class="hero-stat">-->
+<!--            <div class="stat-icon"><i class="bi bi-star-fill"></i></div>-->
+<!--            <div>-->
+<!--              <div class="stat-value">{{ average_rating|floatformat:1 }}</div>-->
+<!--              <div class="stat-label">Средняя оценка</div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hero-stat">-->
+<!--            <div class="stat-icon"><i class="bi bi-people"></i></div>-->
+<!--            <div>-->
+<!--              <div class="stat-value">{{ stylists|length }}</div>-->
+<!--              <div class="stat-label">Мастеров в салоне</div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          <div class="hero-stat">-->
+<!--            <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>-->
+<!--            <div>-->
+<!--              <div class="stat-value">{{ salon.reviews.count }}</div>-->
+<!--              <div class="stat-label">Отзывов клиентов</div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </div>-->
+      </div>
+      <div class="hero-image-wrapper">
+        {% with photos=salon.get_photos %}
+          {% if photos %}
+            <div class="hero-image-slider" role="presentation">
+              {% for photo in photos %}
+                <img
+                  src="{{ photo.url }}"
+                  alt="{{ salon.name }} — фото {{ forloop.counter }}"
+                  class="hero-image-slide{% if forloop.first %} is-active{% endif %}"
+                  loading="lazy"
+                  {% if not forloop.first %}aria-hidden="true"{% endif %}
+                >
+              {% endfor %}
+            </div>
+          {% else %}
+            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" alt="Salon placeholder">
+          {% endif %}
+        {% endwith %}
+      </div>
+    </div>
+  </section>
+
+  {% with photos=salon.get_photos %}
+    {% if photos|length >= 3 %}
+      <section class="salon-gallery">
+        <div class="salon-gallery__grid">
+          {% for photo in photos %}
+            <figure class="salon-gallery__item">
+              <img src="{{ photo.url }}" alt="{{ salon.name }} — фото {{ forloop.counter }}">
+            </figure>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  {% endwith %}
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const heroSection = document.querySelector(".salon-hero");
+      const heroWrapper = heroSection?.querySelector(".hero-image-wrapper");
+      const heroSlider = heroWrapper?.querySelector(".hero-image-slider");
+      const heroSlides = heroSlider ? Array.from(heroSlider.querySelectorAll(".hero-image-slide")) : [];
+      const staticHeroImage = heroSlider ? null : heroWrapper?.querySelector("img");
+
+      if (!heroSection || (!heroSlider && !staticHeroImage)) {
+        return;
+      }
+
+      const computedStyles = getComputedStyle(heroSection);
+      const fallbackPrimary = (computedStyles.getPropertyValue("--hero-primary") || "rgba(72, 107, 113, 0.95)").trim();
+      const fallbackSecondary = (computedStyles.getPropertyValue("--hero-secondary") || "rgba(19, 41, 45, 0.92)").trim();
+
+      const applyGradient = (primary, secondary) => {
+        heroSection.style.setProperty("--hero-primary", primary);
+        heroSection.style.setProperty("--hero-secondary", secondary);
+        heroSection.style.background = `linear-gradient(135deg, ${primary}, ${secondary})`;
+      };
+
+      const rgbToHsl = (r, g, b) => {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h = 0;
+        let s = 0;
+        const l = (max + min) / 2;
+
+        if (max !== min) {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+          switch (max) {
+            case r:
+              h = (g - b) / d + (g < b ? 6 : 0);
+              break;
+            case g:
+              h = (b - r) / d + 2;
+              break;
+            default:
+              h = (r - g) / d + 4;
+          }
+
+          h /= 6;
+        }
+
+        return { h, s, l };
+      };
+
+      const hueToRgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+      };
+
+      const hslToRgba = (h, s, l, alpha) => {
+        let r;
+        let g;
+        let b;
+
+        if (s === 0) {
+          r = g = b = l;
+        } else {
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 2 * l - q;
+          r = hueToRgb(p, q, h + 1 / 3);
+          g = hueToRgb(p, q, h);
+          b = hueToRgb(p, q, h - 1 / 3);
+        }
+
+        return `rgba(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)}, ${alpha})`;
+      };
+
+      const createGradientFromColor = (r, g, b) => {
+        const { h, s, l } = rgbToHsl(r, g, b);
+        const elevatedSaturation = Math.min(1, s * 1.05 + 0.02);
+        const softerSaturation = Math.min(1, s * 0.85 + 0.05);
+        const lighterTone = Math.min(0.9, l + 0.12);
+        const deeperTone = Math.max(0.12, l - 0.22);
+        const primary = hslToRgba(h, softerSaturation, lighterTone, 0.95);
+        const secondary = hslToRgba(h, elevatedSaturation, deeperTone, 0.92);
+        applyGradient(primary, secondary);
+      };
+
+      const extractAverageColor = image => {
+        try {
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+
+          if (!context) {
+            throw new Error("Canvas not supported");
+          }
+
+          const sampleWidth = 80;
+          const aspectRatio = image.naturalHeight && image.naturalWidth
+            ? image.naturalHeight / image.naturalWidth
+            : 1;
+          const sampleHeight = Math.max(1, Math.round(sampleWidth * aspectRatio));
+
+          canvas.width = sampleWidth;
+          canvas.height = sampleHeight;
+
+          context.drawImage(image, 0, 0, sampleWidth, sampleHeight);
+
+          const { data } = context.getImageData(0, 0, sampleWidth, sampleHeight);
+
+          let r = 0;
+          let g = 0;
+          let b = 0;
+          let count = 0;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const alpha = data[i + 3];
+            if (alpha < 32) {
+              continue;
+            }
+
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            count += 1;
+          }
+
+          if (!count) {
+            throw new Error("No opaque pixels detected");
+          }
+
+          createGradientFromColor(Math.round(r / count), Math.round(g / count), Math.round(b / count));
+        } catch (error) {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+        }
+      };
+
+      const prepareImageForSampling = (image) => {
+        const sampleSource = image?.currentSrc || image?.src;
+
+        if (!sampleSource) {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+          return;
+        }
+
+        const sampler = new Image();
+        const isSameOrigin = sampleSource.startsWith(window.location.origin);
+
+        if (!isSameOrigin) {
+          sampler.crossOrigin = "anonymous";
+        }
+
+        sampler.src = sampleSource;
+
+        if (sampler.complete && sampler.naturalWidth) {
+          extractAverageColor(sampler);
+        } else {
+          sampler.onload = () => extractAverageColor(sampler);
+          sampler.onerror = () => applyGradient(fallbackPrimary, fallbackSecondary);
+        }
+      };
+
+      const triggerHeroGradient = (image) => {
+        if (!image) {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+          return;
+        }
+
+        if (image.complete && image.naturalWidth) {
+          prepareImageForSampling(image);
+        } else {
+          image.addEventListener("load", () => prepareImageForSampling(image), { once: true });
+          image.addEventListener("error", () => applyGradient(fallbackPrimary, fallbackSecondary), { once: true });
+        }
+      };
+
+      let currentHeroIndex = 0;
+
+      if (heroSlider && heroSlides.length) {
+        const detectedIndex = heroSlides.findIndex((slide) => slide.classList.contains("is-active"));
+        currentHeroIndex = detectedIndex >= 0 ? detectedIndex : 0;
+      }
+
+      const syncHeroSlides = () => {
+        if (!heroSlider) {
+          return;
+        }
+
+        heroSlides.forEach((slide, index) => {
+          const isActive = index === currentHeroIndex;
+          slide.classList.toggle("is-active", isActive);
+          slide.setAttribute("aria-hidden", isActive ? "false" : "true");
+        });
+      };
+
+      const updateGradientForActiveImage = () => {
+        if (heroSlider) {
+          const activeSlide = heroSlider.querySelector(".hero-image-slide.is-active");
+          if (activeSlide) {
+            triggerHeroGradient(activeSlide);
+            return;
+          }
+        }
+
+        if (staticHeroImage) {
+          triggerHeroGradient(staticHeroImage);
+        } else {
+          applyGradient(fallbackPrimary, fallbackSecondary);
+        }
+      };
+
+      if (heroSlider && heroSlides.length > 1) {
+        const mediaQuery = window.matchMedia("(max-width: 768px)");
+        const AUTO_ROTATE_INTERVAL = 5000;
+        let autoRotateTimer = null;
+        let touchStartX = 0;
+        let isSwiping = false;
+
+        const goToRelativeHeroSlide = (delta, options) => {
+          showHeroSlide(currentHeroIndex + delta, options);
+        };
+
+        const stopHeroAutoRotate = () => {
+          if (autoRotateTimer !== null) {
+            window.clearInterval(autoRotateTimer);
+            autoRotateTimer = null;
+          }
+        };
+
+        const startHeroAutoRotate = () => {
+          if (!mediaQuery.matches || autoRotateTimer !== null) {
+            return;
+          }
+
+          autoRotateTimer = window.setInterval(() => {
+            goToRelativeHeroSlide(1, { fromAuto: true });
+          }, AUTO_ROTATE_INTERVAL);
+        };
+
+        const restartHeroAutoRotate = () => {
+          stopHeroAutoRotate();
+          startHeroAutoRotate();
+        };
+
+        const showHeroSlide = (index, { fromAuto = false } = {}) => {
+          if (!heroSlides.length) {
+            return;
+          }
+
+          currentHeroIndex = (index + heroSlides.length) % heroSlides.length;
+          syncHeroSlides();
+          updateGradientForActiveImage();
+
+          if (!fromAuto) {
+            restartHeroAutoRotate();
+          }
+        };
+
+        heroSlider.addEventListener('touchstart', (event) => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          touchStartX = event.touches[0]?.clientX ?? 0;
+          isSwiping = true;
+          stopHeroAutoRotate();
+        }, { passive: true });
+
+        heroSlider.addEventListener('touchmove', (event) => {
+          if (!mediaQuery.matches || !isSwiping) {
+            return;
+          }
+
+          const currentX = event.touches[0]?.clientX ?? 0;
+          const deltaX = currentX - touchStartX;
+
+          if (Math.abs(deltaX) > 50) {
+            isSwiping = false;
+            if (deltaX > 0) {
+              goToRelativeHeroSlide(-1);
+            } else {
+              goToRelativeHeroSlide(1);
+            }
+          }
+        }, { passive: true });
+
+        const endHeroSwipe = () => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          isSwiping = false;
+          restartHeroAutoRotate();
+        };
+
+        heroSlider.addEventListener('touchend', endHeroSwipe);
+        heroSlider.addEventListener('touchcancel', endHeroSwipe);
+
+        const handleHeroMediaChange = () => {
+          if (mediaQuery.matches) {
+            restartHeroAutoRotate();
+          } else {
+            stopHeroAutoRotate();
+          }
+        };
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+          mediaQuery.addEventListener('change', handleHeroMediaChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+          mediaQuery.addListener(handleHeroMediaChange);
+        }
+
+        showHeroSlide(currentHeroIndex, { fromAuto: true });
+        handleHeroMediaChange();
+      } else {
+        if (heroSlider && heroSlides.length) {
+          syncHeroSlides();
+        }
+
+        updateGradientForActiveImage();
+      }
+
+      const scrollTriggers = document.querySelectorAll('[data-scroll-target]');
+
+      scrollTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', (event) => {
+          const targetSelector = trigger.getAttribute('data-scroll-target');
+
+          if (!targetSelector) {
+            return;
+          }
+
+          const targetElement = document.querySelector(targetSelector);
+
+          if (!targetElement) {
+            return;
+          }
+
+          event.preventDefault();
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      });
+
+      const gallerySection = document.querySelector('.salon-gallery');
+      const galleryGrid = gallerySection?.querySelector('.salon-gallery__grid');
+      const galleryItems = galleryGrid ? Array.from(galleryGrid.querySelectorAll('.salon-gallery__item')) : [];
+
+      if (galleryGrid && galleryItems.length > 1) {
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        let currentIndex = 0;
+        let autoRotateTimer = null;
+        const AUTO_ROTATE_INTERVAL = 5000;
+
+        const resetDesktopLayout = () => {
+          galleryItems.forEach((item) => {
+            item.style.transform = '';
+            item.style.opacity = '';
+            item.style.pointerEvents = '';
+            item.style.zIndex = '';
+            item.removeAttribute('aria-hidden');
+          });
+        };
+
+        const updateMobileSlides = () => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          galleryItems.forEach((item, index) => {
+            const offset = index - currentIndex;
+            item.style.transform = `translateX(${offset * 100}%)`;
+            item.style.opacity = offset === 0 ? '1' : '0';
+            item.style.pointerEvents = offset === 0 ? 'auto' : 'none';
+            item.style.zIndex = String(galleryItems.length - Math.abs(offset));
+            item.setAttribute('aria-hidden', offset === 0 ? 'false' : 'true');
+          });
+        };
+
+        const syncLayout = () => {
+          if (mediaQuery.matches) {
+            currentIndex = Math.min(currentIndex, galleryItems.length - 1);
+            updateMobileSlides();
+          } else {
+            resetDesktopLayout();
+          }
+        };
+
+        const goToRelativeSlide = (delta, { fromAuto = false } = {}) => {
+          currentIndex = (currentIndex + delta + galleryItems.length) % galleryItems.length;
+          updateMobileSlides();
+
+          if (!fromAuto) {
+            restartAutoRotate();
+          }
+        };
+
+        const stopAutoRotate = () => {
+          if (autoRotateTimer !== null) {
+            window.clearInterval(autoRotateTimer);
+            autoRotateTimer = null;
+          }
+        };
+
+        const startAutoRotate = () => {
+          if (!mediaQuery.matches || autoRotateTimer !== null) {
+            return;
+          }
+
+          autoRotateTimer = window.setInterval(() => {
+            goToRelativeSlide(1, { fromAuto: true });
+          }, AUTO_ROTATE_INTERVAL);
+        };
+
+        const restartAutoRotate = () => {
+          stopAutoRotate();
+          startAutoRotate();
+        };
+
+        let touchStartX = 0;
+        let isSwiping = false;
+
+        galleryGrid.addEventListener('touchstart', (event) => {
+          if (!mediaQuery.matches) {
+            return;
+          }
+
+          touchStartX = event.touches[0]?.clientX ?? 0;
+          isSwiping = true;
+          stopAutoRotate();
+        }, { passive: true });
+
+        galleryGrid.addEventListener('touchmove', (event) => {
+          if (!mediaQuery.matches || !isSwiping) {
+            return;
+          }
+
+          const currentX = event.touches[0]?.clientX ?? 0;
+          const deltaX = currentX - touchStartX;
+
+          if (Math.abs(deltaX) > 50) {
+            isSwiping = false;
+            if (deltaX > 0) {
+              goToRelativeSlide(-1);
+            } else {
+              goToRelativeSlide(1);
+            }
+          }
+        }, { passive: true });
+
+        const stopSwipe = () => {
+          isSwiping = false;
+          restartAutoRotate();
+        };
+
+        galleryGrid.addEventListener('touchend', stopSwipe);
+        galleryGrid.addEventListener('touchcancel', stopSwipe);
+
+        const handleMediaChange = () => {
+          if (mediaQuery.matches) {
+            restartAutoRotate();
+          } else {
+            stopAutoRotate();
+          }
+
+          syncLayout();
+        };
+
+        if (typeof mediaQuery.addEventListener === 'function') {
+          mediaQuery.addEventListener('change', handleMediaChange);
+        } else if (typeof mediaQuery.addListener === 'function') {
+          mediaQuery.addListener(handleMediaChange);
+        }
+
+        syncLayout();
+        startAutoRotate();
+      }
+    });
+  </script>
+
+  {% if stylists %}
+    <section id="salon-stylists" class="stylists-section">
+      <h2 class="section-heading">Наши мастера</h2>
+      <div class="row g-4">
+      {% for stylist in stylists %}
+        <div class="col-6 col-md-6 col-lg-4">
+          <div class="card stylist-card h-100">
+            <div class="card-body d-flex flex-column text-center">
+              {% with name=stylist.user.get_full_name|default:stylist.user.username %}
+                <div class="avatar-wrapper">
+                  {% if stylist.avatar %}
+                    <img src="{{ stylist.avatar.url }}" alt="{{ name }}">
+                  {% else %}
+                    <div class="placeholder">{{ name|slice:":1"|upper }}</div>
+                  {% endif %}
+                </div>
+
+                <h5 class="fw-semibold">{{ name }}</h5>
+
+                <div class="mb-3">
+                  {% if stylist.level %}
+                    {% if stylist.level.name == "Топ Барбер" %}
+                      <span class="badge-level" style="background: rgba(255, 193, 7, 0.18); color: #9a6b00;">★ {{ stylist.level.name }}</span>
+                    {% elif stylist.level.name == "Старший Барбер" %}
+                      <span class="badge-level" style="background: rgba(25, 135, 84, 0.15); color: #19633d;">💈 {{ stylist.level.name }}</span>
+                    {% elif stylist.level.name == "Барбер" %}
+                      <span class="badge-level" style="background: rgba(108, 117, 125, 0.18); color: #495057;">✂️ {{ stylist.level.name }}</span>
+                    {% else %}
+                      <span class="badge-level">{{ stylist.level.name }}</span>
+                    {% endif %}
+                  {% else %}
+                    <span class="badge-level">Барбер</span>
+                  {% endif %}
+                </div>
+
+                {% with services_list=stylist.salon_services_for_display %}
+                  {% if services_list %}
+                    <div class="stylist-services-preview flex-grow-1">
+                      {% for ss in services_list|slice:":3" %}
+                        <span class="salon-service-chip">{{ ss.salon_service.service.name }}</span>
+                      {% endfor %}
+                      {% with total=services_list|length %}
+                        {% if total > 3 %}
+                          <span class="salon-service-chip salon-service-chip--more">+{{ total|add:"-3" }}</span>
+                        {% endif %}
+                      {% endwith %}
+                      <button type="button" class="btn-service-modal" data-bs-toggle="modal" data-bs-target="#stylist-services-{{ stylist.id }}" aria-label="Показать все услуги мастера">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                    </div>
+                  {% else %}
+                    <p class="text-muted small flex-grow-1">Услуги мастера пока не добавлены.</p>
+                  {% endif %}
+                {% endwith %}
+
+                <a href="{% url 'service_booking' %}?salon={{ salon.id }}&stylist={{ stylist.id }}" class="btn btn-theme mt-3">
+                  Выбрать мастера
+                </a>
+              {% endwith %}
+            </div>
+          </div>
+        </div>
+        {% with services_list=stylist.salon_services_for_display %}
+          {% if services_list %}
+            <div class="modal fade stylist-services-modal" id="stylist-services-{{ stylist.id }}" tabindex="-1" aria-labelledby="stylist-services-label-{{ stylist.id }}" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="stylist-services-label-{{ stylist.id }}">Услуги мастера {{ stylist.user.get_full_name|default:stylist.user.username }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                  </div>
+                  <div class="modal-body">
+                    <div class="service-list">
+                      {% for ss in services_list %}
+                        <div class="service-list-item">
+<!--                          <i class="bi bi-scissors"></i>-->
+                          <span>{{ ss.salon_service.service.name }}</span>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        {% endwith %}
+      {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if uncategorized_services %}
+    <h2 class="section-heading">Популярные услуги</h2>
+    <div class="row g-4">
+      {% for salon_service in uncategorized_services %}
+        <div class="col-6 col-md-6 col-lg-4">
+          <div class="card service-card h-100">
+            {% if salon_service.service.photo %}
+              <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1502786129293-79981df4e689?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ salon_service.service.name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title text-center fw-semibold">{{ salon_service.service.name }}</h5>
+              <button class="btn btn-outline-theme add-to-cart mt-auto" data-service-id="{{ salon_service.service.id }}">
+                <i class="bi bi-plus-circle me-1"></i>Добавить услугу
+              </button>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if categories %}
+    <h2 class="section-heading">Категории услуг</h2>
+    <div class="row g-4">
+      {% for category in categories %}
+        <div class="col-6 col-md-6 col-lg-4">
+          <div class="card category-card h-100">
+            {% if category.photo %}
+              <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ category.name }}">
+            {% else %}
+              <img src="https://images.unsplash.com/photo-1500835556837-99ac94a94552?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ category.name }}">
+            {% endif %}
+            <div class="card-body">
+              <h5 class="card-title text-center fw-semibold">{{ category.name }}</h5>
+              <a href="{% url 'category_services' category.id %}?salon={{ salon.id }}" class="btn btn-theme mt-auto">Открыть категорию</a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <section class="salon-products">
+    <div class="d-flex flex-column align-items-center text-center gap-2 salon-products__heading">
+<!--      <div class="hero-eyebrow text-dark bg-light border">{{ salon.name }} • Товары салона</div>-->
+      <h2 class="section-heading mb-1">Возьмите с собой любимые продукты</h2>
+<!--      <p class="text-muted mb-0">Доставка в течение {{ delivery_eta_days }} дней после оформления заказа.</p>-->
+      <div class="d-flex flex-column align-items-center gap-2">
+        {% if product_payment_methods and product_payment_methods.0 == 'card' %}
+<!--          <span class="payment-badge"><i class="bi bi-credit-card me-1"></i>Оплата картой или наличными</span>-->
+        {% else %}
+<!--          <span class="badge bg-secondary-subtle text-dark border"><i class="bi bi-cash-stack me-1"></i>Оплата наличными при получении</span>-->
+        {% endif %}
+<!--      <span class="product-eta"><i class="bi bi-truck"></i> Доставка {{ delivery_eta_days }} дня</span>-->
+      </div>
+    </div>
+    <div id="product-cart-alert" class="alert alert-info d-none mt-3" role="alert"></div>
+
+    {% if salon_products %}
+      {% regroup salon_products by category as salon_products_by_category %}
+      <div class="d-flex flex-column gap-4 mt-2">
+        {% for category_group in salon_products_by_category %}
+          <div class="category-products">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h5 class="mb-0">{{ category_group.grouper.name|default:'Без категории' }}</h5>
+              <span class="badge bg-light text-dark border">{{ category_group.list|length }} товаров</span>
+            </div>
+            <div class="row g-4">
+              {% for product in category_group.list %}
+                <div class="col-6 col-md-6 col-lg-4 col-xl-4">
+                  <div class="product-card">
+                    {% if product.photo %}
+                      <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="product-image">
+                    {% else %}
+                      <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80" alt="{{ product.name }}" class="product-image">
+                    {% endif %}
+                    <div class="product-body">
+                      <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                          <div class="h5 mb-1">{{ product.name }}</div>
+                          {% if product.description %}
+                            <div class="product-description-container">
+                              <div class="product-meta product-description" data-full-description="{{ product.description|escape }}">
+                                {{ product.description }}
+                              </div>
+                              <button type="button" class="btn btn-link p-0 product-description__more d-none" data-description-toggle>
+                                Читать полностью
+                              </button>
+                            </div>
+                          {% endif %}
+                        </div>
+                        {% if product.discount_percent %}
+                          <span class="discount-chip"><i class="bi bi-fire"></i> -{{ product.discount_percent }}%</span>
+                        {% endif %}
+                      </div>
+                      <div class="d-flex flex-wrap align-items-baseline gap-2">
+                        <span class="product-price">{{ product.get_final_price|intcomma }} сум</span>
+                        {% if product.get_display_old_price %}
+                          <span class="product-old-price">{{ product.get_display_old_price|intcomma }} сум</span>
+                        {% endif %}
+                      </div>
+                      <div class="product-meta">В наличии: {{ product.quantity }} шт.</div>
+                      <form method="post" action="{% url 'add_product_to_cart' salon.id %}" class="mt-auto" data-product-add-form>
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                        <div class="d-flex align-items-center gap-2">
+                          <input type="number" name="quantity" value="1" min="1" max="{{ product.quantity }}" class="form-control form-control-sm" style="max-width: 120px;">
+                          <button type="submit" class="btn btn-theme flex-grow-1">В корзину</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light border mt-3 mb-0">
+        <div class="fw-semibold mb-1">Товары появятся скоро</div>
+        <p class="mb-0 text-muted">Администратор салона готовит подборку товаров для продажи.</p>
+      </div>
+    {% endif %}
+
+    <div class="card cart-card mt-4" data-product-cart data-cart-update-url="{% url 'update_product_cart_item' salon.id %}">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Корзина товаров салона</span>
+        <span class="text-muted small">Оплата выбирается при оформлении заказа</span>
+      </div>
+      <div class="card-body">
+        <div class="cart-items" data-cart-items>
+          {% if product_cart_items %}
+            {% for item in product_cart_items %}
+              <form method="post" action="{% url 'update_product_cart_item' salon.id %}" class="cart-item-row" data-cart-update-form>
+                {% csrf_token %}
+                <input type="hidden" name="item_id" value="{{ item.id }}">
+                <div>
+                  <div class="fw-semibold">{{ item.name }}</div>
+                  <div class="text-muted small">Доступно: {{ item.available }} шт.</div>
+                </div>
+                <div>
+                  <div class="product-price mb-1">{{ item.final_price|intcomma }} сум</div>
+                  {% if item.old_price %}
+                    <div class="product-old-price">{{ item.old_price|intcomma }} сум</div>
+                  {% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                  <input type="number" name="quantity" class="form-control form-control-sm" min="1" max="{{ item.available }}" value="{{ item.quantity }}">
+                  <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+                </div>
+                <div class="text-end">
+                  <div class="fw-semibold">{{ item.subtotal|intcomma }} сум</div>
+                  <button type="submit" name="action" value="remove" class="btn btn-link text-danger btn-sm p-0 mt-1">Удалить</button>
+                </div>
+              </form>
+            {% endfor %}
+          {% endif %}
+        </div>
+        <p class="text-muted mb-0 {% if product_cart_items %}d-none{% endif %}" data-cart-empty>Корзина пуста. Добавьте товары, чтобы оформить доставку.</p>
+        <div class="{% if not product_cart_items %}d-none{% endif %}" data-cart-summary>
+          <hr>
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div class="cart-total" data-cart-total>Итого: <span data-cart-total-value>{{ product_cart_total|intcomma }}</span> сум</div>
+<!--            <div class="text-muted small">Курьер доставит заказ в течение {{ delivery_eta_days }} дней.</div>-->
+          </div>
+          <form method="post" action="{% url 'checkout_salon_products' salon.id %}" class="mt-3" data-cart-checkout-form>
+            {% csrf_token %}
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Контактное имя</label>
+                <input type="text" name="guest_name" class="form-control" value="{{ prefill_guest_name }}" placeholder="Ваше имя" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Телефон для доставки</label>
+                <div class="input-group">
+                  <span class="input-group-text">+998</span>
+                  <input type="tel"
+                         name="guest_phone"
+                         id="guest_phone"
+                         class="form-control"
+                         inputmode="numeric"
+                         value="{{ prefill_guest_phone }}"
+                         placeholder="93-123-45-67"
+                         pattern="^\d{2}-\d{3}-\d{2}-\d{2}$"
+                         title="Введите номер в формате 93-123-45-67"
+                         data-uzbek-phone-input
+                         required>
+                </div>
+              </div>
+              <div class="col-md-12">
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="id_is_pickup" name="is_pickup">
+                  <label class="form-check-label" for="id_is_pickup">Заберу собой</label>
+                </div>
+                <label class="form-label">Адрес доставки</label>
+                <textarea name="address" rows="2" class="form-control" placeholder="Укажите улицу, дом, подъезд, ориентиры"></textarea>
+                <div class="form-text">Оставьте пустым только если выбрали самовывоз.</div>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-theme" data-cart-submit {% if not product_cart_items %}disabled{% endif %}>Оформить заказ</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <h2 class="section-heading">Контакты и расположение</h2>
+  <div class="row g-4 align-items-stretch">
+    <div class="col-lg-7">
+      <div class="ratio ratio-4x3 rounded-4 shadow-sm overflow-hidden">
+        {% if salon.latitude and salon.longitude %}
+          {% with lat=salon.latitude|stringformat:"f"|cut:","|add:"." %}
+            {% with lon=salon.longitude|stringformat:"f"|cut:","|add:"." %}
+              <iframe src="https://yandex.ru/map-widget/v1/?ll={{ lon }},{{ lat }}&z=15&pt={{ lon }},{{ lat }},pm2rdm" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+            {% endwith %}
+          {% endwith %}
+        {% else %}
+          <div class="d-flex flex-column justify-content-center align-items-center h-100 text-muted">
+            <i class="bi bi-geo-alt display-5 mb-3"></i>
+            <p class="mb-0">Координаты не указаны.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card contact-card h-100">
+        <div class="card-body">
+          <div class="contact-item">
+            <div class="contact-icon"><i class="bi bi-building"></i></div>
+            <div>
+              <div class="text-muted text-uppercase small">Салон</div>
+              <h5 class="mb-0">{{ salon.name }}</h5>
+            </div>
+          </div>
+          <div class="contact-item d-flex align-items-start gap-3">
+  <div class="contact-icon flex-shrink-0">
+    <i class="bi bi-geo-alt-fill"></i>
+  </div>
+  <div>
+    <div class="text-muted text-uppercase small">Адрес</div>
+    <p class="mb-0">{{ salon.address }}</p>
+  </div>
+</div>
+          {% if salon.phone %}
+            <div class="contact-item">
+              <div class="contact-icon"><i class="bi bi-telephone"></i></div>
+              <div>
+                <div class="text-muted text-uppercase small">Телефон</div>
+                <a href="tel:{{ salon.phone }}" class="text-decoration-none fw-semibold text-dark">{{ salon.phone }}</a>
+              </div>
+            </div>
+          {% endif %}
+<!--          {% if salon.description %}-->
+<!--            <div class="contact-item mb-0">-->
+<!--              <div class="contact-icon"><i class="bi bi-card-text"></i></div>-->
+<!--              <div>-->
+<!--                <div class="text-muted text-uppercase small">О салоне</div>-->
+<!--                <p class="mb-0">{{ salon.description }}</p>-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          {% endif %}-->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="card reviews-card border-0 mt-5">
+    <div class="card-body">
+      <div class="reviews-header">
+        <div class="reviews-header__info">
+          <span class="reviews-eyebrow"><i class="bi bi-chat-dots"></i> Голос клиентов</span>
+          <h3 class="reviews-title">Отзывы клиентов</h3>
+          <div class="reviews-stars" id="reviews-stars">
+            {% for _ in stars.full %}
+              <i class="bi bi-star-fill"></i>
+            {% endfor %}
+            {% if stars.half %}
+              <i class="bi bi-star-half"></i>
+            {% endif %}
+            {% for _ in stars.empty %}
+              <i class="bi bi-star"></i>
+            {% endfor %}
+            <span id="reviews-stars-value">{{ average_rating|floatformat:1 }} / 5</span>
+          </div>
+        </div>
+        <div class="reviews-summary">
+          <div class="reviews-score" id="reviews-score">{{ average_rating|floatformat:1 }}</div>
+          <small>Средняя оценка</small>
+          {% with total=salon.reviews.count %}
+            <div class="reviews-count" id="reviews-count">
+              {% if total %}
+                Всего отзывов: {{ total }}
+              {% else %}
+                Пока нет отзывов
+              {% endif %}
+            </div>
+          {% endwith %}
+          <a href="#review-form" class="btn btn-theme">Оставить отзыв</a>
+        </div>
+      </div>
+
+      <div class="review-form-card">
+        <div class="review-form-card__header">
+          <div>
+            <h5 class="mb-1">Поделитесь впечатлением</h5>
+            <p class="mb-0">Оцените сервис и расскажите о вашем визите.</p>
+          </div>
+          <i class="bi bi-chat-heart"></i>
+        </div>
+        <form method="post" id="review-form" class="review-form">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label d-block">Ваша оценка</label>
+            <div class="rating-select">
+              <span class="text-muted small text-uppercase">Выберите количество звезд</span>
+              <div id="star-rating" class="text-warning fs-4">
+                {% for i in "12345" %}
+                  <i class="bi bi-star" data-value="{{ forloop.counter }}"></i>
+                {% endfor %}
+              </div>
+            </div>
+            <input type="hidden" name="rating" id="rating-value" required>
+          </div>
+          <div class="mb-3">
+            <label for="id_comment" class="form-label">Комментарий</label>
+            <textarea name="comment" id="id_comment" rows="3" class="form-control" placeholder="Ваш отзыв (необязательно)"></textarea>
+          </div>
+          <button type="submit" class="btn btn-theme">Отправить отзыв</button>
+        </form>
+      </div>
+
+      {% if reviews %}
+        <div class="review-list" id="review-list">
+          {% for review in reviews %}
+            <article class="review-item{% if forloop.counter > 5 %} d-none extra-review{% endif %}" id="review-{{ review.id }}" data-review-id="{{ review.id }}">
+              <div class="review-avatar">{{ review.user.username|first|upper }}</div>
+              <div>
+                <div class="review-meta">
+                  <div class="review-meta__info">
+                    <strong>{{ review.user.username }}</strong>
+                    <span class="review-date">{{ review.created_at|date:"d M Y, H:i" }}</span>
+                  </div>
+                  {% if request.user.is_authenticated and review.user_id == request.user.id %}
+                    <div class="review-actions">
+                      <button type="button"
+                              class="review-delete-btn"
+                              data-review-delete
+                              data-review-id="{{ review.id }}"
+                              aria-label="Удалить отзыв"
+                              title="Удалить отзыв">
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="review-rating">
+                  {% for i in "12345"|make_list %}
+                    {% if forloop.counter <= review.rating %}
+                      <i class="bi bi-star-fill"></i>
+                    {% else %}
+                      <i class="bi bi-star"></i>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+                {% if review.comment %}
+                  <p class="review-comment">{{ review.comment }}</p>
+                {% endif %}
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+        <p class="reviews-empty d-none" id="no-reviews-message">Отзывов пока нет. Будьте первым!</p>
+        {% if reviews|length > 5 %}
+          <div class="text-center mt-4">
+            <button class="btn btn-outline-theme" id="load-more-reviews" data-batch="5">Показать ещё</button>
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="reviews-empty" id="no-reviews-message">Отзывов пока нет. Будьте первым!</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const modalEl = document.getElementById('productDescriptionModal');
+    const modalBody = modalEl ? modalEl.querySelector('[data-product-description-modal-body]') : null;
+    const modalInstance = modalEl && window.bootstrap ? new window.bootstrap.Modal(modalEl) : null;
+
+    const openDescriptionModal = (text) => {
+      const content = text || 'Описание временно недоступно.';
+      if (modalBody) {
+        modalBody.textContent = content;
+      }
+
+      if (modalInstance) {
+        modalInstance.show();
+      } else if (modalEl) {
+        modalEl.style.display = 'block';
+        modalEl.classList.add('show');
+      } else {
+        window.alert(content);
+      }
+    };
+
+    document.querySelectorAll('.product-description').forEach((descriptionEl) => {
+      const parentContainer = descriptionEl.parentElement;
+      const moreButton = parentContainer ? parentContainer.querySelector('[data-description-toggle]') : null;
+      const fullText = descriptionEl.dataset.fullDescription || descriptionEl.textContent.trim();
+
+      const isOverflowing = descriptionEl.scrollHeight > descriptionEl.clientHeight + 1;
+      if (isOverflowing) {
+        descriptionEl.classList.add('is-truncated');
+        const showFullDescription = (event) => {
+          if (event) {
+            event.preventDefault();
+          }
+          openDescriptionModal(fullText);
+        };
+        descriptionEl.addEventListener('click', showFullDescription);
+
+        if (moreButton) {
+          moreButton.classList.remove('d-none');
+          moreButton.addEventListener('click', showFullDescription);
+        }
+      } else if (moreButton) {
+        moreButton.remove();
+      }
+    });
+  });
+</script>
+
+<div class="modal fade" id="productDescriptionModal" tabindex="-1" aria-labelledby="productDescriptionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="productDescriptionModalLabel">Описание товара</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0" data-product-description-modal-body></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deleteReviewModal" tabindex="-1" aria-labelledby="deleteReviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteReviewModalLabel">Удалить отзыв</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Вы уверены, что хотите удалить отзыв? Это действие нельзя отменить.</p>
+        <div class="alert alert-danger d-none mt-3 mb-0" role="alert" data-delete-error></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="button" class="btn btn-danger" data-confirm-delete>Удалить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const loadMoreButton = document.getElementById('load-more-reviews');
+    const reviewList = document.getElementById('review-list');
+    const noReviewsMessage = document.getElementById('no-reviews-message');
+
+    const getHiddenReviews = () => Array.from(document.querySelectorAll('.review-item.extra-review.d-none'));
+    const showHiddenBatch = (count = 1) => {
+      getHiddenReviews()
+        .slice(0, count)
+        .forEach((item) => item.classList.remove('d-none'));
+    };
+
+    if (loadMoreButton) {
+      const batchSize = parseInt(loadMoreButton.dataset.batch, 10) || 5;
+      if (!getHiddenReviews().length) {
+        loadMoreButton.classList.add('d-none');
+      }
+
+      loadMoreButton.addEventListener('click', () => {
+        showHiddenBatch(batchSize);
+
+        if (!getHiddenReviews().length) {
+          loadMoreButton.classList.add('d-none');
+        }
+      });
+    }
+
+    const deleteModalEl = document.getElementById('deleteReviewModal');
+    const deleteButtons = document.querySelectorAll('[data-review-delete]');
+
+    if (deleteModalEl && deleteButtons.length) {
+      const modal = window.bootstrap ? new window.bootstrap.Modal(deleteModalEl) : null;
+      const confirmBtn = deleteModalEl.querySelector('[data-confirm-delete]');
+      const errorAlert = deleteModalEl.querySelector('[data-delete-error]');
+      const confirmDefaultInner = confirmBtn ? confirmBtn.innerHTML : '';
+      let targetReviewId = null;
+
+      const restoreConfirmButton = () => {
+        if (!confirmBtn) {
+          return;
+        }
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = confirmDefaultInner;
+      };
+
+      const hideError = () => {
+        if (!errorAlert) {
+          return;
+        }
+        errorAlert.classList.add('d-none');
+        errorAlert.textContent = '';
+      };
+
+      const showError = (message) => {
+        if (!errorAlert) {
+          return;
+        }
+        errorAlert.textContent = message;
+        errorAlert.classList.remove('d-none');
+      };
+
+      const updateEmptyState = () => {
+        if (!reviewList) {
+          return;
+        }
+        const totalReviews = reviewList.querySelectorAll('.review-item').length;
+        if (totalReviews === 0) {
+          reviewList.classList.add('d-none');
+          if (noReviewsMessage) {
+            noReviewsMessage.classList.remove('d-none');
+          }
+          if (loadMoreButton) {
+            loadMoreButton.classList.add('d-none');
+          }
+        } else {
+          reviewList.classList.remove('d-none');
+          if (noReviewsMessage) {
+            noReviewsMessage.classList.add('d-none');
+          }
+        }
+      };
+
+      const updateReviewSummary = (payload) => {
+        if (!payload) {
+          return;
+        }
+
+        const scoreNode = document.getElementById('reviews-score');
+        if (scoreNode && payload.average_rating_display !== undefined) {
+          scoreNode.textContent = payload.average_rating_display;
+        }
+
+        const starsContainer = document.getElementById('reviews-stars');
+        if (starsContainer && payload.stars) {
+          const parts = [];
+          for (let i = 0; i < (payload.stars.full || 0); i += 1) {
+            parts.push('<i class="bi bi-star-fill"></i>');
+          }
+          if (payload.stars.half) {
+            parts.push('<i class="bi bi-star-half"></i>');
+          }
+          for (let i = 0; i < (payload.stars.empty || 0); i += 1) {
+            parts.push('<i class="bi bi-star"></i>');
+          }
+          const value = payload.average_rating_display !== undefined ? payload.average_rating_display : '0.0';
+          parts.push(`<span id="reviews-stars-value">${value} / 5</span>`);
+          starsContainer.innerHTML = parts.join('');
+        }
+
+        const countNode = document.getElementById('reviews-count');
+        if (countNode && payload.review_count !== undefined) {
+          countNode.textContent = payload.review_count > 0
+            ? `Всего отзывов: ${payload.review_count}`
+            : 'Пока нет отзывов';
+        }
+      };
+
+      const getCookie = (name) => {
+        const cookies = document.cookie ? document.cookie.split(';') : [];
+        for (let i = 0; i < cookies.length; i += 1) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === `${name}=`) {
+            return decodeURIComponent(cookie.substring(name.length + 1));
+          }
+        }
+        return null;
+      };
+
+      if (deleteModalEl.addEventListener) {
+        deleteModalEl.addEventListener('hidden.bs.modal', () => {
+          targetReviewId = null;
+          hideError();
+          restoreConfirmButton();
+        });
+      }
+
+      const performDeletion = () => {
+        if (!targetReviewId) {
+          return;
+        }
+
+        hideError();
+
+        if (confirmBtn) {
+          confirmBtn.disabled = true;
+          confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Удаляем...';
+        }
+
+        fetch(`/reviews/${targetReviewId}/delete/`, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken') || '',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+          })
+            .then((response) => response.json()
+              .catch(() => ({ success: false, error: 'Не удалось обработать ответ сервера.' }))
+              .then((data) => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+              if (!ok || !data.success) {
+                const message = data && data.error ? data.error : 'Не удалось удалить отзыв. Попробуйте позже.';
+                showError(message);
+                throw new Error(message);
+              }
+
+              const reviewElement = document.getElementById(`review-${targetReviewId}`);
+              const wasHidden = reviewElement ? reviewElement.classList.contains('d-none') : false;
+              if (reviewElement) {
+                reviewElement.remove();
+              }
+
+              if (!wasHidden) {
+                showHiddenBatch(1);
+              }
+
+              if (loadMoreButton && !getHiddenReviews().length) {
+                loadMoreButton.classList.add('d-none');
+              }
+
+              updateReviewSummary(data);
+              updateEmptyState();
+
+              if (modal) {
+                modal.hide();
+              }
+              targetReviewId = null;
+            })
+            .catch((error) => {
+              console.error(error);
+              if (errorAlert && errorAlert.classList.contains('d-none')) {
+                showError(error.message || 'Произошла ошибка. Попробуйте снова.');
+              }
+            })
+            .finally(() => {
+              restoreConfirmButton();
+            });
+      };
+
+      deleteButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          targetReviewId = button.dataset.reviewId;
+          hideError();
+          restoreConfirmButton();
+          if (modal) {
+            modal.show();
+          } else if (window.confirm('Вы уверены, что хотите удалить отзыв?')) {
+            performDeletion();
+          } else {
+            targetReviewId = null;
+          }
+        });
+      });
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener('click', () => {
+          performDeletion();
+        });
+      }
+    }
+  });
+</script>
+
+<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center">
+  <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
+    Записаться (<span id="cart-count">0</span>)
+  </button>
+  <div id="cart-warning" class="text-danger small fw-semibold px-2 d-none text-center">
+    Нет мастеров для выбранных услуг
+  </div>
+  <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
+</div>
+
+{{ service_stylists_map|json_script:"service-stylists-map" }}
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const productCartCard = document.querySelector('[data-product-cart]');
+    const addProductForms = document.querySelectorAll('[data-product-add-form]');
+
+    if (!productCartCard) {
+      return;
+    }
+
+    const cartItemsContainer = productCartCard.querySelector('[data-cart-items]');
+    const emptyState = productCartCard.querySelector('[data-cart-empty]');
+    const summaryBlock = productCartCard.querySelector('[data-cart-summary]');
+    const totalValueEl = productCartCard.querySelector('[data-cart-total-value]');
+    const checkoutButton = productCartCard.querySelector('[data-cart-submit]');
+    const alertBox = document.getElementById('product-cart-alert');
+    const updateUrl = productCartCard.dataset.cartUpdateUrl;
+
+    function getCsrfToken() {
+      const cookie = document.cookie.split(';').map((c) => c.trim()).find((c) => c.startsWith('csrftoken='));
+      if (cookie) {
+        return decodeURIComponent(cookie.split('=')[1]);
+      }
+      const input = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return input ? input.value : '';
+    }
+
+    function showAlert(message, type = 'info') {
+      if (!alertBox) return;
+      alertBox.textContent = message;
+      alertBox.classList.remove('d-none', 'alert-info', 'alert-success', 'alert-danger');
+      alertBox.classList.add(`alert-${type}`);
+    }
+
+    function formatCurrency(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) {
+        return value || '0';
+      }
+      return num.toLocaleString('ru-RU');
+    }
+
+    function toggleSummary(hasItems) {
+      if (summaryBlock) {
+        summaryBlock.classList.toggle('d-none', !hasItems);
+      }
+      if (emptyState) {
+        emptyState.classList.toggle('d-none', hasItems);
+      }
+      if (checkoutButton) {
+        checkoutButton.disabled = !hasItems;
+      }
+    }
+
+    function buildCartItem(item) {
+      const form = document.createElement('form');
+      form.method = 'post';
+      form.action = updateUrl;
+      form.className = 'cart-item-row';
+      form.setAttribute('data-cart-update-form', '');
+
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = 'csrfmiddlewaretoken';
+      csrfInput.value = getCsrfToken();
+      form.appendChild(csrfInput);
+
+      const idInput = document.createElement('input');
+      idInput.type = 'hidden';
+      idInput.name = 'item_id';
+      idInput.value = item.id;
+      form.appendChild(idInput);
+
+      const infoCol = document.createElement('div');
+      infoCol.innerHTML = `<div class="fw-semibold">${item.name}</div><div class="text-muted small">Доступно: ${item.available} шт.</div>`;
+      form.appendChild(infoCol);
+
+      const priceCol = document.createElement('div');
+      priceCol.className = 'd-flex flex-column';
+      priceCol.innerHTML = `<div class="product-price mb-1">${formatCurrency(item.final_price)} сум</div>`;
+      if (item.old_price) {
+        const oldPrice = document.createElement('div');
+        oldPrice.className = 'product-old-price';
+        oldPrice.textContent = `${formatCurrency(item.old_price)} сум`;
+        priceCol.appendChild(oldPrice);
+      }
+      form.appendChild(priceCol);
+
+      const quantityCol = document.createElement('div');
+      quantityCol.className = 'd-flex align-items-center gap-2';
+      quantityCol.innerHTML = `
+        <input type="number" name="quantity" class="form-control form-control-sm" min="1" max="${item.available}" value="${item.quantity}">
+        <button type="submit" class="btn btn-outline-primary btn-sm">Обновить</button>
+      `;
+      form.appendChild(quantityCol);
+
+      const actionsCol = document.createElement('div');
+      actionsCol.className = 'text-end';
+      actionsCol.innerHTML = `
+        <div class="fw-semibold">${formatCurrency(item.subtotal)} сум</div>
+        <button type="submit" name="action" value="remove" class="btn btn-link text-danger btn-sm p-0 mt-1">Удалить</button>
+      `;
+      form.appendChild(actionsCol);
+
+      return form;
+    }
+
+    function refreshCart(cart) {
+      const items = Array.isArray(cart?.items) ? cart.items : [];
+      cartItemsContainer.innerHTML = '';
+
+      if (!items.length) {
+        toggleSummary(false);
+        return;
+      }
+
+      items.forEach((item) => {
+        cartItemsContainer.appendChild(buildCartItem(item));
+      });
+
+      if (totalValueEl) {
+        totalValueEl.textContent = formatCurrency(cart.total || 0);
+      }
+
+      toggleSummary(true);
+    }
+
+    function handleResponse(response) {
+      return response
+        .json()
+        .catch(() => ({}))
+        .then((data) => ({ ok: response.ok, status: response.status, data }));
+    }
+
+    function submitWithFetch(url, formData, pendingElement) {
+      if (pendingElement) {
+        pendingElement.disabled = true;
+      }
+
+      return fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: formData,
+      })
+        .then(handleResponse)
+        .finally(() => {
+          if (pendingElement) {
+            pendingElement.disabled = false;
+          }
+        });
+    }
+
+    addProductForms.forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const submitter = event.submitter || form.querySelector('button[type="submit"]');
+        const formData = new FormData(form);
+
+        submitWithFetch(form.action, formData, submitter).then(({ ok, data }) => {
+          if (!ok || !data?.success) {
+            showAlert(data?.error || 'Не удалось добавить товар. Попробуйте снова.', 'danger');
+            return;
+          }
+          refreshCart(data.cart);
+<!--          showAlert('Товар добавлен в корзину.', 'success');-->
+        }).catch(() => {
+          showAlert('Произошла ошибка. Попробуйте позже.', 'danger');
+        });
+      });
+    });
+
+    cartItemsContainer.addEventListener('submit', (event) => {
+      const form = event.target;
+      if (!form.matches('[data-cart-update-form]')) {
+        return;
+      }
+
+      event.preventDefault();
+      const submitter = event.submitter || form.querySelector('button[type="submit"]');
+      const formData = new FormData(form);
+      if (submitter && submitter.name) {
+        formData.append(submitter.name, submitter.value);
+      }
+
+      submitWithFetch(updateUrl, formData, submitter).then(({ ok, data }) => {
+        if (!ok || !data?.success) {
+          showAlert(data?.error || 'Не удалось обновить корзину.', 'danger');
+          return;
+        }
+        refreshCart(data.cart);
+<!--        showAlert('Корзина обновлена.', 'success');-->
+      }).catch(() => {
+        showAlert('Произошла ошибка при обновлении корзины.', 'danger');
+      });
+    });
+
+    const pickupCheckbox = document.getElementById('id_is_pickup');
+    const addressField = productCartCard.querySelector('textarea[name="address"]');
+
+    function toggleAddressRequirement() {
+      const isPickup = pickupCheckbox && pickupCheckbox.checked;
+      if (addressField) {
+        addressField.required = !isPickup;
+        addressField.disabled = isPickup;
+      }
+    }
+
+    if (pickupCheckbox) {
+      pickupCheckbox.addEventListener('change', toggleAddressRequirement);
+      toggleAddressRequirement();
+    }
+  });
+</script>
+
+<script>
+  const stars = document.querySelectorAll('#star-rating i');
+  const ratingInput = document.getElementById('rating-value');
+  const reviewForm = document.getElementById('review-form');
+
+  stars.forEach((star, idx) => {
+    star.addEventListener('click', () => {
+      ratingInput.value = idx + 1;
+      stars.forEach((s, i) => {
+        s.classList.toggle('bi-star-fill', i <= idx);
+        s.classList.toggle('bi-star', i > idx);
+      });
+    });
+  });
+
+  reviewForm.addEventListener('submit', (e) => {
+    if (!ratingInput.value) {
+      e.preventDefault();
+      alert('Пожалуйста, выберите количество звёзд.');
+    }
+  });
+</script>
+<script src="{% static 'js/cart.js' %}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    initSalonCart({ salonId: "{{ salon.id }}" });
+  });
+</script>
+{% endblock %}

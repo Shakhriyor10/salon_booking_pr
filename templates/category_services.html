@@ -1,0 +1,179 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% load form_tags %}
+
+{% block content %}
+<style>
+  .category-card,
+  .service-card,
+  .stylist-card,
+  .contact-card,
+  .reviews-card {
+    border: none;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(15, 34, 36, 0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: #fff;
+  }
+
+  .category-card:hover,
+  .service-card:hover,
+  .stylist-card:hover,
+  .reviews-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 45px rgba(15, 34, 36, 0.12);
+  }
+
+  .category-card img,
+  .service-card img {
+    height: 220px;
+    object-fit: cover;
+  }
+
+  .category-card .card-body,
+  .service-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .add-to-cart {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  }
+
+  .btn-outline-theme {
+    border-radius: 999px;
+    border: 1px solid #486b71;
+    color: #486b71;
+    padding: 0.55rem 1.3rem;
+    font-weight: 600;
+    transition: all 0.25s ease;
+  }
+
+  .btn-outline-theme:hover,
+  .btn-outline-theme.added {
+    color: #fff;
+    background: linear-gradient(135deg, #4caf50, #3c8c40);
+    border-color: transparent;
+  }
+
+  .btn-outline-theme.added:hover {
+    background: linear-gradient(135deg, #e2574c, #cc473d);
+  }
+
+  .add-to-cart.added {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: #fff;
+  }
+
+  .add-to-cart.added:hover {
+    background-color: #218838;
+    border-color: #218838;
+  }
+
+  .floating-cart {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1050;
+    background: #fff;
+    border-radius: 999px;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    box-shadow: 0 18px 35px rgba(18, 42, 45, 0.18);
+    gap: 0.75rem;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .floating-cart.d-none {
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 30px);
+  }
+
+  .floating-cart .btn-custom {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #486b71, #36565a);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.5rem;
+    font-weight: 600;
+  }
+
+  .floating-cart .btn-outline-danger {
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 575.98px) {
+    .floating-cart {
+      left: 50%;
+      right: auto;
+      transform: translate(-50%, 0);
+      width: min(240px, calc(100vw - 48px));
+      border-radius: 50px;
+      padding: 0.6rem 0.75rem 0.6rem 0.9rem;
+    }
+
+    .floating-cart.d-none {
+      transform: translate(-50%, 30px);
+    }
+  }
+</style>
+<h3 class="text-center fw-semibold mt-4 mb-3">{{ category.name }}</h3>
+
+{% if services %}
+  <div class="row g-4">
+    {% for salon_service in services %}
+      <div class="col-lg-4 col-md-6">
+        <div class="card service-card h-100">
+          {% if salon_service.service.photo %}
+            <img src="{{ salon_service.service.photo.url }}" class="card-img-top" alt="{{ salon_service.service.name }}">
+          {% else %}
+            <img src="https://images.unsplash.com/photo-1502786129293-79981df4e689?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="{{ salon_service.service.name }}">
+          {% endif %}
+          <div class="card-body">
+            <h5 class="card-title text-center fw-semibold">{{ salon_service.service.name }}</h5>
+            <button
+              class="btn btn-outline-theme add-to-cart mt-auto"
+              data-service-id="{{ salon_service.service.id }}">
+              ➕ Добавить услугу
+            </button>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-center text-muted">Услуги в этой категории пока не добавлены.</p>
+{% endif %}
+
+<div id="floating-cart-button" class="floating-cart d-none d-flex align-items-center">
+  <button id="go-to-booking" class="btn btn-custom" data-salon-id="{{ salon.id }}" disabled>
+    Записаться (<span id="cart-count">0</span>)
+  </button>
+  <div id="cart-warning" class="text-danger small fw-semibold px-2 d-none text-center">
+    Нет мастеров для выбранных услуг
+  </div>
+  <button id="clear-cart" class="btn btn-outline-danger btn-sm" title="Очистить корзину">&times;</button>
+</div>
+
+
+{{ service_stylists_map|json_script:"service-stylists-map" }}
+
+<script src="{% static 'js/cart.js' %}"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    initSalonCart({ salonId: "{{ salon.id }}" });
+  });
+</script>
+
+
+{% endblock %}

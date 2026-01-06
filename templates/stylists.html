@@ -1,0 +1,8 @@
+<h1>Мастера</h1>
+<ul>
+  {% for stylist in stylists %}
+    <li>
+      <a href="{% url 'stylist_detail' stylist.id %}">{{ stylist.user.get_full_name }}</a>
+    </li>
+  {% endfor %}
+</ul>

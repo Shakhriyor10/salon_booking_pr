@@ -1,0 +1,980 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% load form_tags %}
+
+{% block content %}
+<style>
+  :root {
+    --salon-card-radius: 1.25rem;
+    --salon-card-shadow: 0 18px 40px rgba(72, 107, 113, 0.18);
+    --salon-card-shadow-hover: 0 24px 55px rgba(72, 107, 113, 0.26);
+    --salon-accent: #486b71;
+    --salon-accent-soft: rgba(72, 107, 113, 0.08);
+    --promo-shadow: 0 20px 40px rgba(72, 107, 113, 0.18);
+  }
+
+  .salon-grid {
+    --bs-gutter-y: 1.0rem;
+    --bs-gutter-x: 1.0rem;
+  }
+
+  .salon-card {
+    border-radius: var(--salon-card-radius);
+    overflow: hidden;
+    border: none;
+    box-shadow: var(--salon-card-shadow);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    background: linear-gradient(180deg, #ffffff 0%, #f6fbfc 100%);
+  }
+
+  .salon-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--salon-card-shadow-hover);
+  }
+
+  .salon-card__image-wrapper {
+    position: relative;
+    aspect-ratio: 16 / 11;
+    background: linear-gradient(135deg, rgba(72, 107, 113, 0.08) 0%, rgba(72, 107, 113, 0.35) 100%);
+  }
+
+  .salon-card__image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .salon-card__badge {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--salon-accent);
+    border-radius: 999px;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(72, 107, 113, 0.18);
+  }
+
+  .salon-card__body {
+    padding: 1.75rem 1.75rem 1.9rem;
+  }
+
+
+.salon-card__favorite {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 25px rgba(72, 107, 113, 0.18);
+  transition: transform 0.25s ease, background 0.25s ease;
+  z-index: 5;
+}
+
+.salon-card__favorite:hover {
+  transform: scale(1.08);
+}
+
+.salon-card__favorite i {
+  font-size: 1.25rem;
+  color: #8a999c;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.salon-card__favorite.active {
+  background: var(--salon-accent-soft);
+}
+
+.salon-card__favorite.active i {
+  color: #e63946;
+  transform: scale(1.15);
+}
+
+  .salon-card__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #233133;
+    margin-bottom: 0.6rem;
+  }
+
+  .salon-card__rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(72, 107, 113, 0.08);
+    color: #1c2a2c;
+    font-weight: 600;
+    margin-bottom: 1.1rem;
+  }
+
+  .salon-card__rating .bi {
+    font-size: 1rem;
+  }
+
+  .salon-card__location {
+    color: #5d6d70;
+    font-size: 0.95rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .salon-card__distance {
+    color: #8a999c;
+    font-size: 0.85rem;
+    margin-left: 0.35rem;
+  }
+
+  .salon-card__button {
+    background: var(--salon-accent);
+    color: #fff;
+    font-weight: 600;
+    border-radius: 0.9rem;
+    padding: 0.65rem 1.3rem;
+    border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .salon-card__button:hover,
+  .salon-card__button:focus {
+    background: #3b585d;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(72, 107, 113, 0.25);
+  }
+
+  @media (max-width: 575.98px) {
+    .salon-card__body {
+      padding: 1.5rem 1.4rem 1.75rem;
+    }
+
+    .salon-card__title {
+      font-size: 1.05rem;
+    }
+  }
+@media (max-width: 576px) {
+  .salon-card__badge {
+    bottom: 0.6rem;
+    left: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.03em;
+  }
+}
+
+  .promo-banner {
+    --promo-accent: #486b71;
+    --promo-accent-strong: #2a3f44;
+    --promo-accent-soft: rgba(72, 107, 113, 0.14);
+    --promo-image: url("{% static 'img/default_salon.jpg' %}");
+    border-radius: 24px;
+    padding: 1.75rem 1.9rem;
+    box-shadow: 0 25px 55px rgba(14, 38, 46, 0.2);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(72, 107, 113, 0.14);
+    min-height: 260px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(245, 250, 252, 0.92));
+    isolation: isolate;
+  }
+
+  .promo-banner::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background: var(--promo-image) center/cover no-repeat;
+    filter: blur(38px) saturate(1.15);
+    opacity: 0.55;
+    transform: scale(1.05);
+    z-index: 0;
+  }
+
+  .promo-banner::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.55;
+    background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.75), transparent 42%),
+                radial-gradient(circle at 15% 75%, rgba(72, 107, 113, 0.22), transparent 50%);
+    z-index: 0;
+  }
+
+  .promo-banner .promo-ambient-dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .promo-banner .promo-ambient-dots span {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0));
+    filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.08));
+    opacity: 0.8;
+  }
+
+  .promo-banner .promo-ambient-dots span:nth-child(1) { top: 10%; left: 8%; }
+  .promo-banner .promo-ambient-dots span:nth-child(2) { top: 65%; left: 18%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(72, 107, 113, 0.22), rgba(72, 107, 113, 0)); }
+  .promo-banner .promo-ambient-dots span:nth-child(3) { top: 20%; right: 10%; width: 90px; height: 90px; background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0)); }
+
+  .promo-banner.promo-theme-1 {
+    --promo-accent: #7a6cf1;
+    --promo-accent-strong: #4c43c9;
+    --promo-accent-soft: rgba(122, 108, 241, 0.14);
+    background: linear-gradient(135deg, rgba(238, 246, 255, 0.9) 0%, rgba(247, 240, 255, 0.92) 60%, rgba(255, 238, 246, 0.95) 100%);
+  }
+
+  .promo-banner.promo-theme-2 {
+    --promo-accent: #44b48c;
+    --promo-accent-strong: #2c8b69;
+    --promo-accent-soft: rgba(68, 180, 140, 0.16);
+    background: linear-gradient(135deg, rgba(233, 251, 243, 0.92) 0%, rgba(241, 247, 255, 0.92) 60%, rgba(255, 243, 233, 0.94) 100%);
+  }
+
+  .promo-banner.promo-theme-3 {
+    --promo-accent: #f27fb0;
+    --promo-accent-strong: #d25d92;
+    --promo-accent-soft: rgba(242, 127, 176, 0.16);
+    background: linear-gradient(135deg, rgba(240, 244, 255, 0.92) 0%, rgba(254, 243, 255, 0.92) 60%, rgba(233, 251, 255, 0.94) 100%);
+  }
+
+  .promo-banner.promo-theme-4 {
+    --promo-accent: #ff9f68;
+    --promo-accent-strong: #e57736;
+    --promo-accent-soft: rgba(255, 159, 104, 0.16);
+    background: linear-gradient(135deg, rgba(255, 242, 242, 0.92) 0%, rgba(238, 247, 255, 0.92) 60%, rgba(241, 255, 248, 0.94) 100%);
+  }
+
+  .promo-content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1.2fr 0.9fr;
+    gap: 1.25rem;
+    align-items: stretch;
+    height: 100%;
+  }
+
+  .promo-text h2 {
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+    color: #0f1c1f;
+  }
+
+  .promo-text p {
+    margin-bottom: 0.75rem;
+    color: #304345;
+  }
+
+  .promo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    color: #0f1c1f;
+    box-shadow: 0 10px 20px rgba(14, 38, 46, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .promo-tone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    background: var(--promo-accent-soft);
+    color: #0f1c1f;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(14, 38, 46, 0.12);
+  }
+
+  .promo-tone .tone-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--promo-accent);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.4);
+  }
+
+.promo-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 1rem;
+}
+
+  .promo-price strong {
+    font-size: 1.6rem;
+    color: #0f1c1f;
+  }
+
+  .promo-price del {
+    color: #576b71;
+    font-weight: 600;
+  }
+
+  .promo-discount {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #c1121f;
+    font-weight: 700;
+    background: rgba(193, 18, 31, 0.12);
+    padding: 0.45rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .promo-highlights {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.4rem;
+    margin: 0.75rem 0 0.4rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .promo-highlights li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.65rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.85);
+    color: #0f1c1f;
+    box-shadow: 0 12px 24px rgba(14, 38, 46, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  .promo-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--promo-accent-strong);
+    color: #fff;
+    padding: 0.65rem 1.1rem;
+    border-radius: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 14px 30px rgba(14, 38, 46, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .promo-cta:hover {
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 22px 38px rgba(14, 38, 46, 0.28);
+    background: var(--promo-accent);
+  }
+
+.promo-image {
+  position: relative;
+  background: rgba(255, 255, 255, 0.42);
+  border-radius: 18px;
+  overflow: hidden;
+  min-height: 220px;
+  height: 100%;
+  max-height: 100%;
+  box-shadow: 0 12px 28px rgba(14, 38, 46, 0.16);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.promo-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  border-radius: inherit;
+}
+
+.promo-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.45rem 0.8rem;
+  border-radius: 12px;
+  background: var(--promo-accent-strong);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 14px 24px rgba(14, 38, 46, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.promo-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f1c1f;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(14, 38, 46, 0.12);
+}
+
+.promo-carousel .carousel-indicators [data-bs-target] {
+  background-color: #0f1c1f;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  opacity: 0.3;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.promo-carousel .carousel-indicators .active {
+  opacity: 0.9;
+  background-color: #0f1c1f;
+}
+
+.promo-carousel {
+  --promo-banner-height: clamp(280px, 42vw, 360px);
+}
+
+.promo-carousel .carousel-item {
+  min-height: var(--promo-banner-height);
+}
+
+.promo-carousel .carousel-item .promo-banner {
+  height: var(--promo-banner-height);
+}
+
+@media (max-width: 992px) {
+  .promo-content {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+.promo-content--reversed .promo-text {
+  order: 2;
+}
+
+.promo-content--reversed .promo-image {
+  order: 1;
+}
+</style>
+<!--<form method="get" class="row gy-2 gx-3 align-items-center mb-4">-->
+<!--  &lt;!&ndash; Тип салона &ndash;&gt;-->
+<!--<div class="col-sm-4 col-md-3">-->
+<!--  <select name="type" class="form-select">-->
+<!--    <option value="">Тип салона</option>-->
+<!--    <option value="male" {% if selected_type == 'male' %}selected{% endif %}>Мужской</option>-->
+<!--    <option value="female" {% if selected_type == 'female' %}selected{% endif %}>Женский</option>-->
+<!--    <option value="both" {% if selected_type == 'both' %}selected{% endif %}>Обе</option>-->
+<!--  </select>-->
+<!--</div>-->
+
+<!--  &lt;!&ndash; Рейтинг &ndash;&gt;-->
+<!--  <div class="col-sm-4 col-md-3">-->
+<!--    <select name="rating" class="form-select">-->
+<!--      <option value="">Рейтинг</option>-->
+<!--      <option value="4" {% if selected_rating == '4' %}selected{% endif %}>4+</option>-->
+<!--      <option value="3.5" {% if selected_rating == '3.5' %}selected{% endif %}>3.5+</option>-->
+<!--      <option value="3" {% if selected_rating == '3' %}selected{% endif %}>3+</option>-->
+<!--    </select>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Поиск услуги &ndash;&gt;-->
+<!--  <div class="col-sm-8 col-md-4 position-relative">-->
+<!--    <input type="text" id="serviceSearch" name="service" class="form-control" placeholder="Поиск услуги..." autocomplete="off">-->
+<!--    <ul id="suggestions" class="list-group position-absolute w-100 mt-1 shadow-sm" style="z-index: 1000;"></ul>-->
+<!--  </div>-->
+
+<!--  &lt;!&ndash; Кнопка поиска &ndash;&gt;-->
+<!--  <div class="col-sm-4 col-md-2">-->
+<!--    <button class="btn btn-primary w-100" type="submit">Поиск</button>-->
+<!--  </div>-->
+<!--</form>-->
+
+<h3 class="text-center fw-semibold mt-4 mb-3">Поиск и фильтр</h3>
+<form id="filterForm" method="get" class="mb-4">
+  <div class="container-fluid">
+    <div class="row gx-3 gy-2 align-items-center">
+
+      <!-- Фильтр: Тип салона -->
+      <div class="col-12 col-md-2">
+          <select name="type" class="form-select">
+  <option value="">Тип</option>
+  <option value="male" {% if selected_type == "male" %}selected{% endif %}>Мужской</option>
+  <option value="female" {% if selected_type == "female" %}selected{% endif %}>Женский</option>
+  <option value="both" {% if selected_type == "both" %}selected{% endif %}>Оба</option>
+</select>
+      </div>
+
+      <!-- Фильтр: Рейтинг -->
+      <div class="col-12 col-md-2">
+        <select name="rating" class="form-select">
+          <option value="">Рейтинг</option>
+          {% for i in "54321" %}
+            <option value="{{ i }}" {% if i == selected_rating %}selected{% endif %}>от {{ i }}★</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Поиск -->
+      <div class="col-12 col-md-6 position-relative">
+        <input
+          type="text"
+          id="searchInput"
+          name="search_value"
+          placeholder="Поиск по салону или услуге"
+          autocomplete="off"
+          value="{{ selected_service }}"
+          class="form-control"
+        >
+        <input type="hidden" name="search_type" id="searchTypeInput" value="{{ request.GET.search_type }}">
+
+        <ul
+          id="suggestions"
+          class="list-group position-absolute w-100"
+          style="top: 100%; left: 0; z-index: 1050; max-height: 200px; overflow-y: auto; display: none;"
+        ></ul>
+      </div>
+
+      <!-- Кнопка -->
+      <div class="col-12 col-md-2 d-grid">
+        <button type="submit" class="btn" style="background-color: #486b71; color: #fff;">Найти</button>
+      </div>
+
+    </div>
+  </div>
+</form>
+
+{% if promoted_products %}
+<!--<section class="container my-4 promo-carousel">-->
+<!--  <div-->
+<!--    id="promoCarousel"-->
+<!--    class="carousel slide"-->
+<!--    data-bs-ride="carousel"-->
+<!--    data-bs-touch="true"-->
+<!--    data-bs-keyboard="true"-->
+<!--  >-->
+<!--    {% if promoted_products|length > 1 %}-->
+<!--      <div class="carousel-indicators">-->
+<!--        {% for product in promoted_products %}-->
+<!--          <button type="button" data-bs-target="#promoCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} {% if forloop.first %}aria-current="true"{% endif %} aria-label="Товар {{ forloop.counter }}"></button>-->
+<!--        {% endfor %}-->
+<!--      </div>-->
+<!--    {% endif %}-->
+<!--    <div class="carousel-inner">-->
+<!--      {% for product in promoted_products %}-->
+<!--        <div class="carousel-item {% if forloop.first %}active{% endif %}">-->
+<!--          {% with promo_image=product.photo.url|default:'' %}-->
+<!--          <div class="promo-banner {% cycle 'promo-theme-1' 'promo-theme-2' 'promo-theme-3' 'promo-theme-4' %}" style="&#45;&#45;promo-image: url('{% if promo_image %}{{ promo_image }}{% else %}{% static 'img/default_salon.jpg' %}{% endif %}');">-->
+<!--            <div class="promo-ambient-dots" aria-hidden="true">-->
+<!--              <span></span>-->
+<!--              <span></span>-->
+<!--              <span></span>-->
+<!--            </div>-->
+<!--            <div class="promo-content {% if forloop.counter0|divisibleby:2 %}promo-content&#45;&#45;reversed{% endif %}">-->
+<!--              <div class="promo-text">-->
+<!--                <div class="d-flex gap-2 flex-wrap mb-2">-->
+<!--&lt;!&ndash;                  <span class="promo-chip"><i class="bi bi-stars"></i> Выбор администрации</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                  {% if product.category %}&ndash;&gt;-->
+<!--&lt;!&ndash;                    <span class="promo-chip"><i class="bi bi-tag"></i> {{ product.category.name }}</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                  {% endif %}&ndash;&gt;-->
+<!--                </div>-->
+<!--&lt;!&ndash;                <div class="promo-tone mb-3">&ndash;&gt;-->
+<!--&lt;!&ndash;                  <span class="tone-dot"></span>&ndash;&gt;-->
+<!--&lt;!&ndash;                  <span>Фон подобран под обложку товара</span>&ndash;&gt;-->
+<!--&lt;!&ndash;                </div>&ndash;&gt;-->
+<!--                <h2>{{ product.name }}</h2>-->
+<!--                <p class="mb-2">Товар из салона <strong>{{ product.salon.name }}</strong>. Заберите свою выгоду, пока действует акция.</p>-->
+<!--                <div class="promo-price">-->
+<!--                  <strong>{{ product.get_final_price }} сум</strong>-->
+<!--                  {% if product.get_display_old_price %}-->
+<!--                    <del>{{ product.get_display_old_price }} сум</del>-->
+<!--                  {% endif %}-->
+<!--                  {% if product.discount_percent %}-->
+<!--                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> -{{ product.discount_percent }}%</span>-->
+<!--                  {% elif product.get_display_old_price %}-->
+<!--                    <span class="promo-discount"><i class="bi bi-lightning-charge-fill"></i> Спецпредложение</span>-->
+<!--                  {% endif %}-->
+<!--                </div>-->
+<!--                <div class="d-flex gap-2 flex-wrap align-items-center">-->
+<!--                  <a href="{% url 'salon_detail' product.salon.pk product.salon.slug %}" class="promo-cta">-->
+<!--                    В салон-->
+<!--                    <i class="bi bi-arrow-right-short fs-4 mb-0"></i>-->
+<!--                  </a>-->
+<!--                  <span class="promo-meta"><i class="bi bi-box-seam"></i> В наличии: {{ product.quantity }}</span>-->
+<!--                </div>-->
+<!--              </div>-->
+<!--              <div class="promo-image">-->
+<!--                {% if product.photo %}-->
+<!--                  <img src="{{ product.photo.url }}" alt="{{ product.name }}">-->
+<!--                {% else %}-->
+<!--                  <img src="{% static 'img/default_salon.jpg' %}" alt="{{ product.name }}">-->
+<!--                {% endif %}-->
+<!--                {% if product.discount_percent %}-->
+<!--                  <span class="promo-badge">-{{ product.discount_percent }}%</span>-->
+<!--                {% elif product.get_display_old_price %}-->
+<!--                  <span class="promo-badge">SALE</span>-->
+<!--                {% endif %}-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+<!--          {% endwith %}-->
+<!--        </div>-->
+<!--      {% endfor %}-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</section>-->
+{% endif %}
+<h3 class="text-center fw-semibold mt-4 mb-3">Салоны</h3>
+<div class="row row-cols-2 row-cols-md-2 row-cols-xl-3 salon-grid">
+    {% for salon in salons %}
+        <div
+          class="col"
+          data-lat="{{ salon.latitude|default_if_none:'' }}"
+          data-lng="{{ salon.longitude|default_if_none:'' }}"
+        >
+            <div class="salon-card h-100">
+                <div class="salon-card__image-wrapper">
+                    {% with photos=salon.get_photos %}
+                        {% if photos %}
+                            <img src="{{ photos.0.url }}" alt="{{ salon.name }}">
+                        {% else %}
+                            <img src="{% static 'img/default_salon.jpg' %}" alt="{{ salon.name }}">
+                        {% endif %}
+                    {% endwith %}
+                    {% with salon.get_type_display as type_display %}
+                      {% if type_display and type_display != 'Не указано' %}
+                        <span class="salon-card__badge">{{ type_display }}</span>
+                      {% endif %}
+                    {% endwith %}
+                    <div class="salon-card__favorite {% if salon.is_favorite %}active{% endif %}"
+                         data-salon-id="{{ salon.id }}"
+                         onclick="toggleFavorite(this)">
+                        <i class="bi {% if salon.is_favorite %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    </div>
+                </div>
+                <div class="salon-card__body text-center d-flex flex-column align-items-center">
+                    <h5 class="salon-card__title">{{ salon.name }}</h5>
+                    <div class="salon-card__rating">
+                        {% for _ in salon.stars.full %}
+                            <i class="text-warning bi bi-star-fill"></i>
+                        {% endfor %}
+                        {% if salon.stars.half %}
+                            <i class="text-warning bi bi-star-half"></i>
+                        {% endif %}
+                        {% for _ in salon.stars.empty %}
+                            <i class="text-warning opacity-25 bi bi-star"></i>
+                        {% endfor %}
+                        <span>{{ salon.rating_value }}/5</span>
+                    </div>
+                    <p class="salon-card__location" data-location-name="{{ salon.city.name }}">
+                        <i class="bi bi-geo-alt-fill me-1 text-warning"></i>
+                        <span class="salon-card__location-text">{{ salon.city.name }}</span>
+                        <span class="salon-card__distance"></span>
+                    </p>
+                    <a href="{% url 'salon_detail' salon.pk salon.slug %}" class="btn salon-card__button mt-auto">Посмотреть</a>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <p>Салоны не найдены.</p>
+    {% endfor %}
+</div>
+<div class="modal fade" id="favoriteAuthModal" tabindex="-1" aria-labelledby="favoriteAuthModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="favoriteAuthModalLabel">Войдите, чтобы добавить в избранное</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Чтобы салон появился в избранных, войдите в систему или зарегистрируйтесь.</p>
+      </div>
+      <div class="modal-footer d-flex gap-2 justify-content-between flex-wrap">
+        <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100 w-md-auto">Войти</a>
+        <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-dark w-100 w-md-auto">Зарегистрироваться</a>
+      </div>
+    </div>
+  </div>
+</div>
+<!--<script>-->
+<!--document.getElementById('serviceSearch').addEventListener('input', function () {-->
+<!--    let query = this.value;-->
+<!--    if (query.length < 2) return;-->
+
+<!--    fetch(`/services/search/?q=${query}`)-->
+<!--        .then(response => response.json())-->
+<!--        .then(data => {-->
+<!--            let suggestions = document.getElementById('suggestions');-->
+<!--            suggestions.innerHTML = '';-->
+<!--            data.forEach(item => {-->
+<!--                let li = document.createElement('li');-->
+<!--                li.className = 'list-group-item';-->
+<!--                li.textContent = item;-->
+<!--                li.onclick = function () {-->
+<!--                    document.getElementById('serviceSearch').value = this.textContent;-->
+<!--                    suggestions.innerHTML = '';-->
+<!--                };-->
+<!--                suggestions.appendChild(li);-->
+<!--            });-->
+<!--        });-->
+<!--});-->
+<!--</script>-->
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const input = document.getElementById("searchInput");
+  const suggestionsBox = document.getElementById("suggestions");
+  const searchTypeInput = document.getElementById("searchTypeInput");
+  const salonGrid = document.querySelector(".salon-grid");
+  const salonColumns = salonGrid ? Array.from(salonGrid.querySelectorAll(".col[data-lat][data-lng]")) : [];
+  let suggestions = [];
+  const favoriteModalElement = document.getElementById("favoriteAuthModal");
+  const favoriteAuthModal = favoriteModalElement && typeof bootstrap !== "undefined"
+    ? new bootstrap.Modal(favoriteModalElement)
+    : null;
+  const isAuthenticated = {{ request.user.is_authenticated|yesno:'true,false' }};
+  const favoriteToggleUrl = "{% url 'toggle_favorite' %}";
+
+  function getCsrfToken(name = "csrftoken") {
+    const cookies = document.cookie ? document.cookie.split("; ") : [];
+    for (const cookie of cookies) {
+      const [key, ...rest] = cookie.split("=");
+      if (key === name) {
+        return decodeURIComponent(rest.join("="));
+      }
+    }
+    return "";
+  }
+
+  function setFavoriteState(button, isFavorite) {
+    if (!button) {
+      return;
+    }
+    const icon = button.querySelector("i");
+    button.classList.toggle("active", isFavorite);
+    if (icon) {
+      icon.classList.toggle("bi-heart-fill", isFavorite);
+      icon.classList.toggle("bi-heart", !isFavorite);
+    }
+  }
+
+  window.toggleFavorite = function (button) {
+    if (!button) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      if (favoriteAuthModal) {
+        favoriteAuthModal.show();
+      }
+      return;
+    }
+
+    const salonId = button.dataset.salonId;
+    if (!salonId) {
+      return;
+    }
+
+    button.classList.add("pe-none", "opacity-75");
+
+    fetch(favoriteToggleUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCsrfToken(),
+      },
+      body: JSON.stringify({ salon_id: salonId }),
+    })
+      .then(response => {
+        if (response.status === 403) {
+          if (favoriteAuthModal) {
+            favoriteAuthModal.show();
+          }
+          return null;
+        }
+        if (!response.ok) {
+          throw new Error("Ошибка при обновлении избранного");
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (!data) {
+          return;
+        }
+        setFavoriteState(button, Boolean(data.is_favorite));
+      })
+      .catch(error => {
+        console.error("Favorite toggle error:", error);
+      })
+      .finally(() => {
+        button.classList.remove("pe-none", "opacity-75");
+      });
+  };
+
+  if (input) {
+    input.addEventListener("input", function () {
+      const query = input.value.trim();
+      if (searchTypeInput) {
+        searchTypeInput.value = ""; // сбрасываем search_type, если пользователь вводит вручную
+      }
+
+      if (query.length < 2) {
+        if (suggestionsBox) {
+          suggestionsBox.style.display = "none";
+        }
+        return;
+      }
+
+      fetch(`/autocomplete/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+          suggestions = data;
+          if (!suggestionsBox) {
+            return;
+          }
+          suggestionsBox.innerHTML = "";
+          if (suggestions.length === 0) {
+            suggestionsBox.style.display = "none";
+            return;
+          }
+
+          suggestions.forEach(item => {
+            const li = document.createElement("li");
+            let label = item.label;
+            if (item.type === "service" && item.gender) {
+              label += ` (${item.gender})`;
+            }
+            li.textContent = label;
+            li.classList.add("list-group-item", "list-group-item-action");
+            li.addEventListener("click", () => {
+              input.value = item.label;
+              if (searchTypeInput) {
+                searchTypeInput.value = item.type;
+              }
+              suggestionsBox.style.display = "none";
+            });
+            suggestionsBox.appendChild(li);
+          });
+
+          suggestionsBox.style.display = "block";
+        });
+    });
+  }
+
+  if (suggestionsBox) {
+    // Скрыть подсказки при клике вне
+    document.addEventListener("click", function (e) {
+      if (!suggestionsBox.contains(e.target) && e.target !== input) {
+        suggestionsBox.style.display = "none";
+      }
+    });
+  }
+
+  function calculateDistance(lat1, lon1, lat2, lon2) {
+    const toRad = value => (value * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  }
+
+  function parseCoordinate(value) {
+    if (typeof value !== "string") {
+      return NaN;
+    }
+
+    const normalized = value.replace(/,/g, ".").replace(/[^0-9+\-\.]/g, "").trim();
+    if (normalized === "") {
+      return NaN;
+    }
+
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  function sortSalonsByDistance(userLat, userLng) {
+    if (!salonGrid) {
+      return;
+    }
+
+    const salonsWithCoords = [];
+    const salonsWithoutCoords = [];
+
+    salonColumns.forEach(column => {
+      const lat = parseCoordinate(column.dataset.lat);
+      const lng = parseCoordinate(column.dataset.lng);
+      const distanceElement = column.querySelector(".salon-card__distance");
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        if (distanceElement) {
+          distanceElement.textContent = "";
+        }
+        salonsWithoutCoords.push(column);
+        return;
+      }
+
+      const distance = calculateDistance(userLat, userLng, lat, lng);
+      column.dataset.distance = String(distance);
+
+      if (distanceElement) {
+        distanceElement.textContent = `· ${distance.toFixed(1)} км`;
+      }
+
+      salonsWithCoords.push({ column, distance });
+    });
+
+    salonsWithCoords.sort((a, b) => a.distance - b.distance);
+
+    const fragment = document.createDocumentFragment();
+    salonsWithCoords.forEach(item => fragment.appendChild(item.column));
+    salonsWithoutCoords.forEach(column => fragment.appendChild(column));
+    salonGrid.appendChild(fragment);
+  }
+
+  if (
+    "geolocation" in navigator &&
+    salonColumns.some(column => column.dataset.lat && column.dataset.lng)
+  ) {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        sortSalonsByDistance(latitude, longitude);
+      },
+      error => {
+        console.warn("Не удалось получить геолокацию пользователя:", error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 300000,
+        timeout: 15000,
+      }
+    );
+  }
+});
+</script>
+
+{% endblock %}

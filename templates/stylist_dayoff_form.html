@@ -1,0 +1,1590 @@
+{% extends 'base3.html' %}
+{% load humanize %}
+{% block content %}
+<style>
+    .modal-dialog-scrollable {
+        max-height: calc(100vh - 2rem);
+    }
+
+    .modal-dialog-scrollable .modal-content {
+        max-height: 100%;
+    }
+
+    .modal-dialog-scrollable .modal-body {
+        overflow-y: auto;
+        max-height: calc(100vh - 12rem);
+    }
+
+    @media (max-width: 576px) {
+        .modal-dialog-scrollable {
+            max-height: calc(100vh - 1rem);
+        }
+
+        .modal-dialog-scrollable .modal-body {
+            max-height: calc(100vh - 8rem);
+        }
+    }
+</style>
+<div class="container py-4">
+    <h2 class="mb-4 text-center">Настройка стилистов салона</h2>
+
+    {% if request.user.profile.is_salon_admin %}
+    <div class="alert {% if subscription_is_active %}alert-info{% else %}alert-warning{% endif %} mb-4">
+        {% if subscription_expires_at %}
+            {% if subscription_is_active %}
+                Ваша подписка активна до {{ subscription_expires_at|date:"d.m.Y" }}.
+            {% else %}
+                Срок действия подписки истек {{ subscription_expires_at|date:"d.m.Y" }}. Салон скрыт для клиентов до продления подписки.
+            {% endif %}
+        {% else %}
+            У вашего салона нет ограничения по дате подписки.
+        {% endif %}
+    </div>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Дизайн записей в дашборде</span>
+            <small class="text-muted">Применяется для панели салона</small>
+        </div>
+        <div class="card-body">
+            {% if salon_settings_form %}
+                <form method="post" class="row g-3 align-items-end">
+                    {% csrf_token %}
+                    <input type="hidden" name="form_type" value="salon_settings_update">
+                    <div class="col-12 col-lg-8">
+                        {% with field=salon_settings_form.appointment_view_style %}
+                            <label class="form-label" for="{{ field.id_for_label }}">Выберите вид записей по умолчанию</label>
+                            <div class="d-flex flex-column gap-2">
+                                {% for radio in field %}
+                                    <div class="form-check">
+                                        {{ radio.tag }}
+                                        <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                            {{ radio.choice_label }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        {% endwith %}
+                    </div>
+                    <div class="col-12 col-lg-4 text-lg-end">
+                        <button type="submit" class="btn btn-primary mt-2 w-100">Сохранить</button>
+                    </div>
+                </form>
+            {% else %}
+                <p class="mb-0 text-muted">Салон не найден. Привяжите салон к администратору, чтобы выбрать дизайн записей.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Стилисты салона</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addStylistModal">
+                Добавить стилиста
+            </button>
+        </div>
+        <div class="card-body">
+            {% if stylists %}
+                <ul class="list-group">
+                    {% for s in stylists %}
+                        <li class="list-group-item">
+                            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                <div>
+                                    <div class="fw-semibold">
+                                        {{ s.user.get_full_name|default:s.user.username }}
+                                        {% if s.level %}
+                                            <span class="text-muted">— {{ s.level.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if s.bio %}
+                                        <div class="text-muted small mt-1">{{ s.bio }}</div>
+                                        <div class="mt-2 small">
+                                <span class="me-3">
+                                    {% if s.show_client_phone %}
+                                        <span class="badge bg-success">Телефон виден</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Телефон скрыт</span>
+                                    {% endif %}
+                                </span>
+                                <span>
+                                    {% if s.allow_cancel_appointment %}
+                                        <span class="badge bg-success">Отмена разрешена</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Отмена запрещена</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center flex-wrap gap-2 justify-content-end">
+                                    {% if s.user.profile.phone %}
+                                        <span class="text-muted small me-2">{{ s.user.profile.phone }}</span>
+                                    {% endif %}
+                                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editStylistModal{{ s.id }}">
+                                        Изменить
+                                    </button>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="form_type" value="stylist_delete">
+                                        <input type="hidden" name="stylist_id" value="{{ s.id }}">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить стилиста? Это действие нельзя отменить.')">
+                                            Удалить
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="modal fade" id="editStylistModal{{ s.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <form method="post" enctype="multipart/form-data">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="stylist_update">
+                                            <input type="hidden" name="stylist_id" value="{{ s.id }}">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Изменить данные стилиста</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                {% if s.update_form.non_field_errors %}
+                                                    <div class="alert alert-danger">
+                                                        {% for error in s.update_form.non_field_errors %}
+                                                            <div>{{ error }}</div>
+                                                        {% endfor %}
+                                                    </div>
+                                                {% endif %}
+
+                                                <div class="row g-3">
+                                                    {% with field=s.update_form.username %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.phone %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.first_name %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.last_name %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.level %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.telegram_chat_id %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.photo %}
+                                                    <div class="col-md-6">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% if field.help_text %}
+                                                                <div class="form-text">{{ field.help_text }}</div>
+                                                            {% endif %}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    {% endwith %}
+                                                    {% with field=s.update_form.bio %}
+                                                    <div class="col-12">
+                                                        <div class="mb-3">
+                                                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                            {{ field }}
+                                                            {% for error in field.errors %}
+                                                                <div class="invalid-feedback d-block">{{ error }}</div>
+                                                            {% endfor %}
+                                                        </div>
+                                                        {% with field=s.update_form.show_client_phone %}
+                                            <div class="col-md-6">
+                                                <div class="form-check mt-3">
+                                                    {{ field }}
+                                                    <label class="form-check-label" for="{{ field.id_for_label }}">
+                                                        {{ field.label }}
+                                                    </label>
+                                                </div>
+                                                {% for error in field.errors %}
+                                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endwith %}
+
+                                            {% with field=s.update_form.allow_cancel_appointment %}
+                                            <div class="col-md-6">
+                                                <div class="form-check mt-3">
+                                                    {{ field }}
+                                                    <label class="form-check-label" for="{{ field.id_for_label }}">
+                                                        {{ field.label }}
+                                                    </label>
+                                                </div>
+                                                {% for error in field.errors %}
+                                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                            {% endwith %}
+                                                    </div>
+                                                    {% endwith %}
+                                                </div>
+
+                                                {% if s.avatar %}
+                                                    <div class="mb-3">
+                                                        <label class="form-label d-block">Текущее фото</label>
+                                                        <img src="{{ s.avatar.url }}" alt="{{ s.user.get_full_name|default:s.user.username }}" class="img-thumbnail" style="max-width: 160px;">
+                                                    </div>
+                                                {% endif %}
+                                                <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-end mb-5">
+                                                    <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">Отмена
+                                                    </button>
+                                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                                </div>
+                                            </div>
+<!--                                            <div class="modal-footer">-->
+<!--                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>-->
+<!--                                                <button type="submit" class="btn btn-primary">Сохранить</button>-->
+<!--                                            </div>-->
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">Стилистов пока нет.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <span>Карты для приёма платежей</span>
+        </div>
+        <div class="card-body">
+            <h5 class="fw-semibold mb-3">Добавить карту</h5>
+            <form method="post" class="row g-3 align-items-end">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="payment_card_add">
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ payment_card_form.card_type.id_for_label }}">{{ payment_card_form.card_type.label }}</label>
+                    {{ payment_card_form.card_type }}
+                    {% for error in payment_card_form.card_type.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ payment_card_form.cardholder_name.id_for_label }}">{{ payment_card_form.cardholder_name.label }}</label>
+                    {{ payment_card_form.cardholder_name }}
+                    {% for error in payment_card_form.cardholder_name.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label" for="{{ payment_card_form.card_number.id_for_label }}">{{ payment_card_form.card_number.label }}</label>
+                    {{ payment_card_form.card_number }}
+                    {% for error in payment_card_form.card_number.errors %}
+                        <div class="invalid-feedback d-block">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check mt-4">
+                        {{ payment_card_form.is_active }}
+                        <label class="form-check-label" for="{{ payment_card_form.is_active.id_for_label }}">Сделать активной</label>
+                    </div>
+                </div>
+                <div class="col-12 col-md-auto d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Сохранить</button>
+                </div>
+                {% if payment_card_form.non_field_errors %}
+                    <div class="col-12">
+                        <div class="alert alert-danger mb-0">
+                            {% for error in payment_card_form.non_field_errors %}
+                                <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+
+            <hr class="my-4">
+
+            {% if payment_cards %}
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Тип</th>
+                                <th>Владелец</th>
+                                <th>Номер</th>
+                                <th>Статус</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for card in payment_cards %}
+                            <tr>
+                                <td>{{ card.get_card_type_display }}</td>
+                                <td>{{ card.cardholder_name }}</td>
+                                <td><code>{{ card.card_number }}</code></td>
+                                <td>
+                                    {% if card.is_active %}
+                                        <span class="badge bg-success">Активна</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Не активна</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                        <form method="post">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="payment_card_toggle">
+                                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                                            <input type="hidden" name="target_state" value="{% if card.is_active %}0{% else %}1{% endif %}">
+                                            <button type="submit" class="btn btn-sm {% if card.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                                                {% if card.is_active %}Сделать неактивной{% else %}Сделать активной{% endif %}
+                                            </button>
+                                        </form>
+                                        <form method="post" onsubmit="return confirm('Удалить карту?');">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="payment_card_delete">
+                                            <input type="hidden" name="card_id" value="{{ card.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Карты пока не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4" id="salonProductsCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Товары салона</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                Добавить товар
+            </button>
+        </div>
+        <div class="card-body">
+            {% if salon_products %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Фото</th>
+                                <th>Название</th>
+                                <th>Цена</th>
+                                <th>Количество</th>
+                                <th>Статус</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in salon_products %}
+                                <tr>
+                                    <td>
+                                        {% if product.photo %}
+                                            <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-width: 110px;">
+                                        {% else %}
+                                            <div class="text-muted small">Нет фото</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ product.name }}</div>
+                                        {% if product.description %}
+                                            <div class="text-muted small mt-1">{{ product.description }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ product.get_final_price|intcomma }} сум</div>
+                                        {% if product.get_display_old_price %}
+                                            <div class="text-muted text-decoration-line-through small">{{ product.get_display_old_price|intcomma }} сум</div>
+                                        {% endif %}
+                                        {% if product.discount_percent %}
+                                            <span class="badge bg-success-subtle text-success border mt-1">-{{ product.discount_percent }}%</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ product.quantity }}</td>
+                                    <td>
+                                        {% if product.is_active %}
+                                            <span class="badge bg-success">Активен</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Выключен</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                                            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editProductModal{{ product.id }}">
+                                                Изменить
+                                            </button>
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="product_toggle">
+                                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                <button type="submit" class="btn btn-sm {% if product.is_active %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                                                    {% if product.is_active %}Выключить{% else %}Включить{% endif %}
+                                                </button>
+                                            </form>
+                                            <form method="post" onsubmit="return confirm('Удалить товар?');">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="form_type" value="product_delete">
+                                                <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Удалить</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% for product in salon_products %}
+                    <div class="modal fade" id="editProductModal{{ product.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <form method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="product_update">
+                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Изменить товар «{{ product.name }}»</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% for field in product.update_form %}
+                                            <div class="mb-3">
+                                                {% if field.field.widget.input_type == 'checkbox' %}
+                                                    <div class="form-check">
+                                                        {{ field }}
+                                                        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    </div>
+                                                {% else %}
+                                                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    {{ field }}
+                                                {% endif %}
+                                                {% if field.help_text %}
+                                                    <div class="form-text">{{ field.help_text }}</div>
+                                                {% endif %}
+                                                {% for error in field.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                        {% if product.photo %}
+                                            <div class="alert alert-light border small">
+                                                <div class="fw-semibold mb-1">Текущее фото</div>
+                                                <img src="{{ product.photo.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-width: 160px;">
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">Товары ещё не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4" id="salonServicesCard">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Услуги салона</span>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalonServiceModal">
+                Добавить услугу
+            </button>
+        </div>
+        <div class="card-body">
+            {% if salon_services %}
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Услуга</th>
+                                <th>Категория</th>
+                                <th>Длительность</th>
+                                <th>Позиция</th>
+                                <th>Активна</th>
+                                <th class="text-end">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salonServicesTableBody">
+                            {% for ss in salon_services %}
+                                <tr>
+                                    <td>{{ ss.service.name }}</td>
+                                    <td>{% if ss.category %}{{ ss.category.name }}{% else %}—{% endif %}</td>
+                                    <td>{{ ss.duration_minutes }} мин</td>
+                                    <td>{{ ss.position }}</td>
+                                    <td>
+                                        {% if ss.is_active %}
+                                            <span class="badge bg-success">Да</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Нет</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-outline-secondary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editSalonServiceModal{{ ss.id }}">
+                                            Изменить
+                                        </button>
+                                        <form method="post" class="d-inline">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="salon_service_delete">
+                                            <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить услугу из салона?')">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% for ss in salon_services %}
+                    <div class="modal fade" id="editSalonServiceModal{{ ss.id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="form_type" value="salon_service_update">
+                                    <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Изменить услугу «{{ ss.service.name }}»</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if ss.update_form.non_field_errors %}
+                                            <div class="alert alert-danger">
+                                                {% for error in ss.update_form.non_field_errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        {% for field in ss.update_form %}
+                                            <div class="mb-3">
+                                                {% if field.field.widget.input_type == 'checkbox' %}
+                                                    <div class="form-check">
+                                                        {{ field }}
+                                                        <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    </div>
+                                                {% else %}
+                                                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                                    {{ field }}
+                                                {% endif %}
+                                                {% if field.help_text %}
+                                                    <div class="form-text">{{ field.help_text }}</div>
+                                                {% endif %}
+                                                {% for error in field.errors %}
+                                                    <div class="text-danger small">{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                        <button type="submit" class="btn btn-primary">Сохранить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted mb-0">Услуги ещё не добавлены.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if stylists %}
+    <form method="get" class="mb-4">
+        <label class="form-label">Выберите мастера для управления расписанием и ценами</label>
+<select id="stylistSelect" class="form-select">
+    <option value="">-- Выберите стилиста --</option>
+    {% for s in stylists %}
+        <option value="{{ s.id }}">
+            {{ s.user.get_full_name|default:s.user.username }}
+        </option>
+    {% endfor %}
+</select>
+    </form>
+    <div id="stylistPrices"></div>
+    {% endif %}
+
+    {% if request.user.profile.is_salon_admin and selected_stylist %}
+    <div class="card mb-4" id="stylistPricesCard">
+        <div class="card-header">
+            Цены для {{ selected_stylist.user.get_full_name|default:selected_stylist.user.username }}
+        </div>
+        <div class="card-body">
+            {% if salon_services %}
+                <p class="text-muted">Измените цену и нажмите «Сохранить». Чтобы удалить цену, используйте кнопку «Очистить».</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Услуга</th>
+                                <th>Длительность</th>
+                                <th style="width: 320px;">Цена</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ss in salon_services %}
+                                <tr>
+                                    <td>{{ ss.service.name }}</td>
+                                    <td>{{ ss.duration_minutes }} мин</td>
+                                    <td>
+                                        <form method="post" class="d-flex flex-wrap gap-2 align-items-center stylist-price-form">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="form_type" value="stylist_price_update">
+                                            <input type="hidden" name="salon_service_id" value="{{ ss.id }}">
+                                            <input type="hidden" name="stylist_id" value="{{ selected_stylist.id }}">
+                                            <div class="flex-grow-1">
+                                                <input type="number" step="0.01" min="0" name="price" value="{{ ss.current_price|default_if_none:'' }}" class="form-control" placeholder="Не задана">
+                                                {% if ss.current_price is not None %}
+                                                    <div class="form-text">Текущая цена: {{ ss.current_price|intcomma }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+                                            {% if ss.current_price %}
+                                                <button type="submit" name="price" value="" class="btn btn-outline-danger btn-sm">Очистить</button>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">Сначала добавьте услуги салона, чтобы назначить цены.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <h4>Блокировки</h4>
+    {% include 'partials/_dayoff_table.html' with blocks=blocks selected_stylist_id=selected_stylist_id %}
+
+    <button class="btn btn-primary mb-4" id="openAddDayOffModal" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
+        Добавить блокировку
+    </button>
+
+<h4>Рабочие интервалы</h4>
+
+<div id="stylistWorkingHoursContainer">
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>День</th>
+          <th>С</th>
+          <th>До</th>
+          <th>Перерывы</th>
+          <th class="text-end">Действия</th>
+        </tr>
+      </thead>
+
+      <!-- ✅ ВАЖНО: tbody ВНУТРИ table -->
+      <tbody id="stylistWorkingHours">
+        <tr>
+          <td colspan="5" class="text-muted text-center">
+            Выберите стилиста
+          </td>
+        </tr>
+      </tbody>
+
+    </table>
+  </div>
+</div>
+
+<!-- Кнопка добавления рабочего интервала -->
+<button id="addWorkingHourBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWorkingHourModal">
+    Добавить интервал
+</button>
+</div>
+
+<div class="modal fade" id="addDayOffModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="addDayOffForm">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="dayoff_add">
+        <input type="hidden" name="stylist_id" id="addDayOffStylistId" value="{{ selected_stylist_id }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить блокировку</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+              <label class="form-label">Дата</label>
+              <input type="date" name="date" class="form-control" required>
+          </div>
+          <div class="mb-3">
+              <label class="form-label">С</label>
+              <input type="time" name="from_time" class="form-control">
+          </div>
+          <div class="mb-3">
+              <label class="form-label">До</label>
+              <input type="time" name="to_time" class="form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addWorkingHourModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="addWorkingHourForm">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="workinghour_add">
+        <input type="hidden" id="modalStylistId" name="stylist_id" value="{{ selected_stylist_id }}">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить рабочий интервал</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+              <label class="form-label">День недели</label>
+              <select name="weekday" class="form-select">
+                {% for num, name in WEEKDAYS %}
+                    <option value="{{ num }}">{{ name }}</option>
+                {% endfor %}
+              </select>
+          </div>
+          <div class="mb-3">
+              <label class="form-label">С</label>
+              <input type="time" name="start_time" class="form-control" required>
+          </div>
+          <div class="mb-3">
+              <label class="form-label">До</label>
+              <input type="time" name="end_time" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if request.user.profile.is_salon_admin %}
+<div class="modal fade" id="addStylistModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="stylist_add">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить стилиста</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if stylist_creation_form.non_field_errors %}
+            <div class="alert alert-danger">{{ stylist_creation_form.non_field_errors }}</div>
+          {% endif %}
+          {% if stylist_creation_form.photo %}
+            <div class="alert alert-info small mb-3">
+              Фото стилиста должно быть квадратным и весить не более 4 МБ.
+            </div>
+          {% endif %}
+          <div class="row g-3">
+            {% for field in stylist_creation_form %}
+              {% if field.name != 'bio' %}
+                <div class="col-md-6">
+                  <label class="form-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endfor %}
+            <div class="col-12">
+              <label class="form-label" for="id_bio">О себе</label>
+              {{ stylist_creation_form.bio }}
+              {% if stylist_creation_form.bio.help_text %}
+                <div class="form-text">{{ stylist_creation_form.bio.help_text }}</div>
+              {% endif %}
+              {% for error in stylist_creation_form.bio.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addProductModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="product_add">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить товар</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if product_form and product_form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for error in product_form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% if product_form %}
+            <div class="row g-3">
+              {% for field in product_form %}
+                <div class="col-md-6">
+                  {% if field.field.widget.input_type == 'checkbox' %}
+                    <div class="form-check mt-4">
+                      {{ field }}
+                      <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    </div>
+                  {% else %}
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                  {% endif %}
+                  {% if field.help_text %}
+                    <div class="form-text">{{ field.help_text }}</div>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addSalonServiceModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" id="addSalonServiceForm">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="salon_service_add">
+        <div class="modal-header">
+          <h5 class="modal-title">Добавить услугу салона</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          {% if salon_service_form.non_field_errors %}
+            <div class="alert alert-danger">{{ salon_service_form.non_field_errors }}</div>
+          {% endif %}
+          {% for field in salon_service_form %}
+            <div class="mb-3">
+              {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="form-check">
+                  {{ field }}
+                  <label class="form-check-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                </div>
+              {% else %}
+                <label class="form-label" for="id_{{ field.name }}">{{ field.label }}</label>
+                {{ field }}
+              {% endif %}
+              {% if field.help_text %}
+                <div class="form-text">{{ field.help_text }}</div>
+              {% endif %}
+              {% for error in field.errors %}
+                <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal" type="button">Отмена</button>
+          <button class="btn btn-primary" type="submit">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+<div class="modal fade" id="editWorkingHourModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="editWorkingHourForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Редактировать рабочий интервал</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editWhId" name="workinghour_id">
+        <div class="mb-3">
+          <label>День недели</label>
+<select id="editWhWeekday" name="weekday" class="form-select">
+  <option value="0">Понедельник</option>
+  <option value="1">Вторник</option>
+  <option value="2">Среда</option>
+  <option value="3">Четверг</option>
+  <option value="4">Пятница</option>
+  <option value="5">Суббота</option>
+  <option value="6">Воскресенье</option>
+</select>
+        </div>
+        <div class="mb-3">
+          <label>С</label>
+          <input type="time" id="editWhStart" name="start_time" class="form-control">
+        </div>
+        <div class="mb-3">
+          <label>До</label>
+          <input type="time" id="editWhEnd" name="end_time" class="form-control">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="modal fade" id="addBreakModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="addBreakForm" class="modal-content">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Добавить перерыв</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="workinghour_id" id="addBreakWorkingHourId">
+        <input type="hidden" name="stylist_id" id="addBreakStylistId" value="{{ selected_stylist_id }}">
+        <div class="mb-3">
+          <label class="form-label" for="addBreakStart">Начало</label>
+          <input type="time" class="form-control" id="addBreakStart" name="start_time" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="addBreakEnd">Конец</label>
+          <input type="time" class="form-control" id="addBreakEnd" name="end_time" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+const stylistSelectEl = document.getElementById('stylistSelect');
+if (stylistSelectEl) {
+    stylistSelectEl.addEventListener('change', function () {
+        const stylistId = this.value;
+        if (!stylistId) return;
+
+        // Обновляем hidden input для модального окна "Добавить интервал"
+        const modalStylistInput = document.getElementById('modalStylistId');
+        if (modalStylistInput) {
+            modalStylistInput.value = stylistId;
+        }
+        const addDayOffStylist = document.getElementById('addDayOffStylistId');
+        if (addDayOffStylist) {
+            addDayOffStylist.value = stylistId;
+        }
+
+        // Загружаем рабочие часы и цены мастера
+        fetch(`/stylist/ajax/${stylistId}/`)
+            .then(res => res.json())
+            .then(data => {
+                renderPrices(data.services);
+                renderWorkingHours(data.working_hours);
+                fetchBlocksForStylist(stylistId);
+            });
+    });
+}
+function renderPrices(services) {
+    let html = `<table class="table table-bordered">
+        <tr><th>Услуга</th><th>Цена</th><th></th></tr>`;
+
+    services.forEach(s => {
+        html += `
+        <tr>
+            <td>${s.name} (${s.duration} мин)</td>
+            <td>
+                <input type="number" id="price-${s.id}" value="${s.price ?? ''}" class="form-control">
+            </td>
+            <td>
+                <button class="btn btn-sm btn-primary"
+                    onclick="savePrice(${s.id})">Сохранить</button>
+            </td>
+        </tr>`;
+    });
+
+    html += '</table>';
+    document.getElementById('stylistPrices').innerHTML = html;
+}
+
+const WEEKDAYS = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+
+function renderWorkingHours(hours) {
+    const tbody = document.getElementById('stylistWorkingHours');
+    if (!hours || !hours.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted">Нет рабочих интервалов</td></tr>';
+        return;
+    }
+
+    let html = '';
+    hours.forEach(h => {
+        let breaksHtml = h.breaks && h.breaks.length
+            ? h.breaks.map(b => `${b.start}–${b.end}`).join('<br>')
+            : '<span class="text-muted">Нет</span>';
+
+        html += `
+        <tr>
+            <td>${WEEKDAYS[h.weekday]}</td>
+            <td>${h.start}</td>
+            <td>${h.end}</td>
+            <td>${breaksHtml}</td>
+            <td class="text-end">
+                <button class="btn btn-outline-secondary btn-sm me-2" onclick="editWorkingHour(${h.id})">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm me-2" onclick="addBreak(${h.id})">Добавить перерыв</button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteWorkingHour(${h.id})">Удалить</button>
+            </td>
+        </tr>`;
+    });
+
+    tbody.innerHTML = html;
+}
+</script>
+<script>
+function savePrice(serviceId) {
+    const price = document.getElementById(`price-${serviceId}`).value;
+    const stylistId = document.getElementById('stylistSelect').value;
+
+    fetch('/stylist/ajax/price/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            stylist_id: stylistId,
+            salon_service_id: serviceId,
+            price: price
+        })
+    }).then(() => {
+        showToast('Сохранено ✅');
+    });
+}
+
+function showToast(text) {
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-success position-fixed bottom-0 end-0 m-3';
+    toast.innerText = text;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+}
+</script>
+<script>
+const addWorkingHourForm = document.getElementById('addWorkingHourForm');
+if (addWorkingHourForm) {
+    addWorkingHourForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Останавливаем обычную отправку формы
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Закрываем модалку
+                const modalEl = document.getElementById('addWorkingHourModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+
+                // Очистка формы
+                form.reset();
+
+                // Перезагружаем данные мастера (AJAX)
+                const stylistId = document.getElementById('modalStylistId').value;
+                if (data.working_hours) {
+                    renderWorkingHours(data.working_hours || []);
+                } else if (stylistId) {
+                    fetch(`/stylist/ajax/${stylistId}/`)
+                        .then(res => res.json())
+                        .then(data => renderWorkingHours(data.working_hours));
+                }
+
+                showToast('Интервал добавлен ✅');
+            }
+        });
+    });
+}
+</script>
+<script>
+let currentWorkingHours = []; // глобально храним рабочие часы
+
+function renderWorkingHours(working_hours) {
+    currentWorkingHours = working_hours;
+
+    const tbody = document.getElementById('stylistWorkingHours');
+    tbody.innerHTML = '';
+
+    if (!working_hours || !working_hours.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">Нет рабочих интервалов</td></tr>`;
+        return;
+    }
+
+    working_hours.forEach(wh => {
+        const breaks = wh.breaks && wh.breaks.length
+            ? wh.breaks.map(b => `${b.start}–${b.end}`).join('<br>')
+            : '<span class="text-muted">Нет</span>';
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${WEEKDAYS[wh.weekday]}</td>
+            <td>${wh.start}</td>
+            <td>${wh.end}</td>
+            <td>${breaks}</td>
+            <td class="text-end">
+                <button class="btn btn-outline-secondary btn-sm me-2 edit-workinghour" data-id="${wh.id}">Изменить</button>
+                <button class="btn btn-outline-primary btn-sm me-2 add-break" data-id="${wh.id}">Добавить перерыв</button>
+                <button class="btn btn-outline-danger btn-sm delete-workinghour" data-id="${wh.id}">Удалить</button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    attachWorkingHourEvents();
+}
+
+function attachWorkingHourEvents() {
+    // Изменить рабочий интервал
+    document.querySelectorAll('.edit-workinghour').forEach(btn => {
+        btn.onclick = function() {
+            const whId = this.dataset.id;
+            const wh = currentWorkingHours.find(w => w.id == whId);
+            if (!wh) return;
+
+            document.getElementById('editWhId').value = wh.id;
+            document.getElementById('editWhWeekday').value = wh.weekday;
+            document.getElementById('editWhStart').value = wh.start;
+            document.getElementById('editWhEnd').value = wh.end;
+
+            const modal = new bootstrap.Modal(document.getElementById('editWorkingHourModal'));
+            modal.show();
+        };
+    });
+
+    // Submit формы редактирования
+    const editForm = document.getElementById('editWorkingHourForm');
+    if (editForm) {
+        editForm.onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('form_type', 'workinghour_update');
+            formData.append('stylist_id', document.getElementById('modalStylistId').value);
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: new URLSearchParams(formData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderWorkingHours(data.working_hours);
+                    bootstrap.Modal.getInstance(document.getElementById('editWorkingHourModal')).hide();
+                } else {
+                    alert(data.error || 'Ошибка при сохранении');
+                }
+            });
+        };
+    }
+
+    // Добавить перерыв
+    document.querySelectorAll('.add-break').forEach(btn => {
+        btn.onclick = function() {
+            const whId = this.dataset.id;
+            document.getElementById('addBreakWorkingHourId').value = whId;
+            document.getElementById('addBreakStylistId').value = document.getElementById('modalStylistId').value;
+            document.getElementById('addBreakStart').value = '';
+            document.getElementById('addBreakEnd').value = '';
+            const modal = new bootstrap.Modal(document.getElementById('addBreakModal'));
+            modal.show();
+        };
+    });
+
+    // Удалить рабочий интервал
+    document.querySelectorAll('.delete-workinghour').forEach(btn => {
+        btn.onclick = function() {
+            const id = this.dataset.id;
+            if (!confirm('Удалить интервал?')) return;
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `form_type=workinghour_delete&workinghour_id=${id}&stylist_id=${document.getElementById('modalStylistId').value}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) renderWorkingHours(data.working_hours);
+            });
+        };
+    });
+}
+</script>
+<script>
+function getCsrfToken() {
+    const tokenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+    return tokenInput ? tokenInput.value : '';
+}
+
+function refreshManagementSections() {
+    const currentUrl = new URL(window.location.href);
+    const stylistSelector = document.getElementById('stylistSelect');
+    if (stylistSelector && stylistSelector.value) {
+        currentUrl.searchParams.set('stylist_id', stylistSelector.value);
+    }
+
+    fetch(currentUrl.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(res => res.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+
+            const newServices = doc.getElementById('salonServicesCard');
+            const currentServices = document.getElementById('salonServicesCard');
+            if (newServices && currentServices) {
+                currentServices.replaceWith(newServices);
+            }
+
+            const newPrices = doc.getElementById('stylistPricesCard');
+            const currentPrices = document.getElementById('stylistPricesCard');
+            if (newPrices && currentPrices) {
+                currentPrices.replaceWith(newPrices);
+            }
+
+            bindAddSalonServiceForm();
+            bindPriceForms();
+        });
+}
+
+function bindAddSalonServiceForm() {
+    const form = document.getElementById('addSalonServiceForm');
+    if (!form) return;
+    if (form.dataset.bound === '1') return;
+    form.dataset.bound = '1';
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const csrfToken = formData.get('csrfmiddlewaretoken') || getCsrfToken();
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken
+            },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('addSalonServiceModal')).hide();
+                    form.reset();
+                    showToast('Услуга добавлена ✅');
+                    refreshManagementSections();
+                } else if (data.errors) {
+                    alert('Исправьте ошибки: ' + Object.values(data.errors).flat().join('\\n'));
+                } else {
+                    alert('Не удалось добавить услугу');
+                }
+            });
+    });
+}
+
+function bindPriceForms() {
+    document.querySelectorAll('.stylist-price-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const csrfToken = formData.get('csrfmiddlewaretoken') || getCsrfToken();
+
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        const helper = form.querySelector('.form-text');
+                        if (helper) {
+                            if (data.price) {
+                                helper.textContent = `Текущая цена: ${data.price}`;
+                                helper.classList.remove('d-none');
+                            } else {
+                                helper.textContent = '';
+                                helper.classList.add('d-none');
+                            }
+                        }
+                        showToast(data.price ? 'Цена сохранена ✅' : 'Цена очищена ✅');
+                    } else {
+                        alert(data.error || 'Не удалось сохранить цену');
+                    }
+                });
+        });
+    });
+}
+
+bindAddSalonServiceForm();
+bindPriceForms();
+
+const addBreakForm = document.getElementById('addBreakForm');
+if (addBreakForm) {
+    addBreakForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(addBreakForm);
+        formData.append('form_type', 'break_add');
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: new URLSearchParams(formData)
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    renderWorkingHours(data.working_hours);
+                    bootstrap.Modal.getInstance(document.getElementById('addBreakModal')).hide();
+                    showToast('Перерыв добавлен ✅');
+                } else {
+                    alert(data.error || 'Не удалось добавить перерыв');
+                }
+            });
+    });
+}
+
+function replaceBlocksContainer(blocksHtml) {
+    if (!blocksHtml) return;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(blocksHtml, 'text/html');
+    const fresh = doc.querySelector('[data-blocks-container]');
+    const current = document.querySelector('[data-blocks-container]');
+    if (fresh && current) {
+        current.replaceWith(fresh);
+        bindDayoffForms();
+    }
+}
+
+function fetchBlocksForStylist(stylistId) {
+    if (!stylistId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('stylist_id', stylistId);
+    url.searchParams.set('partial', 'blocks');
+    fetch(url.toString(), {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(res => res.json())
+        .then(data => replaceBlocksContainer(data.blocks_html));
+}
+
+function bindDayoffForms() {
+    document.querySelectorAll('.dayoff-edit-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            formData.append('form_type', 'dayoff_update');
+            fetch("{% url 'stylist_dayoff' %}", {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        replaceBlocksContainer(data.blocks_html);
+                        bootstrap.Modal.getInstance(form.closest('.modal')).hide();
+                        showToast('Блокировка обновлена ✅');
+                    } else {
+                        alert(data.error || 'Не удалось сохранить блокировку');
+                    }
+                });
+        });
+    });
+
+    document.querySelectorAll('.dayoff-delete-form').forEach(form => {
+        if (form.dataset.bound === '1') return;
+        form.dataset.bound = '1';
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!confirm('Удалить блокировку?')) return;
+            const formData = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken') || getCsrfToken()
+                },
+                body: formData
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        replaceBlocksContainer(data.blocks_html);
+                        showToast('Блокировка удалена ✅');
+                    }
+                });
+        });
+    });
+}
+
+bindDayoffForms();
+
+const addDayOffForm = document.getElementById('addDayOffForm');
+const addDayOffModalEl = document.getElementById('addDayOffModal');
+if (addDayOffForm && addDayOffModalEl) {
+    addDayOffForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(addDayOffForm);
+        formData.append('form_type', 'dayoff_add');
+
+        fetch("{% url 'stylist_dayoff' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    addDayOffForm.reset();
+                    addDayOffForm.querySelector('#addDayOffStylistId').value = document.getElementById('modalStylistId').value;
+                    bootstrap.Modal.getInstance(addDayOffModalEl).hide();
+                    showToast('Блокировка добавлена ✅');
+                    replaceBlocksContainer(data.blocks_html);
+                } else {
+                    alert(data.error || 'Не удалось добавить блокировку');
+                }
+            });
+    });
+}
+</script>
+{% endblock %}

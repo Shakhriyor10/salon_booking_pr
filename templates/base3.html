@@ -1,0 +1,927 @@
+{% load static %}
+{% load form_tags %}
+<!DOCTYPE html>
+<!--[if lt IE 7 ]><html class="ie ie6" lang="en"> <![endif]-->
+<!--[if IE 7 ]><html class="ie ie7" lang="en"> <![endif]-->
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+	<meta name="keywords" content="">
+
+        <title>GoBeauty</title>
+        <link rel="icon" type="image/png" href="{% static 'img/logosalon_black.png' %}">
+
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+
+	<link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.3.0/css/font-awesome.min.css">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/animate.css' %}">
+	<link rel="stylesheet" type="text/css" href="{% static 'css/owl-carousel.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/lightbox.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/form-framework.css' %}">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/icomoon.css' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{% static 'css/support_widget.css' %}">
+<!--	<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}">-->
+
+	<!-- SLIDER REVOLUTION 4.x CSS SETTINGS -->
+	<link rel="stylesheet" type="text/css" href="rs-plugin/css/settings.css" media="screen" />
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+</head>
+<body>
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #f6f6f6;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  .navbar-luxe {
+    background: linear-gradient(120deg, rgba(15, 15, 15, 0.96) 0%, rgba(47, 47, 47, 0.92) 50%, rgba(12, 12, 12, 0.96) 100%);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .navbar-luxe .navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .navbar-luxe .brand-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .navbar-luxe .brand-logo img {
+    display: block;
+    height: 3.2rem;
+    width: auto;
+  }
+
+  .navbar-luxe .nav-link {
+    font-weight: 500;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.85);
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.75rem 0.85rem;
+    position: relative;
+  }
+
+  .navbar-luxe .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.35rem;
+    height: 2px;
+<!--    background: linear-gradient(135deg, #ffd166, #ef476f);-->
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 0.25s ease;
+  }
+
+  .navbar-luxe .nav-link:hover,
+  .navbar-luxe .nav-link:focus {
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .navbar-luxe .nav-link:hover::after,
+  .navbar-luxe .nav-link:focus::after,
+  .navbar-luxe .nav-link.active::after {
+    transform: scaleX(1);
+  }
+
+  .navbar-luxe .nav-item + .nav-item {
+    margin-left: 0.25rem;
+  }
+
+  .navbar-luxe .user-pill {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+  }
+
+  .navbar-luxe .btn-nav {
+    border-radius: 999px;
+    padding: 0.5rem 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .navbar-luxe .btn-nav.btn-outline-light {
+    border: 1px solid rgba(255, 255, 255, 0.35);
+  }
+
+  .navbar-luxe .btn-nav:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.28);
+  }
+
+  .navbar-luxe .navbar-toggler {
+    border: none;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .navbar-luxe .navbar-toggler:focus {
+    box-shadow: none;
+  }
+
+  .navbar-luxe .navbar-toggler-icon {
+    filter: invert(1);
+  }
+
+  .bg-gradient-success {
+    background: linear-gradient(135deg, #0f0f0f 0%, #2b2b2b 45%, #1a1a1a 100%);
+  }
+
+  .modal-content.luxe-celebration {
+    background-color: #111;
+  }
+
+  .modal-content.luxe-celebration .modal-body {
+    background-color: #ffffff;
+    color: #212529;
+  }
+
+  .booking-success-modal .modal-dialog {
+    max-width: 820px;
+  }
+
+  .booking-success-modal .modal-content {
+    border-radius: 18px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .booking-success-modal .modal-header,
+  .booking-success-modal .modal-footer {
+    padding: 1.25rem 1.75rem;
+  }
+
+  .booking-success-modal .modal-header {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    position: relative;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-header .btn-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+
+  .booking-success-modal .modal-body {
+    padding: 1.75rem;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-footer {
+    border-top: 1px solid #eef0f3;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .booking-success-modal .modal-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    width: 100%;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-message {
+    max-width: 620px;
+    text-align: center;
+    font-size: 1rem;
+    color: #4b5563;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .booking-success-modal .modal-message .booking-success-credentials {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.85rem;
+    text-align: center;
+  }
+
+  .booking-success-modal .modal-message .text-start {
+    text-align: center !important;
+  }
+
+  .booking-success-modal .booking-success-credentials .badge {
+    font-size: 1rem;
+    padding: 0.85rem 1.35rem;
+    white-space: normal;
+  }
+
+  .booking-success-modal .booking-success-credentials .copy-credential {
+    min-width: 200px;
+    justify-content: center;
+  }
+
+  .overdue-modal .modal-content {
+    border-radius: 20px;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    background: linear-gradient(145deg, #ffffff, #f4f7ff);
+    color: #0f172a;
+    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.14);
+  }
+
+  .overdue-modal .modal-body {
+    position: relative;
+    padding: 2rem;
+  }
+
+  .overdue-modal .glow-accent {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.14), transparent 36%),
+      radial-gradient(circle at 80% 8%, rgba(16, 185, 129, 0.12), transparent 36%),
+      radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.1), transparent 42%);
+    filter: blur(18px);
+    opacity: 0.75;
+  }
+
+  .overdue-modal .content-wrap {
+    position: relative;
+    z-index: 1;
+  }
+
+  .overdue-modal .modal-title {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+
+  .overdue-modal .badge-pill {
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+
+  .overdue-modal .stat-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    color: #111827;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.04);
+  }
+
+  .overdue-modal .stat-card h6 {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    font-size: 0.78rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .overdue-modal .stat-card .value {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #2563eb;
+  }
+
+  .overdue-modal .btn-ghost {
+    background: #f8fafc;
+    color: #111827;
+    border: 1px solid #d1d5db;
+  }
+
+  .overdue-modal .btn-ghost:hover {
+    border-color: #9ca3af;
+    background: #f1f5f9;
+  }
+
+  .overdue-modal .icon-circle {
+    width: 68px;
+    height: 68px;
+    min-width: 68px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .modal-content.luxe-celebration .modal-body .display-6 {
+    color: #212529;
+  }
+
+  .modal-content.luxe-celebration .modal-body h5 {
+    color: #111;
+  }
+
+  .modal-content.luxe-celebration .modal-body .text-muted {
+    color: #6c757d !important;
+  }
+
+  .footer-luxe {
+    background: radial-gradient(circle at top, rgba(45, 45, 45, 0.95), rgba(10, 10, 10, 0.98));
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 3rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .footer-luxe h5 {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .footer-luxe p,
+  .footer-luxe a,
+  .footer-luxe li {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+  }
+
+  .footer-luxe a:hover {
+    color: #ffffff;
+  }
+
+  .footer-luxe .social-link {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+
+  .footer-luxe .social-link:hover {
+    transform: translateY(-2px);
+<!--    background: linear-gradient(135deg, #ffd166, #ef476f);-->
+    color: #0f0f0f;
+  }
+
+  .footer-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(239, 71, 111, 0), rgba(239, 71, 111, 0.5), rgba(239, 71, 111, 0));
+    margin: 2.25rem 0 1.75rem;
+  }
+
+  @media (max-width: 991.98px) {
+    .navbar-luxe .navbar-collapse {
+      background: rgba(12, 12, 12, 0.96);
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      margin-top: 1rem;
+      box-shadow: 0 18px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    .navbar-luxe .nav-item + .nav-item {
+      margin-left: 0;
+    }
+
+    .navbar-luxe .nav-link {
+      padding: 0.65rem 0.25rem;
+    }
+
+    .navbar-luxe .nav-link::after {
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    .navbar-luxe .btn-nav {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .footer-luxe {
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .navbar-luxe .navbar-brand {
+      font-size: 1.05rem;
+    }
+
+    .navbar-luxe .brand-logo {
+      width: auto;
+      height: auto;
+      padding: 0;
+    }
+
+    .footer-luxe {
+      padding-top: 2.5rem;
+      padding-bottom: 2rem;
+    }
+  }
+</style>
+<nav class="navbar navbar-expand-lg navbar-dark navbar-luxe sticky-top shadow-lg">
+  <div class="container py-2 py-lg-0">
+    <a class="navbar-brand" href="{% url 'home' %}">
+      <span class="brand-logo">
+        <img src="{% static 'img/logosalon.png' %}" alt="Логотип GoBeauty">
+      </span>
+      <span>GoBeauty</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+      aria-controls="navbarNav" aria-expanded="false" aria-label="Переключить навигацию">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto align-items-lg-center">
+<!--        <li class="nav-item">-->
+<!--          <a class="nav-link" href="{% url 'home' %}"><i class="bi bi-house-door"></i> Главная</a>-->
+<!--        </li>-->
+        {% if user.is_authenticated  %}
+          {% if user.is_staff or user.profile.is_salon_admin %}
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'reports' %}"><i class="bi bi-graph-up"></i> Отчеты</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-calendar-event"></i> Записи</a>
+          </li>
+
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'manual_appointment' %}"><i class="bi bi-plus-circle"></i> Создать запись</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-sliders"></i> Настройки</a>
+          </li>
+          {% if user.profile.is_salon_admin %}
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'salon_product_orders_admin' %}"><i class="bi bi-bag-check"></i> Заказы</a>
+          </li>
+          {% endif %}
+          {% if user.is_staff %}
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'support:inbox' %}"><i class="bi bi-chat-text"></i> Поддержка</a>
+          </li>
+          {% endif %}
+          {% endif %}
+        {% endif %}
+        {% if user.is_authenticated and user.stylist_profile and not user.is_staff and not user.profile.is_salon_admin %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stylist_manual_appointment' %}"><i class="bi bi-plus-circle"></i> Создать запись</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stylist_dashboard' %}"><i class="bi bi-calendar3"></i> Мои записи</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stylist_reports' %}"><i class="bi bi-clipboard-data"></i> Мои отчеты</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'stylist_dayoff' %}"><i class="bi bi-gear"></i> Настройки</a>
+          </li>
+        {% endif %}
+        {% if not user.is_superuser and not user.stylist_profile and user.is_authenticated %}
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'my_appointments' %}"><i class="bi bi-journal-check"></i> Мои записи</a>
+          </li>
+          <li class="nav-item">
+              <a class="nav-link" href="{% url 'my_product_orders' %}"><i class="bi bi-bag-heart"></i> Мои заказы</a>
+          </li>
+        {% endif %}
+      </ul>
+
+      <ul class="navbar-nav ms-lg-3 align-items-lg-center">
+        {% if user.is_authenticated %}
+        <li class="nav-item me-lg-3 mb-2 mb-lg-0">
+          <span class="nav-link user-pill"><i class="bi bi-person-circle"></i> {{ user.username }}</span>
+        </li>
+        <li class="nav-item">
+          <a class="btn btn-nav btn-outline-light" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right"></i> Выйти</a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="btn btn-nav btn-light text-dark" href="{% url 'login' %}"><i class="bi bi-shield-lock"></i> Войти</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+<main>
+  <section class="post-section grey-section clearfix">
+    <div class="container">
+        {% if messages %}
+          {% for message in messages %}
+            {% if 'booking-success-modal' in message.tags %}
+              <div class="modal fade booking-success-modal" id="bookingSuccessModal" tabindex="-1" aria-labelledby="bookingSuccessModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-content shadow-sm">
+                    <div class="modal-header">
+                      <h5 class="modal-title" id="bookingSuccessModalLabel">✨ Спасибо, что выбрали нас!</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                      <p class="text-muted mb-4">Ваша запись успешно создана. Мы уже подготовили все детали.</p>
+                      {% if message %}
+                        <div class="modal-message text-break">{{ message|safe }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        {% if overdue_appointments_prompt %}
+          <div class="modal fade overdue-modal" id="overdueAppointmentsModal" tabindex="-1" aria-hidden="true" data-complete-url="{% url 'complete_overdue_appointments' %}" data-count="{{ overdue_appointments_prompt.count }}">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-content shadow-lg">
+                <div class="modal-body">
+                  <div class="glow-accent"></div>
+                  <div class="content-wrap">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                      <span class="badge badge-pill"><i class="bi bi-exclamation-circle me-1"></i> Незавершённые записи прошлого месяца</span>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                      <div class="icon-circle bg-white border p-3 shadow-sm">
+                        <i class="bi bi-calendar-week text-primary" style="font-size: 1.6rem;"></i>
+                      </div>
+                      <div>
+                        <h4 class="modal-title mb-1">Есть записи без отметки о выполнении</h4>
+                        <p class="mb-0 text-secondary">Закройте их единым действием или обработайте вручную.</p>
+                      </div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                      <div class="col-md-6">
+                        <div class="stat-card h-100">
+                          <h6>Количество</h6>
+                          <div class="d-flex align-items-baseline gap-2">
+                            <div class="value" data-overdue-count>{{ overdue_appointments_prompt.count }}</div>
+                            <span class="text-muted">записей</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="stat-card h-100">
+                          <h6>Период</h6>
+                          <div class="fw-semibold">{{ overdue_appointments_prompt.start_date|date:"d E" }} — {{ overdue_appointments_prompt.end_date|date:"d E" }}</div>
+                          <small class="text-muted">Предыдущий месяц</small>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                      <button type="button" class="btn btn-warning px-4" data-complete-overdue>
+                        <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" data-loading-spinner></span>
+                        Выполнить все записи
+                      </button>
+                      <button type="button" class="btn btn-ghost px-3" data-bs-dismiss="modal" data-dismiss-overdue>Обработать позже</button>
+                      <div class="text-success fw-semibold ms-sm-3" data-overdue-status role="status"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </section>
+</main>
+
+  <footer class="footer-luxe text-white mt-5">
+      <div class="container">
+          <div class="row gy-4 align-items-start">
+              <div class="col-md-4 text-md-start text-center">
+                  <div class="d-inline-flex align-items-center gap-3 mb-3">
+                      <span class="brand-icon">✦</span>
+                      <div>
+                          <h5 class="mb-1 text-white">GoBeauty</h5>
+                          <p class="mb-0">Премиальный сервис записи в лучшие салоны города.</p>
+                      </div>
+                  </div>
+                  <p class="mt-3 mb-0">Мы создаем незабываемый опыт красоты каждый день.</p>
+              </div>
+              <div class="col-md-4 text-md-start text-center">
+                  <h5 class="text-white">Навигация</h5>
+                  <ul class="list-unstyled mb-0">
+                      <li class="mb-2"><a class="text-decoration-none" href="#">Главная</a></li>
+                      <li class="mb-2"><a class="text-decoration-none" href="#">Онлайн-запись</a></li>
+                      <li class="mb-2"><a class="text-decoration-none" href="#">Наши стилисты</a></li>
+<!--                      <li><a class="text-decoration-none" href="{% url 'support:inbox' %}">Поддержка</a></li>-->
+                  </ul>
+              </div>
+              <div class="col-md-4 text-md-start text-center">
+                  <h5 class="text-white">Всегда на связи</h5>
+<!--                  <p class="mb-2"><i class="bi bi-telephone-outbound me-2"></i>+998 (93) 818-88-18</p>-->
+<p class="mb-2">
+    <i class="bi bi-telephone-outbound me-2"></i>
+    <a href="tel:+9989938188818" class="text-decoration-none">
+        +998 (93) 818-88-18
+    </a>
+</p>
+
+<p class="mb-2">
+    <i class="bi bi-telephone-outbound me-2"></i>
+    <a href="tel:+998901008533" class="text-decoration-none">
+        +998 (90) 100-85-33
+    </a>
+</p>
+                  <p class="mb-3"><i class="bi bi-envelope-open me-2"></i>gobeauty@internet.ru</p>
+                  <div class="d-flex gap-2 justify-content-md-start justify-content-center">
+                      <a class="social-link" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+                      <a class="social-link" href="https://t.me/shaxriyor_10/" aria-label="Telegram"><i class="bi bi-telegram"></i></a>
+                      <a class="social-link" href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+                  </div>
+              </div>
+          </div>
+          <div class="footer-divider"></div>
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center text-center gap-2">
+              <p class="mb-0">&copy; 2025 GoBeauty. Все права защищены.</p>
+              <p class="mb-0 small">Сделано с <span class="text-danger">&hearts;</span> в BrightLab</p>
+          </div>
+      </div>
+  </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/uzbek-phone-mask.js' %}"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const successModalEl = document.getElementById('bookingSuccessModal');
+
+        if (!successModalEl) {
+          return;
+        }
+
+        if (window.bootstrap && typeof window.bootstrap.Modal === 'function') {
+          const modal = new window.bootstrap.Modal(successModalEl, {
+            backdrop: true,
+            keyboard: true,
+          });
+          modal.show();
+        } else {
+          successModalEl.classList.remove('fade');
+          successModalEl.classList.add('show', 'd-block');
+          successModalEl.removeAttribute('aria-hidden');
+          successModalEl.setAttribute('aria-modal', 'true');
+          document.body.classList.add('modal-open');
+
+          const backdrop = document.createElement('div');
+          backdrop.className = 'modal-backdrop show';
+          document.body.appendChild(backdrop);
+
+          const closeModal = () => {
+            successModalEl.classList.remove('show', 'd-block');
+            successModalEl.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('modal-open');
+            if (backdrop.parentNode) {
+              backdrop.parentNode.removeChild(backdrop);
+            }
+            document.removeEventListener('keydown', handleEsc);
+          };
+
+          const handleEsc = (event) => {
+            if (event.key === 'Escape') {
+              closeModal();
+            }
+          };
+
+          document.addEventListener('keydown', handleEsc);
+
+          const closeButtons = successModalEl.querySelectorAll('[data-dismiss="modal"], [data-bs-dismiss="modal"]');
+          closeButtons.forEach((button) => {
+            button.addEventListener('click', closeModal);
+          });
+
+          successModalEl.addEventListener('click', (event) => {
+            if (event.target === successModalEl) {
+              closeModal();
+            }
+          });
+        }
+
+        document.addEventListener('click', (event) => {
+          const btn = event.target.closest('.copy-credential');
+          if (!btn) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+
+          const explicitValue = btn.getAttribute('data-credential') || '';
+          const targetSelector = btn.getAttribute('data-target');
+          const target = targetSelector ? document.querySelector(targetSelector) : null;
+          const targetValue = target ? (target.getAttribute('data-credential') || target.textContent || '') : '';
+          const parentValue = btn.closest('[data-credential]')?.getAttribute('data-credential') || '';
+          const fallbackValue = btn.closest('.booking-success-credentials')?.innerText || '';
+          const value = (explicitValue || targetValue || parentValue || fallbackValue || '').trim();
+
+          if (!value) {
+            btn.textContent = 'Нет данных';
+            setTimeout(() => btn.textContent = 'Скопировать', 2000);
+            return;
+          }
+
+          const markCopied = () => {
+            btn.textContent = 'Скопировано';
+            setTimeout(() => btn.textContent = 'Скопировать', 1500);
+          };
+
+          const fallbackCopy = () => {
+            const textarea = document.createElement('textarea');
+            textarea.value = value;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            textarea.setSelectionRange(0, value.length);
+            try {
+              if (document.execCommand('copy')) {
+                markCopied();
+              } else {
+                throw new Error('copy failed');
+              }
+            } catch (e) {
+              btn.textContent = 'Не удалось скопировать';
+              setTimeout(() => btn.textContent = 'Скопировать', 2000);
+            }
+            document.body.removeChild(textarea);
+          };
+
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(value).then(markCopied).catch(fallbackCopy);
+          } else {
+            fallbackCopy();
+          }
+        });
+
+      });
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('overdueAppointmentsModal');
+        if (!modalEl || !window.bootstrap) {
+          return;
+        }
+
+        const count = Number(modalEl.dataset.count || 0);
+        if (!count) {
+          return;
+        }
+
+        const modal = new window.bootstrap.Modal(modalEl, {
+          backdrop: 'static',
+          keyboard: false,
+        });
+        modal.show();
+
+        const completeBtn = modalEl.querySelector('[data-complete-overdue]');
+        const dismissBtn = modalEl.querySelector('[data-dismiss-overdue]');
+        const statusEl = modalEl.querySelector('[data-overdue-status]');
+        const spinner = modalEl.querySelector('[data-loading-spinner]');
+        const countEl = modalEl.querySelector('[data-overdue-count]');
+        const completeUrl = modalEl.dataset.completeUrl;
+
+        const toggleLoading = (isLoading) => {
+          if (spinner) {
+            spinner.classList.toggle('d-none', !isLoading);
+          }
+          if (completeBtn) {
+            completeBtn.disabled = isLoading;
+          }
+          if (dismissBtn) {
+            dismissBtn.disabled = isLoading;
+          }
+        };
+
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) {
+            return parts.pop().split(';').shift();
+          }
+          return null;
+        };
+
+        completeBtn?.addEventListener('click', () => {
+          if (!completeUrl) {
+            return;
+          }
+
+          toggleLoading(true);
+          statusEl?.classList.remove('text-danger');
+          statusEl?.classList.add('text-success');
+
+          fetch(completeUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': getCookie('csrftoken') || '',
+            },
+          })
+            .then((response) => response.json().then((data) => ({ response, data })))
+            .then(({ response, data }) => {
+              if (!response.ok || !data?.ok) {
+                const message = data?.error || 'Не удалось обновить записи';
+                throw new Error(message);
+              }
+
+              if (statusEl) {
+                statusEl.textContent = `${data.updated} записей отмечено как выполненные`;
+              }
+
+              if (countEl) {
+                countEl.textContent = '0';
+              }
+
+              if (completeBtn) {
+                completeBtn.classList.remove('btn-warning');
+                completeBtn.classList.add('btn-success');
+                completeBtn.textContent = 'Готово';
+              }
+
+              setTimeout(() => {
+                modal.hide();
+                window.location.reload();
+              }, 700);
+            })
+            .catch((error) => {
+              if (statusEl) {
+                statusEl.classList.remove('text-success');
+                statusEl.classList.add('text-danger');
+                statusEl.textContent = error.message;
+              }
+            })
+            .finally(() => {
+              toggleLoading(false);
+            });
+        });
+      });
+    </script>
+    <script>
+      const cancelModal = document.getElementById('cancelModal');
+      if (cancelModal) {
+        cancelModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const appointmentId = button.getAttribute('data-appointment-id');
+          const form = document.getElementById('cancelForm');
+
+          if (form && appointmentId) {
+            form.action = `/appointment/${appointmentId}/action/`;
+          }
+        });
+      }
+    </script>
+    {% include 'partials/support_widget.html' %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

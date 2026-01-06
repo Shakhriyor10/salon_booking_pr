@@ -1,0 +1,44 @@
+{% extends 'base3.html' %}
+{% load widget_tweaks %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<style>
+  .btn-custom {
+    background-color: #212529;
+    color: white;
+  }
+
+  .btn-custom:hover {
+    background-color: #212529;
+    color: white;
+  }
+</style>
+
+<div class="container" style="max-width: 400px;">
+  <div class="card shadow-sm mt-5 border-0">
+    <div class="card-header text-white text-center" style="background-color: #212529;">
+      <h4 class="mb-0">🔐 Вход в систему</h4>
+    </div>
+    <div class="card-body">
+      <form method="post">
+  {% csrf_token %}
+  {% for field in form %}
+    <div class="mb-3">
+      <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+      {{ field|add_class:"form-control" }}
+      {% if field.errors %}
+        <div class="text-danger small">{{ field.errors|striptags }}</div>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <button type="submit" class="btn btn-custom w-100">Войти</button>
+</form>
+    </div>
+    <div class="card-footer text-center bg-light">
+      <p class="mb-0">Нет аккаунта? <a href="{% url 'register' %}">Создать</a></p>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

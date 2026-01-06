@@ -1,0 +1,121 @@
+{% extends 'base3.html' %}
+{% load static %}
+{% load form_tags %}
+
+
+
+
+    {% block content %}
+<style>
+    .customhr {
+  width: 80px;
+  height: 4px;
+  background-color: #198754; /* зелёный Bootstrap */
+  border: none;
+  border-radius: 2px;
+}
+</style>
+
+<section class="page-title-section text-center py-5 bg-light">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1 class="page-title fw-bold display-5 mb-3">Услуги</h1>
+                <hr class="mx-auto customhr">
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="post-section grey-section clearfix">
+
+        <!-- Блок категорий -->
+        {% if categories %}
+        <h3 class="text-center fw-semibold mt-4 mb-3">Выберите категорию</h3>
+        <div class="row text-center">
+            {% for category in categories %}
+            <!--        <div class="col-md-4 col-sm-6 col-xs-12">-->
+            <!--          <div class="module white-back box">-->
+            <!--            <div class="module-title">-->
+            <!--              <h4>{{ category.name }}</h4>-->
+            <!--              <span class="module-separator"></span>-->
+            <!--            </div>-->
+            <!--              <div class="divimage text-center">-->
+            <!--                      <div class="hovereffect">-->
+            <!--                          {% if category.photo and category.photo.url %}-->
+            <!--                          <img src="{{ category.photo.url }}" alt="" class="img-responsive">-->
+            <!--                          {% endif %}-->
+            <!--                      </div>-->
+            <!--                  </div>-->
+            <!--            <div class="absolute-buttons">-->
+            <!--              <a href="{% url 'services_by_category' category.id %}" class="btn btn-primary">Открыть</a>-->
+            <!--            </div>-->
+            <!--          </div>-->
+            <!--        </div>-->
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <img src="{{ category.photo.url }}" class="card-img-top" alt="{{ service.name }}">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ category.name }}</h5>
+                        <a href="{% url 'services_by_category' category.id %}" class="btn"
+                           style="background-color: #486b71; color: #fff">Открыть</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+
+        <!-- Услуги без категории -->
+        {% if categories %}
+        <h3 class="text-center fw-semibold mt-4 mb-3">Все услуги</h3>
+        {% endif %}
+        <div class="row text-center">
+            {% for service in services %}
+            <!--          <div class="col-md-4 col-sm-6 col-xs-12 wow fadeIn" data-wow-duration="1s" data-wow-delay="0.3s">-->
+            <!--              <div class="module white-back box">-->
+            <!--                  <div class="module-title">-->
+            <!--                      <h4>{{ service.name }}</h4>-->
+            <!--                      <span class="module-separator"></span>-->
+            <!--                  </div>-->
+
+            <!--                  <div class="divimage text-center">-->
+            <!--                      <div class="hovereffect">-->
+            <!--                          {% if service.photo and service.photo.url %}-->
+            <!--                          <img src="{{ service.photo.url }}" alt="" class="img-responsive">-->
+            <!--                          {% endif %}-->
+            <!--                      </div>-->
+            <!--                  </div>-->
+
+            <!--                  <div class="absolute-buttons">-->
+            <!--                      <a href="{% url 'service_booking' service.id %}" class="btn btn-primary">Записаться</a>-->
+            <!--                  </div>-->
+            <!--              </div>-->
+            <!--          </div>-->
+
+
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <img src="{{ service.photo.url }}" class="card-img-top" alt="{{ service.name }}">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ service.name }}</h5>
+                        <a href="{% url 'service_booking' service.id %}" class="btn mt-auto"
+                           style="background-color: #486b71; color: #fff">Записаться</a>
+                    </div>
+                </div>
+            </div>
+
+            {% empty %}
+            <p>Нет услуг без категории</p>
+            {% endfor %}
+        </div>
+
+        <br><br>
+</section>
+
+    {% endblock %}
+
+
+
