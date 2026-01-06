@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import os
 from datetime import datetime
+import html
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -142,7 +143,10 @@ async def register_password(message: Message, state: FSMContext):
     status, data = await api_request("POST", "auth/register/", json=payload)
     if status == 201 and "token" in data:
         auth_tokens[message.from_user.id] = data["token"]
-        await message.answer("Регистрация успешна! Токен сохранён, можно использовать /book.")
+        await message.answer(
+            "🎉 Регистрация успешна! Токен сохранён. Давай сразу посмотрим, какие салоны есть рядом:"
+        )
+        await send_salons_overview(message)
     else:
         error_text = data.get("detail") if isinstance(data, dict) else "Неизвестная ошибка"
         await message.answer(f"Не удалось зарегистрироваться: {error_text}")
@@ -177,29 +181,7 @@ async def login_password(message: Message, state: FSMContext):
 
 @router.message(Command("salons"))
 async def list_salons(message: Message):
-    status, data = await api_request("GET", "salons/")
-    if status != 200:
-        await message.answer("Не удалось получить список салонов.")
-        return
-
-    salons = data or []
-    if not salons:
-        await message.answer("Салоны не найдены.")
-        return
-
-    for item in salons:
-        caption = (
-            f"<b>{item['name']}</b> (#{item['id']})\n"
-            f"Город: {item['city']['name']}\n"
-            f"Адрес: {item['address']}\n"
-            f"Телефон: {item.get('phone', '—')}"
-        )
-        photos = item.get("photos") or []
-
-        if photos:
-            await message.answer_photo(photos[0], caption=caption)
-        else:
-            await message.answer(caption)
+    await send_salons_overview(message)
 
 
 @router.message(Command("services"))
@@ -234,17 +216,93 @@ async def list_stylists(message: Message):
         return
 
     salon_id = parts[1]
+    await send_stylists_cards(message, salon_id)
+
+
+async def send_salons_overview(message: Message):
+    status, data = await api_request("GET", "salons/")
+    if status != 200:
+        await message.answer("Не удалось получить список салонов.")
+        return
+
+    salons = data or []
+    if not salons:
+        await message.answer("Салоны не найдены.")
+        return
+
+    for item in salons:
+        photos = item.get("photos") or []
+        city = html.escape(item.get("city", {}).get("name", ""))
+        description = html.escape(item.get("description") or "")
+        caption = (
+            f"<b>{html.escape(item['name'])}</b> (#{item['id']})\n"
+            f"📍 {city}, {html.escape(item.get('address') or '—')}\n"
+            f"☎️ {html.escape(item.get('phone') or '—')}\n\n"
+            f"{description}".strip()
+        )
+
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [InlineKeyboardButton(text="🧑‍🎨 Мастера", callback_data=f"show_stylists:{item['id']}")],
+                [InlineKeyboardButton(text="💇‍♀️ Услуги", callback_data=f"show_services:{item['id']}")],
+            ]
+        )
+
+        if photos:
+            await message.answer_photo(photos[0], caption=caption, reply_markup=keyboard)
+        else:
+            await message.answer(caption, reply_markup=keyboard)
+
+
+async def send_stylists_cards(target_message: Message, salon_id: str):
     status, data = await api_request("GET", "stylists/", params={"salon": salon_id})
     if status != 200:
-        await message.answer("Не удалось получить список мастеров.")
+        await target_message.answer("Не удалось получить список мастеров.")
+        return
+    if not data:
+        await target_message.answer("В салоне пока нет мастеров.")
+        return
+
+    for stylist in data:
+        caption = (
+            f"<b>{html.escape(stylist['full_name'])}</b> (#{stylist['id']})\n"
+            f"Уровень: {html.escape(stylist.get('level') or '—')}\n"
+            f"{html.escape(stylist.get('bio') or 'Без описания')}"
+        )
+        avatar = stylist.get("avatar")
+        if avatar:
+            await target_message.answer_photo(avatar, caption=caption)
+        else:
+            await target_message.answer(caption)
+
+
+@router.callback_query(F.data.startswith("show_stylists:"))
+async def callback_show_stylists(callback: CallbackQuery):
+    salon_id = callback.data.split(":", 1)[1]
+    await send_stylists_cards(callback.message, salon_id)
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("show_services:"))
+async def callback_show_services(callback: CallbackQuery):
+    salon_id = callback.data.split(":", 1)[1]
+    status, data = await api_request("GET", f"salons/{salon_id}/services/")
+    if status != 200:
+        await callback.message.answer("Не удалось получить услуги.")
+        await callback.answer()
         return
 
     if not data:
-        await message.answer("В салоне пока нет мастеров.")
+        await callback.message.answer("В этом салоне пока нет активных услуг.")
+        await callback.answer()
         return
 
-    lines = [f"#{item['id']}: {item['full_name']} ({item['level']})" for item in data]
-    await message.answer("\n".join(lines))
+    lines = [
+        f"#{item['id']}: {item['service']['name']} — {item['duration']} мин"
+        for item in data
+    ]
+    await callback.message.answer("Список услуг:\n" + "\n".join(lines))
+    await callback.answer()
 
 
 @router.message(Command("appointments"))

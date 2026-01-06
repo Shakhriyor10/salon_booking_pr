@@ -80,13 +80,23 @@ class StylistServicePublicSerializer(serializers.ModelSerializer):
 class StylistSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     level = serializers.StringRelatedField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Stylist
-        fields = ["id", "full_name", "salon", "level"]
+        fields = ["id", "full_name", "salon", "level", "avatar", "bio"]
 
     def get_full_name(self, obj: Stylist) -> str:
         return obj.user.get_full_name() or obj.user.username
+
+    def get_avatar(self, obj: Stylist) -> str:
+        avatar = obj.avatar
+        if not avatar:
+            return ""
+
+        request = self.context.get("request")
+        url = avatar.url
+        return request.build_absolute_uri(url) if request else url
 
 
 class AppointmentServiceSerializer(serializers.ModelSerializer):
