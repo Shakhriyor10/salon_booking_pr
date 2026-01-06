@@ -6,6 +6,7 @@ from salon_booking import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include('booking.api.urls')),
     path('', include('booking.urls')),
     path('', include('users.urls')),
     path('support/', include('support.urls')),
