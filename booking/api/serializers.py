@@ -28,6 +28,7 @@ class CitySerializer(serializers.ModelSerializer):
 
 class SalonSerializer(serializers.ModelSerializer):
     city = CitySerializer()
+    photos = serializers.SerializerMethodField()
 
     class Meta:
         model = Salon
@@ -40,7 +41,18 @@ class SalonSerializer(serializers.ModelSerializer):
             "city",
             "type",
             "slug",
+            "photos",
         ]
+
+    def get_photos(self, obj: Salon):
+        request = self.context.get("request")
+        urls = []
+        for field in ["photo", "photo_2", "photo_3", "photo_4", "photo_5"]:
+            image = getattr(obj, field)
+            if image:
+                url = image.url
+                urls.append(request.build_absolute_uri(url) if request else url)
+        return urls
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -128,7 +140,7 @@ class RegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150)
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
-    phone = serializers.CharField(max_length=20)
+    phone = serializers.CharField(max_length=20, write_only=True)
     password = serializers.CharField(write_only=True, min_length=3)
 
     def validate_username(self, value: str) -> str:

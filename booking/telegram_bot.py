@@ -187,11 +187,19 @@ async def list_salons(message: Message):
         await message.answer("Салоны не найдены.")
         return
 
-    parts = [
-        f"#{item['id']} — {item['name']} ({item['city']['name']})\n" f"Адрес: {item['address']}\nТелефон: {item.get('phone', '—')}"
-        for item in salons
-    ]
-    await message.answer("\n\n".join(parts))
+    for item in salons:
+        caption = (
+            f"<b>{item['name']}</b> (#{item['id']})\n"
+            f"Город: {item['city']['name']}\n"
+            f"Адрес: {item['address']}\n"
+            f"Телефон: {item.get('phone', '—')}"
+        )
+        photos = item.get("photos") or []
+
+        if photos:
+            await message.answer_photo(photos[0], caption=caption)
+        else:
+            await message.answer(caption)
 
 
 @router.message(Command("services"))
