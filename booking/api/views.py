@@ -430,6 +430,7 @@ class AdminAppointmentStatusView(APIView):
         status_map = {
             "confirm": Appointment.Status.CONFIRMED,
             "cancel": Appointment.Status.CANCELLED,
+            "done": Appointment.Status.DONE,
         }
 
         if action not in status_map:

@@ -31,7 +31,7 @@ ALLOWED_HOSTS = ['*']
 # Override via the TELEGRAM_BOT_TOKEN environment variable in production.
 TELEGRAM_BOT_TOKEN = os.getenv(
     "TELEGRAM_BOT_TOKEN",
-    "7539711094:AAFhfqw5i8kLrGZoMlpiAYQM4JS5XMn9Cys",
+    "7916518008:AAEULpvz8GS9mYnWsO_FWOXEXv6qzSxTcts",
 )
 
 # Base URL that will be used for Telegram deep links (registration, booking, etc.).

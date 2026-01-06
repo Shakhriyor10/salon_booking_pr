@@ -28,7 +28,14 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import (
+    CallbackQuery,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    Message,
+    ReplyKeyboardMarkup,
+)
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
@@ -41,6 +48,7 @@ router = Router()
 auth_tokens: Dict[int, str] = {}
 salon_cache: Dict[int, Dict[str, Any]] = {}
 admin_profiles: Dict[int, Dict[str, Any]] = {}
+salon_admin_chats: Dict[int, set[int]] = {}
 
 
 def normalize_media_url(url: str) -> str:
@@ -158,12 +166,36 @@ def build_month_keyboard(target_date: date) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=keyboard)
 
 
+def _detach_admin_chat(user_id: int) -> None:
+    admin_profiles.pop(user_id, None)
+    to_remove = []
+    for salon_id, chats in salon_admin_chats.items():
+        chats.discard(user_id)
+        if not chats:
+            to_remove.append(salon_id)
+    for salon_id in to_remove:
+        salon_admin_chats.pop(salon_id, None)
+
+
+def _track_admin_chat(user_id: int, profile: Dict[str, Any]) -> None:
+    salon = profile.get("salon") or {}
+    salon_id = salon.get("id")
+    if not salon_id:
+        _detach_admin_chat(user_id)
+        return
+
+    for chats in salon_admin_chats.values():
+        chats.discard(user_id)
+    salon_admin_chats.setdefault(salon_id, set()).add(user_id)
+
+
 async def refresh_admin_profile(user_id: int, token: str) -> None:
     status, data = await api_request("GET", "admin/profile/", token=token)
     if status == 200 and isinstance(data, dict) and data.get("is_salon_admin"):
         admin_profiles[user_id] = data
+        _track_admin_chat(user_id, data)
     else:
-        admin_profiles.pop(user_id, None)
+        _detach_admin_chat(user_id)
 
 
 def get_admin_profile(user_id: int) -> Optional[Dict[str, Any]]:
@@ -177,11 +209,12 @@ async def send_admin_panel(message: Message):
         return
 
     salon_name = profile.get("salon", {}).get("name", "салон")
-    keyboard = InlineKeyboardMarkup(
-        inline_keyboard=[
-            [InlineKeyboardButton(text="🗓 Записи салона", callback_data="admin_appointments")],
-            [InlineKeyboardButton(text="📊 Отчёты", callback_data="admin_reports")],
-        ]
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="🗓 Записи салона")],
+            [KeyboardButton(text="📊 Отчёты")],
+        ],
+        resize_keyboard=True,
     )
     await message.answer(
         f"Вы вошли как админ салона «{salon_name}». Выберите раздел:", reply_markup=keyboard
@@ -201,6 +234,71 @@ def format_admin_appointment(appointment: Dict[str, Any]) -> str:
     )
 
 
+def admin_status_keyboard(appointment_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text="✅ Подтвердить", callback_data=f"admin_status:{appointment_id}:confirm"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✅ Выполнено", callback_data=f"admin_status:{appointment_id}:done"
+                )
+            ],
+            [
+                InlineKeyboardButton(
+                    text="❌ Отменить", callback_data=f"admin_status:{appointment_id}:cancel"
+                )
+            ],
+        ]
+    )
+
+
+def format_new_appointment_notice(appointment: Dict[str, Any]) -> str:
+    stylist = appointment.get("stylist") or {}
+    services = ", ".join(
+        s.get("service_name")
+        for s in appointment.get("services") or []
+        if isinstance(s, dict)
+    )
+    client = appointment.get("guest_name") or "Клиент"
+    start_time_local = appointment.get("start_time_local") or appointment.get("start_time")
+    phone = appointment.get("guest_phone") or "—"
+    return (
+        "<b>📝 Новая запись в салоне</b>\n"
+        f"Клиент: {client} ({phone})\n"
+        f"Мастер: {stylist.get('full_name') or '—'}\n"
+        f"Услуги: {services or '—'}\n"
+        f"Время: {start_time_local}"
+    )
+
+
+async def notify_admins_about_new_booking(bot: Bot, appointment: Dict[str, Any]) -> None:
+    stylist = appointment.get("stylist") or {}
+    salon_id = stylist.get("salon")
+    if not salon_id:
+        return
+
+    chat_ids = list(salon_admin_chats.get(salon_id, set()))
+    if not chat_ids:
+        return
+
+    message_text = format_new_appointment_notice(appointment)
+    keyboard = (
+        admin_status_keyboard(appointment.get("id"))
+        if appointment.get("id")
+        else None
+    )
+
+    for chat_id in chat_ids:
+        try:
+            await bot.send_message(chat_id, message_text, reply_markup=keyboard)
+        except Exception:
+            continue
+
+
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     """Приветствие и выбор между входом и регистрацией."""
@@ -212,6 +310,8 @@ async def cmd_start(message: Message, state: FSMContext):
         await refresh_admin_profile(message.from_user.id, token)
         if get_admin_profile(message.from_user.id):
             await send_admin_panel(message)
+            return
+
         await message.answer(
             "Привет! Я помогу записаться в салон. Ниже подборка доступных салонов:"
         )
@@ -284,7 +384,8 @@ async def register_password(message: Message, state: FSMContext):
         )
         if get_admin_profile(message.from_user.id):
             await send_admin_panel(message)
-        await send_salons_overview(message)
+        else:
+            await send_salons_overview(message)
     else:
         error_text = data.get("detail") if isinstance(data, dict) else "Неизвестная ошибка"
         await message.answer(f"Не удалось зарегистрироваться: {error_text}")
@@ -323,7 +424,8 @@ async def login_password(message: Message, state: FSMContext):
         )
         if get_admin_profile(message.from_user.id):
             await send_admin_panel(message)
-        await send_salons_overview(message)
+        else:
+            await send_salons_overview(message)
     else:
         await message.answer("Неверные данные или сервер недоступен.")
     await state.clear()
@@ -332,6 +434,16 @@ async def login_password(message: Message, state: FSMContext):
 @router.message(Command("salons"))
 async def list_salons(message: Message):
     await send_salons_overview(message)
+
+
+@router.message(F.text == "🗓 Записи салона")
+async def admin_appointments_entry(message: Message):
+    await send_admin_appointments(message)
+
+
+@router.message(F.text == "📊 Отчёты")
+async def admin_reports_entry(message: Message):
+    await admin_reports_message(message)
 
 
 @router.message(Command("services"))
@@ -357,6 +469,13 @@ async def list_stylists(message: Message):
 
 
 async def send_salons_overview(message: Message):
+    if get_admin_profile(message.from_user.id):
+        await message.answer(
+            "Вы авторизованы как админ салона. Управляйте записями и отчётами через меню ниже."
+        )
+        await send_admin_panel(message)
+        return
+
     status, data = await api_request("GET", "salons/")
     if status != 200:
         await message.answer("Не удалось получить список салонов.")
@@ -722,6 +841,7 @@ async def booking_finalize(callback: CallbackQuery, state: FSMContext):
             f"Время: {appointment.get('start_time_local')}\n"
             f"Услуги: {services or '—'}"
         )
+        await notify_admins_about_new_booking(callback.message.bot, appointment)
     else:
         detail = resp.get("detail") if isinstance(resp, dict) else "Неизвестная ошибка"
         await callback.message.edit_text(f"Не удалось создать запись: {detail}")
@@ -751,18 +871,33 @@ async def admin_panel_callback(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data == "admin_appointments")
-async def admin_appointments(callback: CallbackQuery):
-    if not get_admin_profile(callback.from_user.id):
-        await callback.message.answer("Админ-панель доступна только салон-админам.")
-        await callback.answer()
+async def send_admin_appointments(target_message: Message | CallbackQuery):
+    user_id = (
+        target_message.from_user.id
+        if isinstance(target_message, (Message, CallbackQuery))
+        else None
+    )
+
+    if user_id is None or not get_admin_profile(user_id):
+        if isinstance(target_message, CallbackQuery):
+            await target_message.message.answer("Админ-панель доступна только салон-админам.")
+            await target_message.answer()
+        else:
+            await target_message.answer("Админ-панель доступна только салон-админам.")
         return
 
-    await callback.message.answer(
+    message_obj = target_message if isinstance(target_message, Message) else target_message.message
+    await message_obj.answer(
         "Выберите дату, чтобы увидеть записи этого дня:",
         reply_markup=build_month_keyboard(date.today()),
     )
-    await callback.answer()
+    if isinstance(target_message, CallbackQuery):
+        await target_message.answer()
+
+
+@router.callback_query(F.data == "admin_appointments")
+async def admin_appointments(callback: CallbackQuery):
+    await send_admin_appointments(callback)
 
 
 @router.callback_query(F.data == "admin_today")
@@ -813,22 +948,7 @@ async def admin_day(callback: CallbackQuery):
 
     await callback.message.answer(f"Записи на {day_str}:")
     for appointment in appointments:
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="✅ Подтвердить",
-                        callback_data=f"admin_status:{appointment['id']}:confirm",
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="❌ Отменить",
-                        callback_data=f"admin_status:{appointment['id']}:cancel",
-                    )
-                ],
-            ]
-        )
+        keyboard = admin_status_keyboard(appointment["id"])
         await callback.message.answer(format_admin_appointment(appointment), reply_markup=keyboard)
 
     await callback.answer()
@@ -856,22 +976,7 @@ async def admin_status_update(callback: CallbackQuery):
     )
 
     if status_code == 200 and isinstance(data, dict):
-        keyboard = InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(
-                        text="✅ Подтвердить",
-                        callback_data=f"admin_status:{data['id']}:confirm",
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="❌ Отменить",
-                        callback_data=f"admin_status:{data['id']}:cancel",
-                    )
-                ],
-            ]
-        )
+        keyboard = admin_status_keyboard(data["id"])
         await callback.message.edit_text(format_admin_appointment(data), reply_markup=keyboard)
         await callback.answer("Статус обновлён")
         return
@@ -881,18 +986,32 @@ async def admin_status_update(callback: CallbackQuery):
     await callback.answer()
 
 
-@router.callback_query(F.data == "admin_reports")
-async def admin_reports(callback: CallbackQuery):
-    profile = get_admin_profile(callback.from_user.id)
+async def admin_reports_message(target_message: Message | CallbackQuery):
+    user_id = (
+        target_message.from_user.id
+        if isinstance(target_message, (Message, CallbackQuery))
+        else None
+    )
+    profile = get_admin_profile(user_id) if user_id is not None else None
     if not profile:
-        await callback.message.answer("Раздел доступен только салон-админам.")
-        await callback.answer()
+        if isinstance(target_message, CallbackQuery):
+            await target_message.message.answer("Раздел доступен только салон-админам.")
+            await target_message.answer()
+        else:
+            await target_message.answer("Раздел доступен только салон-админам.")
         return
 
-    await callback.message.answer(
+    message_obj = target_message if isinstance(target_message, Message) else target_message.message
+    await message_obj.answer(
         "Отчёты по салону доступны в веб-кабинете. Мы сообщим, когда появится сводка прямо в боте."
     )
-    await callback.answer()
+    if isinstance(target_message, CallbackQuery):
+        await target_message.answer()
+
+
+@router.callback_query(F.data == "admin_reports")
+async def admin_reports(callback: CallbackQuery):
+    await admin_reports_message(callback)
 
 
 @router.callback_query(F.data == "noop")
