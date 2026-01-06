@@ -31,6 +31,7 @@ from booking.api.serializers import (
     RegistrationSerializer,
     SalonSerializer,
     SalonServiceSerializer,
+    StylistServicePublicSerializer,
     StylistSerializer,
 )
 from booking.models import City, Salon, SalonService
@@ -221,6 +222,18 @@ class StylistListView(generics.ListAPIView):
         if salon_id:
             qs = qs.filter(salon_id=salon_id)
         return qs
+
+
+class StylistServiceListView(generics.ListAPIView):
+    serializer_class = StylistServicePublicSerializer
+
+    def get_queryset(self):
+        stylist_id = self.kwargs.get("stylist_id")
+        return (
+            StylistService.objects
+            .filter(stylist_id=stylist_id, salon_service__is_active=True)
+            .select_related("salon_service", "salon_service__service", "salon_service__category")
+        )
 
 
 class AvailableSlotsView(APIView):
