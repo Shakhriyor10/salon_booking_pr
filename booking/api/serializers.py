@@ -57,6 +57,14 @@ class SalonServiceSerializer(serializers.ModelSerializer):
         fields = ["id", "service", "duration", "category", "is_active", "position"]
 
 
+class StylistServicePublicSerializer(serializers.ModelSerializer):
+    salon_service = SalonServiceSerializer()
+
+    class Meta:
+        model = StylistService
+        fields = ["id", "salon_service", "price"]
+
+
 class StylistSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     level = serializers.StringRelatedField()
