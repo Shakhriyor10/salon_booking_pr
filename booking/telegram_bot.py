@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import json
 from datetime import datetime
 import html
 from typing import Any, Dict, List, Optional
@@ -96,7 +97,10 @@ async def api_request(
 
     async with aiohttp.ClientSession() as session:
         async with session.request(method, url, json=json, params=params, headers=headers) as resp:
-            data = await resp.json(content_type=None)
+            try:
+                data = await resp.json(content_type=None)
+            except (aiohttp.ContentTypeError, json.JSONDecodeError):
+                data = await resp.text()
             return resp.status, data
 
 
