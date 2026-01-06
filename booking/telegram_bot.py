@@ -18,7 +18,7 @@ import os
 from datetime import datetime
 import html
 from typing import Any, Dict, List, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 
 import aiohttp
 from aiogram import Bot, Dispatcher, F, Router
@@ -41,20 +41,24 @@ salon_cache: Dict[int, Dict[str, Any]] = {}
 
 
 def normalize_media_url(url: str) -> str:
-    """Return absolute URL for Telegram uploads, falling back to original."""
+    """Return a Telegram-safe absolute media URL or empty string if invalid."""
 
     if not url:
         return ""
 
-    if url.startswith("http://") or url.startswith("https://"):
-        return url
+    cleaned = str(url).strip()
+    parsed = urlparse(cleaned)
+    if parsed.scheme in {"http", "https"} and parsed.netloc:
+        return cleaned
 
-    if API_ROOT:
-        if not url.startswith("/"):
-            url = f"/{url}"
-        return f"{API_ROOT}{url}"
+    base_parsed = urlparse(API_BASE_URL)
+    if base_parsed.scheme in {"http", "https"} and base_parsed.netloc:
+        candidate = urljoin(API_BASE_URL, cleaned)
+        joined = urlparse(candidate)
+        if joined.scheme in {"http", "https"} and joined.netloc:
+            return candidate
 
-    return url
+    return ""
 
 
 class RegisterStates(StatesGroup):
@@ -300,8 +304,9 @@ async def send_stylists_cards(target_message: Message, salon_id: str):
             f"{html.escape(stylist.get('bio') or 'Без описания')}"
         )
         avatar = stylist.get("avatar")
-        if avatar:
-            await target_message.answer_photo(normalize_media_url(avatar), caption=caption)
+        avatar_url = normalize_media_url(avatar) if avatar else ""
+        if avatar_url:
+            await target_message.answer_photo(avatar_url, caption=caption)
         else:
             await target_message.answer(caption)
 
